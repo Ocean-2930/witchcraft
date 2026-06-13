@@ -73,6 +73,16 @@ class Game:
     def read_inputs(self):
         events = pygame.event.get()
 
+        # read events
+        wheel_move = 0
+        for event in events:
+            if event.type == pygame.QUIT:
+                self.running = False
+
+            # read wheel movement
+            if event.type == pygame.MOUSEWHEEL:
+                wheel_move += event.y
+
         # read delta time
         delta_time = self.clock.tick(FPS) / 1000.0
 
@@ -118,12 +128,6 @@ class Game:
 
         # read mouse_position
         mouse_position = self.window_to_virtual(pygame.mouse.get_pos())
-
-        # read wheel movement
-        wheel_move = 0
-        for event in events:
-            if event.type == pygame.MOUSEWHEEL:
-                wheel_move += event.y
 
         return delta_time, game_events, mouse_position, wheel_move
 
