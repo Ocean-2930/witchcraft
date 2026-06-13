@@ -1,12 +1,7 @@
 import pygame
+import settings
 
 from scenes import TitleScene
-
-# user setting import
-from settings import (
-    FPS,
-    get_screen_size,
-)
 
 # game event import
 from settings import (
@@ -22,6 +17,7 @@ from settings import (
 
 # develop setting import
 from settings import (
+    FPS,
     VIRTUAL_WIDTH,
     VIRTUAL_HEIGHT,
     VIRTUAL_SIZE,
@@ -167,7 +163,7 @@ class Game:
         pygame.display.flip()
 
     def resize_window(self):
-        self.screen = pygame.display.set_mode(get_screen_size())
+        self.screen = pygame.display.set_mode(settings.get_screen_size())
 
         window_width, window_height = self.screen.get_size()
 
