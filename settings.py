@@ -3,7 +3,6 @@ import pygame
 # user settings
 SCREEN_WIDTH = 1280
 SCREEN_HEIGHT = 720
-FPS = 60
 
 def get_screen_size() -> tuple[int, int]:
     return (SCREEN_WIDTH, SCREEN_HEIGHT)
@@ -19,6 +18,16 @@ ARROW_LEFT = pygame.K_LEFT
 ARROW_RIGHT = pygame.K_RIGHT
 
 # develop settings
+FPS = 60
+__FRAME_DURATION = 0
+def get_frame_duration() -> float:
+    global __FRAME_DURATION
+
+    if __FRAME_DURATION == 0:
+        __FRAME_DURATION = round(1 / FPS, 4)
+
+    return __FRAME_DURATION
+
 VIRTUAL_WIDTH = 1280
 VIRTUAL_HEIGHT = 720
 VIRTUAL_SIZE = (VIRTUAL_WIDTH, VIRTUAL_HEIGHT)
