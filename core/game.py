@@ -182,5 +182,10 @@ class Game:
 
         self.display_offset.update(offset_x, offset_y)
 
+    def set_screen_size(self, width, height):
+        settings.SCREEN_WIDTH = width
+        settings.SCREEN_HEIGHT = height
+        self.resize_window()
+
     def quit(self):
         self.running = False

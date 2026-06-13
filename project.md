@@ -149,12 +149,14 @@ run()
 
 - `window_to_virtual(window_pos)`: 실제 윈도우 좌표를 가상 화면 좌표로 변환한다. letterbox 영역이면 `None`을 반환한다.
 - `resize_window()`: settings의 화면 크기를 읽고, `display_scale`, `display_size`, `display_offset`을 갱신한다.
+- `set_screen_size(width, height)`: `settings.SCREEN_WIDTH`, `settings.SCREEN_HEIGHT`를 갱신한 뒤 `resize_window()`를 호출해서 실제 윈도우 크기와 letterbox 계산을 다시 맞춘다.
 - `quit()`: 메인 루프 종료를 요청한다.
 
 주의할 점:
 
 - 입력은 `Game.read_inputs()`에서 한 번만 수집한다. scene 내부에서 `pygame.event.get()`을 다시 호출하면 이벤트가 소모되어 입력 흐름이 꼬일 수 있다.
 - `present()`는 매 프레임 호출되지만, 화면비와 출력 크기 계산은 `resize_window()`에서 처리한다.
+- 버튼이나 옵션 메뉴처럼 런타임에 화면 크기를 바꿔야 하는 코드는 settings 값을 직접 바꾸고 끝내지 말고 `game.set_screen_size(width, height)`를 호출한다.
 - 게임 로직은 가능하면 `virtual_screen` 기준 좌표를 사용한다.
 
 ---
@@ -582,6 +584,20 @@ Game.draw()
 ```
 
 일반 scene이나 renderer는 가능하면 `game.virtual_screen`에 그린다. 실제 `screen`에 직접 그리면 letterbox, scale, 좌표 변환 흐름과 어긋날 수 있다.
+
+화면 크기를 바꾸는 흐름:
+
+```text
+game.set_screen_size(width, height)
+├─ settings.SCREEN_WIDTH / SCREEN_HEIGHT 갱신
+└─ resize_window()
+   ├─ pygame.display.set_mode(settings.get_screen_size())
+   ├─ display_scale 재계산
+   ├─ display_size 재계산
+   └─ display_offset 재계산
+```
+
+예를 들어 타이틀 화면의 해상도 버튼에서 `game.set_screen_size(1920, 1080)`을 호출하면 실제 윈도우가 1920x1080으로 바뀌고, 기존 `virtual_screen`은 유지된 채 새 윈도우 크기에 맞춰 스케일된다.
 
 ---
 
