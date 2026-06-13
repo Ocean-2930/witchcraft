@@ -1,30 +1,31 @@
 class Scene:
     def __init__(self, game):
         self.game = game
+
         self.parent_scene = None
         self.overlay_scene = None
 
-    def handle_events(self, events):
-        if self.overlay_scene is None:
-            self.scene_events(events)
-        else:
-            self.overlay_scene.handle_events(events)
+        self.background_listeners = []
+        self.update_listeners = []
+        self.draw_listeners = []
 
-    def scene_events(self, events):
-        pass
-    
-    def update(self):
-        self.scene_background_update()
+        self.scene_initialize()
 
-        if self.overlay_scene is None:
-            self.scene_update()
-        else:
-            self.overlay_scene.update()
-
-    def scene_background_update(self):
+    def scene_initialize(self):
         pass
 
-    def scene_update(self):
+    def update(self, delta_time, game_events, mouse_position, wheel_move):
+        self.scene_background_update(delta_time, game_events, mouse_position, wheel_move)
+
+        if self.overlay_scene is None:
+            self.scene_update(delta_time, game_events, mouse_position, wheel_move)
+        else:
+            self.overlay_scene.update(delta_time, game_events, mouse_position, wheel_move)
+
+    def scene_background_update(self, delta_time, game_events, mouse_position, wheel_move):
+        pass
+
+    def scene_update(self, delta_time, game_events, mouse_position, wheel_move):
         pass
 
     def draw(self):
