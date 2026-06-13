@@ -1,3 +1,6 @@
 .project
 
+assets
+!assets/**/.gitkeep
+
 **/__pycache__
