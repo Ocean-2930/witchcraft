@@ -3,6 +3,7 @@ import pygame
 # user settings
 SCREEN_WIDTH = 1280
 SCREEN_HEIGHT = 720
+FULLSCREEN = False
 BGM = 0.5
 SFX = 0.5
 
@@ -18,6 +19,15 @@ ARROW_UP = pygame.K_UP
 ARROW_DOWN = pygame.K_DOWN
 ARROW_LEFT = pygame.K_LEFT
 ARROW_RIGHT = pygame.K_RIGHT
+ESCAPE = pygame.K_ESCAPE
+KEY_1 = pygame.K_1
+KEY_2 = pygame.K_2
+KEY_3 = pygame.K_3
+KEY_4 = pygame.K_4
+KEY_Q = pygame.K_q
+KEY_W = pygame.K_w
+KEY_E = pygame.K_e
+KEY_R = pygame.K_r
 
 # develop settings
 FPS = 60

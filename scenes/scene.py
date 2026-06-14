@@ -74,8 +74,18 @@ class Scene:
             self.overlay_scene.draw()
 
     def scene_draw(self):
-        for listener in self.draw_listeners[:]:
+        for listener in sorted(self.draw_listeners[:], key=self.get_draw_order):
             listener.draw(self.game.virtual_screen)
+
+    @staticmethod
+    def get_draw_order(listener):
+        rect = getattr(listener, "rect", None)
+        draw_layer = getattr(listener, "draw_layer", 0)
+
+        if rect is None:
+            return (draw_layer, 0, 0)
+
+        return (draw_layer, rect.top, rect.left)
 
     def detach_listeners(self, obj):
         for listeners in (self.ui_listener, self.background_listeners, self.update_listeners, self.draw_listeners):
