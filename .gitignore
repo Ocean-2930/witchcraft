@@ -1,6 +1,8 @@
 .project
 
-assets
+assets/*
+!assets/**/
 !assets/**/.gitkeep
+!assets/**/AGENTS.md
 
 **/__pycache__
