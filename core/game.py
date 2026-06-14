@@ -25,9 +25,20 @@ from settings import (
     LETTERBOX_COLOR,
 )
 
+class Sound:
+    def __init__(self, sound_path: str, weight: float):
+        self.player = pygame.mixer.Sound(sound_path)
+        self.weight = weight
+
+    def play(self):
+        self.player.set_volume(settings.SFX * self.weight)
+        self.player.play()
+
+
 class Game:
     def __init__(self):
         pygame.init()
+        pygame.mixer.init()
 
         pygame.display.set_caption("Pygame 2D Template")
 
@@ -61,6 +72,26 @@ class Game:
             self.draw()
 
         pygame.quit()
+
+    def background_music_play(self, music_path: str):
+        pygame.mixer.music.load(music_path)
+        pygame.mixer.music.play(-1)
+        self.change_volume()
+
+    def background_music_stop(self):
+        pygame.mixer.music.stop()
+
+    def background_music_pause(self):
+        pygame.mixer.music.pause()
+
+    def background_music_unpause(self):
+        pygame.mixer.music.unpause()
+
+    def change_volume(self):
+        pygame.mixer.music.set_volume(settings.BGM)
+
+    def sound_load(self, sound_path: str, weight: float):
+        return Sound(sound_path, weight)
 
     def update(self):
         delta_time, game_events, mouse_position, wheel_move = self.read_inputs()

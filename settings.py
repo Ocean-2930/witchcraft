@@ -3,6 +3,8 @@ import pygame
 # user settings
 SCREEN_WIDTH = 1280
 SCREEN_HEIGHT = 720
+BGM = 0.5
+SFX = 0.5
 
 def get_screen_size() -> tuple[int, int]:
     return (SCREEN_WIDTH, SCREEN_HEIGHT)

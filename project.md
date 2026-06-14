@@ -78,6 +78,8 @@ game.run()
 사용자 설정:
 
 - `SCREEN_WIDTH`, `SCREEN_HEIGHT`: 실제 윈도우 크기다.
+- `BGM`: 배경음악 볼륨이다. `0.0`부터 `1.0` 사이 값을 사용한다.
+- `SFX`: 효과음 기본 볼륨이다. `0.0`부터 `1.0` 사이 값을 사용한다.
 - `get_screen_size()`: `(SCREEN_WIDTH, SCREEN_HEIGHT)` 튜플을 반환한다.
 
 게임 입력 상수:
@@ -103,6 +105,7 @@ game.run()
 주의할 점:
 
 - 런타임에 값이 바뀔 수 있는 사용자 설정은 `from settings import SCREEN_WIDTH`처럼 값 자체를 가져오기보다 `import settings` 후 `settings.get_screen_size()`처럼 읽는 편이 안전하다.
+- `BGM`, `SFX`도 런타임 변경 가능성이 있으므로 `from settings import BGM`처럼 직접 import하지 않고 `settings.BGM`, `settings.SFX`로 읽는다.
 - `get_frame_duration()`은 `FPS` 기준으로 `round(1 / FPS, 4)` 값을 계산하고 캐싱한다. 이미 캐싱된 뒤 `FPS`를 바꾸면 기존 캐시가 남을 수 있다.
 - `pygame.RESIZABLE`은 사용하지 않는다. 현재 윈도우 크기는 settings 값 기준으로 고정된다.
 
@@ -150,7 +153,37 @@ run()
 - `window_to_virtual(window_pos)`: 실제 윈도우 좌표를 가상 화면 좌표로 변환한다. letterbox 영역이면 `None`을 반환한다.
 - `resize_window()`: settings의 화면 크기를 읽고, `display_scale`, `display_size`, `display_offset`을 갱신한다.
 - `set_screen_size(width, height)`: `settings.SCREEN_WIDTH`, `settings.SCREEN_HEIGHT`를 갱신한 뒤 `resize_window()`를 호출해서 실제 윈도우 크기와 letterbox 계산을 다시 맞춘다.
+- `background_music_play(music_path)`: 전달받은 음악 파일을 로드하고 `play(-1)`로 반복 재생한다. 마지막에 `change_volume()`을 호출해서 `settings.BGM` 값을 적용한다.
+- `change_volume()`: 현재 `settings.BGM` 값을 읽어서 배경음악 볼륨에 적용한다.
+- `background_music_stop()`: 현재 배경음악 재생을 정지한다.
+- `background_music_pause()`: 현재 배경음악 재생을 일시정지한다.
+- `background_music_unpause()`: 일시정지된 배경음악을 다시 재생한다.
+- `sound_load(sound_path, weight)`: 효과음 경로와 개별 크기값을 받아 `Sound` 객체를 생성해서 반환한다.
 - `quit()`: 메인 루프 종료를 요청한다.
+
+배경음악 사용 예시:
+
+```python
+game.background_music_play("assets/audio/title_theme.wav")
+game.background_music_pause()
+game.background_music_unpause()
+game.background_music_stop()
+```
+
+효과음 사용 예시:
+
+```python
+click_sound = game.sound_load("assets/audio/click.wav", 1.0)
+click_sound.play()
+```
+
+`Sound` 클래스:
+
+- `player`: `pygame.mixer.Sound(sound_path)`로 만든 Pygame 사운드 객체다.
+- `weight`: 효과음마다 따로 적용할 크기값이다.
+- `play()`: `settings.SFX * self.weight`를 실제 볼륨으로 적용한 뒤 효과음을 재생한다.
+
+예를 들어 `settings.SFX = 0.5`이고 `weight = 0.8`이면 실제 효과음 볼륨은 `0.4`가 된다.
 
 주의할 점:
 
