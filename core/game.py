@@ -24,7 +24,8 @@ from settings import (
     KEY_Q,
     KEY_W,
     KEY_E,
-    KEY_R
+    KEY_R,
+    KEY_T
 )
 
 # develop setting import
@@ -62,7 +63,7 @@ class Game:
         pygame.init()
         pygame.mixer.init()
 
-        pygame.display.set_caption("Pygame 2D Template")
+        pygame.display.set_caption("Witchcraft")
 
         # set clock
         self.clock = pygame.time.Clock()
@@ -93,6 +94,7 @@ class Game:
             KEY_W,
             KEY_E,
             KEY_R,
+            KEY_T,
         ]
         self.formal_events = { k:False for k in self.game_events }
         self.formal_events[MOUSE_LEFT] = False
