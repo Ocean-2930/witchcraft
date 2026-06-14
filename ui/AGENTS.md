@@ -31,6 +31,8 @@
 
 ## Exports
 
-- scene별 UI/renderer 클래스를 추가할 때는 `ui/scene_name/class_name.py` 같은 구조를 사용할 수 있다.
+- `Renderer`, `AnimatedRenderer`, `ShiftRenderer`, `UIElement`처럼 상속해서 쓰는 클래스는 루트 `AGENTS.md`의 scene별 구현체 관리 규칙을 따른다.
+- 새 UI/renderer 클래스는 `ui/scene_name/ui_name.py`에 선언한다.
 - 실제 scene에서 import할 요소는 `ui/__init__.py`에 등록한다.
+- `ui/__init__.py`에서는 `# scene_name` 주석 아래에 해당 scene의 import를 모아둔다.
 - `Renderer`는 직접 사용 빈도가 높으므로 package export 대상이다.

@@ -24,6 +24,13 @@
 - 객체를 화면에서 제거할 때 listener list를 직접 수정하지 말고 해당 객체의 `destroy()`를 호출한다.
 - package `__init__.py`에는 실제 외부 사용 요소만 공개한다. 상속용 base class는 필요한 파일에서 직접 경로로 import하는 것을 기본으로 한다.
 
+## Scene-Based Implementations
+
+- `Renderer`, `UIElement`처럼 기반 클래스를 상속해서 scene별 구현체를 만들 때는 부모 클래스가 있는 관리 root folder 아래에 scene별 하위 폴더를 만든다.
+- 파일 경로는 `{root_folder}/{scene_name}/{element_name}.py` 형태를 사용한다. 예: `ui/title_scene/start_button.py`.
+- 해당 root folder의 `__init__.py`에는 `# scene_name` 주석을 만들고, 그 아래에 해당 scene의 구현체 import를 모아둔다.
+- 나중에 `ui/` 외의 다른 관리 폴더가 생겨도 같은 방식으로 scene별 구현체를 배치한다.
+
 ## Verification
 
 - 기본 확인은 `.venv\Scripts\python.exe -m compileall core scenes ui settings.py main.py develop.py`를 사용한다.
