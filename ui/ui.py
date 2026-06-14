@@ -7,12 +7,18 @@ class UIElement(Transform):
         self.owns_renderer = renderer is None
 
         if renderer is None:
+            if scene is None:
+                raise ValueError("UIElement requires a scene when renderer is not provided.")
+
             renderer = Renderer(scene, pos_x, pos_y, width, height)
         else:
             pos_x, pos_y, width, height = renderer.get_transform()
 
             if scene is None:
                 scene = renderer.scene
+
+        if scene is None:
+            raise ValueError("UIElement requires a scene.")
 
         super().__init__(pos_x, pos_y, width, height)
 

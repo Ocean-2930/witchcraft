@@ -60,11 +60,11 @@ class Scene:
             self.overlay_scene.update(delta_time, game_events, mouse_position, wheel_move)
 
     def scene_background_update(self, delta_time, game_events, mouse_position, wheel_move):
-        for listener in self.background_listeners:
+        for listener in self.background_listeners[:]:
             listener.background_update(delta_time, game_events, mouse_position, wheel_move)
 
     def scene_update(self, delta_time, game_events, mouse_position, wheel_move):
-        for listener in self.update_listeners:
+        for listener in self.update_listeners[:]:
             listener.update(delta_time, game_events, mouse_position, wheel_move)
 
     def draw(self):
@@ -74,7 +74,7 @@ class Scene:
             self.overlay_scene.draw()
 
     def scene_draw(self):
-        for listener in self.draw_listeners:
+        for listener in self.draw_listeners[:]:
             listener.draw(self.game.virtual_screen)
 
     def detach_listeners(self, obj):
