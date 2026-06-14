@@ -43,7 +43,7 @@ project-root/
 
 각 패키지의 `__init__.py`는 import 편의성을 위해 공개할 클래스만 정리한다. 개발 전용 파일이나 배포 때 빠질 수 있는 클래스는 굳이 package export에 넣지 않는다.
 
-상속해서 새 클래스를 만들기 위한 base class는 `__init__.py`에 올리지 않는 것을 기본 규칙으로 한다. 예를 들어 `Scene`, `Renderer`, `UIElement`처럼 상속 재료로 쓰는 클래스는 필요한 파일에서 직접 경로로 import하고, 상속과 구성이 끝난 실제 사용 요소만 package import 대상으로 공개한다.
+상속해서 새 클래스를 만들기 위한 base class는 `__init__.py`에 올리지 않는 것을 기본 규칙으로 한다. 예를 들어 `Scene`, `UIElement`처럼 상속 재료로 쓰는 클래스는 필요한 파일에서 직접 경로로 import하고, 상속과 구성이 끝난 실제 사용 요소만 package import 대상으로 공개한다. 단, `Renderer`는 화면 구성에서 직접 사용하는 빈도가 높으므로 예외적으로 `ui/__init__.py`에 등록한다.
 
 ---
 
@@ -244,11 +244,12 @@ draw()
 
 상속할 때 권장 순서:
 
-1. `scene_initialize()`에 초기 객체 생성, renderer 생성, UI 생성, 상태값 초기화를 둔다.
-2. 항상 돌아야 하는 로직은 `scene_background_update(...)`에 둔다.
-3. overlay가 없을 때만 돌아야 하는 일반 로직은 `scene_update(...)`에 둔다.
-4. 직접 그릴 것이 있으면 `scene_draw()`를 오버라이드한다.
-5. `scene_draw()`를 오버라이드하면서 listener도 그리고 싶으면 마지막이나 원하는 위치에서 `super().scene_draw()`를 호출한다.
+1. `Scene`을 상속한 객체는 개별적으로 `scenes/scene_name.py`를 생성해서 관리한다.
+2. `scene_initialize()`에 초기 객체 생성, renderer 생성, UI 생성, 상태값 초기화를 둔다.
+3. 항상 돌아야 하는 로직은 `scene_background_update(...)`에 둔다.
+4. overlay가 없을 때만 돌아야 하는 일반 로직은 `scene_update(...)`에 둔다.
+5. 직접 그릴 것이 있으면 `scene_draw()`를 오버라이드한다.
+6. `scene_draw()`를 오버라이드하면서 listener도 그리고 싶으면 마지막이나 원하는 위치에서 `super().scene_draw()`를 호출한다.
 
 UI 처리:
 
@@ -339,6 +340,13 @@ Transform(pos_x, pos_y, width, height)
 ## ui/renderer.py
 
 renderer 계열은 화면에 그려지는 시각 요소다. 모두 `Transform`을 상속하고, 생성 시 스스로 scene listener에 등록된다.
+사용할 때는 상속해서 게임 화면 구성에 필요한 객체를 구성하게 된다.
+
+`Renderer`는 base class지만 패키지 import 예외 대상이다. scene이나 UI 구성 코드에서 기본 renderer가 필요하면 아래처럼 사용할 수 있다.
+
+```python
+from ui import Renderer
+```
 
 ### Renderer
 
@@ -415,6 +423,9 @@ AnimatedRenderer(
 - 프레임마다 추가 로직이 필요하면 `animated_renderer_update(...)`를 오버라이드한다.
 - 재생 진행 전체를 바꿔야 할 때만 `animation_proceed(...)`를 바꾼다.
 - transform 변경 시 이미지 list 재스케일은 `refresh_image()`에서 처리된다.
+- renderer 계열을 상속하는 요소를 만들 때는 `ui/scene_name/class_name.py` 와 같은 식으로 개별적 .py를 만들어둔다.
+- 만든 class_name.py는 ui의 `__init__.py`에 등록한다. 이때 import는 `# scene_name` 주석의 아래에 작성해서 관리의 편의성을 높인다.
+- scene에서 참고할 때는 이 `__init__.py`를 활용해서 `from ui import class_name` 식으로 사용한다.
 
 ### ShiftRenderer
 
@@ -464,6 +475,9 @@ non-loop animation 종료 후 이동 우선순위:
 - 프레임마다 추가 로직이 필요하면 `shift_renderer_update(...)`를 오버라이드한다.
 - 상태 전환 규칙을 바꾸고 싶으면 `finish_animation()` 또는 `return_formal()`을 검토한다.
 - animation 진행 시간 계산을 바꿔야 할 때만 `animation_proceed(...)`를 바꾼다.
+- renderer 계열을 상속하는 요소를 만들 때는 `ui/scene_name/class_name.py` 와 같은 식으로 개별적 .py를 만들어둔다.
+- 만든 class_name.py는 ui의 `__init__.py`에 등록한다. 이때 import는 `# scene_name` 주석의 아래에 작성해서 관리의 편의성을 높인다.
+- scene에서 참고할 때는 이 `__init__.py`를 활용해서 `from ui import class_name` 식으로 사용한다.
 
 주의할 점:
 
@@ -517,6 +531,9 @@ UIElement(
 - 클릭 반응은 `on_left_click()`, `on_right_click()`, `on_wheel_click()`을 오버라이드한다.
 - focus 반응은 `on_enter()`, `on_hover(...)`, `on_exit()`을 오버라이드한다.
 - transform 변경 후 renderer와 sub UI 위치 갱신은 `on_transform_updated()`가 담당하므로, 이 메서드를 바꿀 때는 기존 동기화 흐름을 유지해야 한다.
+- renderer 계열을 상속하는 요소를 만들 때는 `ui/scene_name/class_name.py` 와 같은 식으로 개별적 .py를 만들어둔다.
+- 만든 class_name.py는 ui의 `__init__.py`에 등록한다. 이때 import는 `# scene_name` 주석의 아래에 작성해서 관리의 편의성을 높인다.
+- scene에서 참고할 때는 이 `__init__.py`를 활용해서 `from ui import class_name` 식으로 사용한다.
 
 sub UI 주의사항:
 
