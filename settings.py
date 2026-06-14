@@ -28,6 +28,7 @@ KEY_Q = pygame.K_q
 KEY_W = pygame.K_w
 KEY_E = pygame.K_e
 KEY_R = pygame.K_r
+KEY_T = pygame.K_t
 
 # develop settings
 FPS = 60

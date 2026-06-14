@@ -12,6 +12,7 @@ from settings import (
     KEY_E,
     KEY_Q,
     KEY_R,
+    KEY_T,
     KEY_W,
     VIRTUAL_HEIGHT,
     VIRTUAL_WIDTH,
@@ -229,7 +230,7 @@ class DungeonScene(Scene):
                 return
 
     def update_active_hotbar_direction(self, game_events):
-        if self.has_direction_keydown(game_events):
+        if self.has_direction_pressed(game_events):
             self.active_hotbar_direction = self.get_combined_direction(game_events)
             self.active_hotbar_cancelled = False
             self.active_hotbar_direction_touched = True
@@ -284,6 +285,9 @@ class DungeonScene(Scene):
 
         return direction_labels.get(direction, "중립")
 
+    def has_direction_pressed(self, game_events):
+        return any(game_events[key]["status"] for key, _ in self.DIRECTION_KEYS)
+
     def has_direction_keydown(self, game_events):
         return any(game_events[key]["keydown"] for key, _ in self.DIRECTION_KEYS)
 
@@ -336,6 +340,9 @@ class DungeonScene(Scene):
     def update_held_direction(self, delta_time, game_events):
         direction = self.get_pressed_direction(game_events)
 
+        if direction is not None and not self.can_start_move_direction(direction, game_events):
+            direction = None
+
         if direction is None:
             self.held_direction = None
             self.hold_elapsed = 0.0
@@ -365,35 +372,32 @@ class DungeonScene(Scene):
         if direction is None:
             return
 
+        if not self.can_start_move_direction(direction, game_events):
+            return
+
         self.start_maze_move(direction)
 
     def get_keydown_direction(self, game_events):
-        for key, direction in self.DIRECTION_KEYS:
-            if game_events[key]["keydown"]:
-                return direction
+        if not self.has_direction_keydown(game_events):
+            return None
 
-        return None
+        return self.get_combined_direction(game_events)
 
     def get_pressed_direction(self, game_events):
-        for key, direction in self.DIRECTION_KEYS:
-            if game_events[key]["status"]:
-                return direction
+        return self.get_combined_direction(game_events)
 
-        return None
+    def can_start_move_direction(self, direction, game_events):
+        direction_x, direction_y = direction
+
+        if not game_events[KEY_T]["status"]:
+            return True
+
+        return direction_x != 0 and direction_y != 0
 
     def start_maze_move(self, direction):
         move_x, move_y = direction
-        shift_x = 0
-        shift_y = 0
-
-        if direction == (-1, 0):
-            shift_x = self.FLOOR_TILE_WIDTH
-        elif direction == (1, 0):
-            shift_x = -self.FLOOR_TILE_WIDTH
-        elif direction == (0, -1):
-            shift_y = self.FLOOR_TILE_HEIGHT
-        elif direction == (0, 1):
-            shift_y = -self.FLOOR_TILE_HEIGHT
+        shift_x = -move_x * self.FLOOR_TILE_WIDTH
+        shift_y = -move_y * self.FLOOR_TILE_HEIGHT
 
         target_tile = (self.player_tile_x + move_x, self.player_tile_y + move_y)
 
