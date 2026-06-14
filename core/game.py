@@ -1,3 +1,6 @@
+import ctypes
+from ctypes import wintypes
+
 import pygame
 import settings
 
@@ -12,7 +15,16 @@ from settings import (
     ARROW_UP,
     ARROW_DOWN,
     ARROW_LEFT,
-    ARROW_RIGHT
+    ARROW_RIGHT,
+    ESCAPE,
+    KEY_1,
+    KEY_2,
+    KEY_3,
+    KEY_4,
+    KEY_Q,
+    KEY_W,
+    KEY_E,
+    KEY_R
 )
 
 # develop setting import
@@ -24,6 +36,16 @@ from settings import (
     BACKGROUND_COLOR,
     LETTERBOX_COLOR,
 )
+
+
+class MonitorInfo(ctypes.Structure):
+    _fields_ = (
+        ("cbSize", wintypes.DWORD),
+        ("rcMonitor", wintypes.RECT),
+        ("rcWork", wintypes.RECT),
+        ("dwFlags", wintypes.DWORD),
+    )
+
 
 class Sound:
     def __init__(self, sound_path: str, weight: float):
@@ -57,7 +79,21 @@ class Game:
         self.virtual_screen = pygame.Surface(VIRTUAL_SIZE).convert()
 
         # game events formal status
-        self.game_events = [ARROW_UP, ARROW_DOWN, ARROW_LEFT, ARROW_RIGHT]
+        self.game_events = [
+            ARROW_UP,
+            ARROW_DOWN,
+            ARROW_LEFT,
+            ARROW_RIGHT,
+            ESCAPE,
+            KEY_1,
+            KEY_2,
+            KEY_3,
+            KEY_4,
+            KEY_Q,
+            KEY_W,
+            KEY_E,
+            KEY_R,
+        ]
         self.formal_events = { k:False for k in self.game_events }
         self.formal_events[MOUSE_LEFT] = False
         self.formal_events[MOUSE_MIDDLE] = False
@@ -194,7 +230,12 @@ class Game:
         pygame.display.flip()
 
     def resize_window(self):
-        self.screen = pygame.display.set_mode(settings.get_screen_size())
+        display_flags = pygame.FULLSCREEN if settings.FULLSCREEN else 0
+        screen_size = (0, 0) if settings.FULLSCREEN else settings.get_screen_size()
+        self.screen = pygame.display.set_mode(screen_size, display_flags)
+
+        if not settings.FULLSCREEN:
+            self.center_window()
 
         window_width, window_height = self.screen.get_size()
 
@@ -213,9 +254,118 @@ class Game:
 
         self.display_offset.update(offset_x, offset_y)
 
+    def center_window(self):
+        if not hasattr(ctypes, "windll"):
+            return
+
+        user32 = ctypes.windll.user32
+        self.configure_window_api(user32)
+
+        window_info = pygame.display.get_wm_info()
+        window_handle = window_info.get("window") or window_info.get("hwnd")
+
+        if not window_handle:
+            return
+
+        work_area = self.get_window_work_area(window_handle)
+        window_rect = self.get_window_rect(window_handle)
+
+        if work_area is None or window_rect is None:
+            return
+
+        work_left, work_top, work_right, work_bottom = work_area
+        window_left, window_top, window_right, window_bottom = window_rect
+        window_width = window_right - window_left
+        window_height = window_bottom - window_top
+        work_width = work_right - work_left
+        work_height = work_bottom - work_top
+
+        position_x = work_left + max(0, (work_width - window_width) // 2)
+        position_y = work_top + max(0, (work_height - window_height) // 2)
+
+        swp_no_size = 0x0001
+        swp_no_z_order = 0x0004
+        swp_no_activate = 0x0010
+        flags = swp_no_size | swp_no_z_order | swp_no_activate
+
+        user32.SetWindowPos(
+            int(window_handle),
+            0,
+            position_x,
+            position_y,
+            0,
+            0,
+            flags,
+        )
+
+    def get_window_rect(self, window_handle):
+        user32 = ctypes.windll.user32
+        self.configure_window_api(user32)
+
+        rect = wintypes.RECT()
+
+        if not user32.GetWindowRect(int(window_handle), ctypes.byref(rect)):
+            return None
+
+        return (rect.left, rect.top, rect.right, rect.bottom)
+
+    def get_window_work_area(self, window_handle):
+        user32 = ctypes.windll.user32
+        self.configure_window_api(user32)
+
+        monitor_default_to_nearest = 0x00000002
+        monitor_handle = user32.MonitorFromWindow(
+            int(window_handle),
+            monitor_default_to_nearest,
+        )
+
+        if not monitor_handle:
+            return None
+
+        monitor_info = MonitorInfo()
+        monitor_info.cbSize = ctypes.sizeof(MonitorInfo)
+
+        if not user32.GetMonitorInfoW(monitor_handle, ctypes.byref(monitor_info)):
+            return None
+
+        work_area = monitor_info.rcWork
+        return (work_area.left, work_area.top, work_area.right, work_area.bottom)
+
+    def configure_window_api(self, user32):
+        user32.SetWindowPos.argtypes = (
+            wintypes.HWND,
+            wintypes.HWND,
+            ctypes.c_int,
+            ctypes.c_int,
+            ctypes.c_int,
+            ctypes.c_int,
+            wintypes.UINT,
+        )
+        user32.SetWindowPos.restype = wintypes.BOOL
+        user32.GetWindowRect.argtypes = (
+            wintypes.HWND,
+            ctypes.POINTER(wintypes.RECT),
+        )
+        user32.GetWindowRect.restype = wintypes.BOOL
+        user32.MonitorFromWindow.argtypes = (
+            wintypes.HWND,
+            wintypes.DWORD,
+        )
+        user32.MonitorFromWindow.restype = wintypes.HANDLE
+        user32.GetMonitorInfoW.argtypes = (
+            wintypes.HANDLE,
+            ctypes.POINTER(MonitorInfo),
+        )
+        user32.GetMonitorInfoW.restype = wintypes.BOOL
+
     def set_screen_size(self, width, height):
+        settings.FULLSCREEN = False
         settings.SCREEN_WIDTH = width
         settings.SCREEN_HEIGHT = height
+        self.resize_window()
+
+    def set_fullscreen(self):
+        settings.FULLSCREEN = True
         self.resize_window()
 
     def quit(self):
