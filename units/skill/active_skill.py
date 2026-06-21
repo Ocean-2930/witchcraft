@@ -7,12 +7,12 @@ from .skill_base import SkillBase
 if TYPE_CHECKING:
     from random import Random
 
-    from .damage_block import DamageBlock
-    from .unit import AttackResult, DamagePreview, Unit
+    from ..unit import AttackResult, DamageBlock, DamagePreview, Unit
 
 
-class Skill(SkillBase):
+class ActiveSkill(SkillBase):
     skill_coefficient: float = 1.0
+    mp_cost: int = 0
 
     def __init__(self, name: str, mp_cost: int = 0, skill_coefficient: float = 1.0):
         super().__init__(name, mp_cost)

@@ -6,39 +6,19 @@ from random import Random
 
 from .damage_block import DamageBlock
 from .variable import (
-    BASE_CRITICAL_DAMAGE,
-    BASE_HIT_RATE,
     BASE_TURN_COST,
-    DEFENSE_BASE_VALUE,
-    EXCESS_PENETRATION_HIGH_EFFICIENCY_DAMAGE_RATE,
-    EXCESS_PENETRATION_HIGH_EFFICIENCY_LIMIT,
-    EXCESS_PENETRATION_LOW_EFFICIENCY_DAMAGE_RATE,
-    HIT_RATE_HIGH_EFFICIENCY_LIMIT,
-    HIT_RATE_HIGH_EFFICIENCY_STEP,
-    HIT_RATE_LOW_EFFICIENCY_STEP,
     LUCK_BASE,
     LUCK_DIVISOR,
-    MAX_CRITICAL_RATE,
     MAX_DROP_BONUS,
-    MAX_HIT_RATE,
-    MAX_INCOMING_DAMAGE_REDUCTION,
-    MAX_RANDOM_DAMAGE_MODIFIER,
     MAX_REWARD_RATE,
     MAX_SPEED_STEP,
-    MIN_CRITICAL_DAMAGE,
-    MIN_CRITICAL_RATE,
-    MIN_DAMAGE_INCREASE,
     MIN_DROP_BONUS,
-    MIN_HIT_RATE,
     MIN_MAX_HP,
     MIN_MAX_MP,
-    MIN_RANDOM_DAMAGE_MODIFIER,
     MIN_REWARD_RATE,
     MIN_SPEED_STEP,
-    OVERSATURATION_DAMAGE_RATE,
     SPEED_MULTIPLIER_BASE,
     SPEED_STEP_DIVISOR,
-    UNDER_CRITICAL_DAMAGE_MODIFIER,
 )
 
 
@@ -85,7 +65,7 @@ class Unit:
     attack_speed: int = 0
     move_speed: int = 0
     luck: int = 0
-    oversaturation: int = 0
+    overloaded: int = 0
     critical_chance: float = 0.0
     critical_defense: float = 0.0
     critical_damage: float = 0.0
@@ -199,8 +179,8 @@ class Unit:
 
     def peek_damage_block(self, damage_block):
         hit_rate, calculated_hit_rate, critical_rate, critical_raw_rate = self.get_damage_block_rates(damage_block)
-        critical_damage_conversion = max(0.0, critical_raw_rate - MAX_CRITICAL_RATE)
-        damage_increase_conversion = -max(0.0, MIN_CRITICAL_RATE - critical_raw_rate)
+        critical_damage_conversion = max(0.0, critical_raw_rate - DamageBlock.MAX_CRITICAL_RATE)
+        damage_increase_conversion = -max(0.0, DamageBlock.MIN_CRITICAL_RATE - critical_raw_rate)
         preview_random_modifier = self.get_preview_random_damage_modifier(damage_block)
         critical_probability = 0.0
         under_critical_probability = 0.0
@@ -234,7 +214,7 @@ class Unit:
                 damage_increase_conversion,
                 preview_random_modifier,
             ),
-            miss_probability=MAX_HIT_RATE - hit_rate,
+            miss_probability=DamageBlock.MAX_HIT_RATE - hit_rate,
             normal_probability=normal_probability,
             under_critical_probability=under_critical_probability,
             critical_probability=critical_probability,
@@ -260,8 +240,8 @@ class Unit:
             )
 
         critical_type = self.roll_critical_type(critical_rate, rng)
-        critical_damage_conversion = max(0.0, critical_raw_rate - MAX_CRITICAL_RATE)
-        damage_increase_conversion = -max(0.0, MIN_CRITICAL_RATE - critical_raw_rate)
+        critical_damage_conversion = max(0.0, critical_raw_rate - DamageBlock.MAX_CRITICAL_RATE)
+        damage_increase_conversion = -max(0.0, DamageBlock.MIN_CRITICAL_RATE - critical_raw_rate)
         damage = self.get_attack_damage(
             damage_block,
             critical_type,
@@ -286,9 +266,13 @@ class Unit:
     def get_damage_block_rates(self, damage_block):
         target = damage_block.defender
         calculated_hit_rate = self.get_calculated_hit_rate(target, damage_block.accuracy_bonus)
-        hit_rate = clamp(calculated_hit_rate, MIN_HIT_RATE, MAX_HIT_RATE)
+        hit_rate = clamp(calculated_hit_rate, DamageBlock.MIN_HIT_RATE, DamageBlock.MAX_HIT_RATE)
         critical_raw_rate = self.get_critical_raw_rate(target, calculated_hit_rate, damage_block.critical_chance_bonus)
-        critical_rate = clamp(critical_raw_rate, MIN_CRITICAL_RATE, MAX_CRITICAL_RATE)
+        critical_rate = clamp(
+            critical_raw_rate,
+            DamageBlock.MIN_CRITICAL_RATE,
+            DamageBlock.MAX_CRITICAL_RATE,
+        )
         return hit_rate, calculated_hit_rate, critical_rate, critical_raw_rate
 
     def get_attack_damage(
@@ -316,11 +300,11 @@ class Unit:
                 damage_block.critical_damage_bonus,
             )
             * self.get_damage_increase_modifier(damage_increase_conversion, damage_block.damage_increase_bonus)
-            * self.get_oversaturation_damage_modifier()
+            * self.get_overloaded_damage_modifier()
             * damage_block.outgoing_damage_modifier
             * target.get_incoming_damage_modifier(damage_block.incoming_damage_reduction_bonus)
             * damage_block.incoming_damage_modifier
-            * target.get_oversaturation_damage_modifier()
+            * target.get_overloaded_damage_modifier()
             * random_modifier
         )
 
@@ -332,51 +316,64 @@ class Unit:
         evasion_advantage = max(0, -accuracy_difference)
 
         return (
-            BASE_HIT_RATE
-            + min(accuracy_advantage, HIT_RATE_HIGH_EFFICIENCY_LIMIT) * HIT_RATE_HIGH_EFFICIENCY_STEP
-            + max(0, accuracy_advantage - HIT_RATE_HIGH_EFFICIENCY_LIMIT) * HIT_RATE_LOW_EFFICIENCY_STEP
-            - min(evasion_advantage, HIT_RATE_HIGH_EFFICIENCY_LIMIT) * HIT_RATE_HIGH_EFFICIENCY_STEP
-            - max(0, evasion_advantage - HIT_RATE_HIGH_EFFICIENCY_LIMIT) * HIT_RATE_LOW_EFFICIENCY_STEP
+            DamageBlock.BASE_HIT_RATE
+            + min(accuracy_advantage, DamageBlock.HIT_RATE_HIGH_EFFICIENCY_LIMIT)
+            * DamageBlock.HIT_RATE_HIGH_EFFICIENCY_STEP
+            + max(0, accuracy_advantage - DamageBlock.HIT_RATE_HIGH_EFFICIENCY_LIMIT)
+            * DamageBlock.HIT_RATE_LOW_EFFICIENCY_STEP
+            - min(evasion_advantage, DamageBlock.HIT_RATE_HIGH_EFFICIENCY_LIMIT)
+            * DamageBlock.HIT_RATE_HIGH_EFFICIENCY_STEP
+            - max(0, evasion_advantage - DamageBlock.HIT_RATE_HIGH_EFFICIENCY_LIMIT)
+            * DamageBlock.HIT_RATE_LOW_EFFICIENCY_STEP
         )
 
     def get_critical_raw_rate(self, target, calculated_hit_rate, critical_chance_bonus=0.0):
-        derived_critical_rate = max(0.0, calculated_hit_rate - MAX_HIT_RATE) - max(0.0, MIN_HIT_RATE - calculated_hit_rate)
+        derived_critical_rate = max(0.0, calculated_hit_rate - DamageBlock.MAX_HIT_RATE) - max(
+            0.0,
+            DamageBlock.MIN_HIT_RATE - calculated_hit_rate,
+        )
         return derived_critical_rate + self.critical_chance + critical_chance_bonus - target.critical_defense
 
     def get_defense_modifier(self, target, penetration_bonus=0):
         effective_defense = max(0, target.defense - (self.penetration + penetration_bonus))
-        return DEFENSE_BASE_VALUE / (DEFENSE_BASE_VALUE + effective_defense)
+        return DamageBlock.DEFENSE_BASE_VALUE / (DamageBlock.DEFENSE_BASE_VALUE + effective_defense)
 
     def get_excess_penetration_modifier(self, target, penetration_bonus=0):
         excess_penetration = max(0, self.penetration + penetration_bonus - target.defense)
         return (
             1
-            + min(excess_penetration, EXCESS_PENETRATION_HIGH_EFFICIENCY_LIMIT)
-            * EXCESS_PENETRATION_HIGH_EFFICIENCY_DAMAGE_RATE
-            + max(0, excess_penetration - EXCESS_PENETRATION_HIGH_EFFICIENCY_LIMIT)
-            * EXCESS_PENETRATION_LOW_EFFICIENCY_DAMAGE_RATE
+            + min(excess_penetration, DamageBlock.EXCESS_PENETRATION_HIGH_EFFICIENCY_LIMIT)
+            * DamageBlock.EXCESS_PENETRATION_HIGH_EFFICIENCY_DAMAGE_RATE
+            + max(0, excess_penetration - DamageBlock.EXCESS_PENETRATION_HIGH_EFFICIENCY_LIMIT)
+            * DamageBlock.EXCESS_PENETRATION_LOW_EFFICIENCY_DAMAGE_RATE
         )
 
     def get_critical_modifier(self, critical_type, critical_damage_conversion=0.0, critical_damage_bonus=0.0):
         if critical_type == "critical":
             critical_damage = max(
-                MIN_CRITICAL_DAMAGE,
-                BASE_CRITICAL_DAMAGE + self.critical_damage + critical_damage_bonus + critical_damage_conversion,
+                DamageBlock.MIN_CRITICAL_DAMAGE,
+                DamageBlock.BASE_CRITICAL_DAMAGE
+                + self.critical_damage
+                + critical_damage_bonus
+                + critical_damage_conversion,
             )
             return 1 + critical_damage / 100
         if critical_type == "under_critical":
-            return UNDER_CRITICAL_DAMAGE_MODIFIER
+            return DamageBlock.UNDER_CRITICAL_DAMAGE_MODIFIER
 
         return 1.0
 
     def get_damage_increase_modifier(self, damage_increase_conversion=0.0, damage_increase_bonus=0.0):
-        damage_increase = max(MIN_DAMAGE_INCREASE, self.damage_increase + damage_increase_bonus + damage_increase_conversion)
+        damage_increase = max(
+            DamageBlock.MIN_DAMAGE_INCREASE,
+            self.damage_increase + damage_increase_bonus + damage_increase_conversion,
+        )
         return 1 + damage_increase / 100
 
     def get_incoming_damage_modifier(self, incoming_damage_reduction_bonus=0.0):
         incoming_damage_reduction = min(
             self.incoming_damage_reduction + incoming_damage_reduction_bonus,
-            MAX_INCOMING_DAMAGE_REDUCTION,
+            DamageBlock.MAX_INCOMING_DAMAGE_REDUCTION,
         )
         return 1 - incoming_damage_reduction / 100
 
@@ -387,7 +384,7 @@ class Unit:
         if not damage_block.use_random_modifier:
             return 1.0
 
-        return rng.uniform(MIN_RANDOM_DAMAGE_MODIFIER, MAX_RANDOM_DAMAGE_MODIFIER)
+        return rng.uniform(DamageBlock.MIN_RANDOM_DAMAGE_MODIFIER, DamageBlock.MAX_RANDOM_DAMAGE_MODIFIER)
 
     @staticmethod
     def get_preview_random_damage_modifier(damage_block):
@@ -396,8 +393,8 @@ class Unit:
 
         return 1.0
 
-    def get_oversaturation_damage_modifier(self):
-        return 1 + self.oversaturation * OVERSATURATION_DAMAGE_RATE
+    def get_overloaded_damage_modifier(self):
+        return 1 + self.overloaded * DamageBlock.OVERLOADED_DAMAGE_RATE
 
     def get_equipment_drop_rate(self, base_drop_rate):
         drop_rate_modifier = 1 + clamp(self.equipment_drop_rate, MIN_DROP_BONUS, MAX_DROP_BONUS) / 100
