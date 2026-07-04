@@ -1,3 +1,5 @@
+from math import ceil
+
 from .scene import Scene
 from settings import (
     ARROW_DOWN,
@@ -31,6 +33,7 @@ class DungeonScene(Scene):
     FLOOR_TILE_WIDTH = 90
     FLOOR_TILE_HEIGHT = 60
     WALL_TILE_HEIGHT = 80
+    TILE_RENDER_BUFFER = 2
     MOVE_DURATION = 0.16
     MOVE_REPEAT_DELAY = 0.24
     HOTBAR_KEYS = (
@@ -76,10 +79,9 @@ class DungeonScene(Scene):
         self.maze_offset_x = 0.0
         self.maze_offset_y = 0.0
         self.maze_renderers = []
-        self.floor_tiles = []
-        self.wall_tiles = []
-        self.create_floor_tiles()
-        self.create_wall_tiles()
+        self.floor_tiles = {}
+        self.wall_tiles = {}
+        self.refresh_visible_tiles()
         self.player_marker = PlayerMarkerRenderer(
             self,
             VIRTUAL_WIDTH // 2,
@@ -111,35 +113,74 @@ class DungeonScene(Scene):
             self.open_pause,
         )
 
-    def create_floor_tiles(self):
-        for tile_y, row in enumerate(self.map_tiles):
-            for tile_x, tile_value in enumerate(row):
-                tile = FloorTileRenderer(
-                    self,
-                    self.get_tile_screen_x(tile_x),
-                    self.get_tile_screen_y(tile_y),
-                    self.FLOOR_TILE_WIDTH,
-                    self.FLOOR_TILE_HEIGHT,
-                )
-                self.set_maze_base_position(tile)
-                self.floor_tiles.append(tile)
-                self.maze_renderers.append(tile)
+    def refresh_visible_tiles(self):
+        visible_tiles = self.get_visible_tile_positions()
+        visible_walls = visible_tiles & self.wall_positions
 
-    def create_wall_tiles(self):
+        self.remove_hidden_tiles(self.floor_tiles, visible_tiles)
+        self.remove_hidden_tiles(self.wall_tiles, visible_walls)
+
+        for tile_x, tile_y in visible_tiles:
+            if (tile_x, tile_y) not in self.floor_tiles:
+                self.create_floor_tile(tile_x, tile_y)
+
+        for tile_x, tile_y in visible_walls:
+            if (tile_x, tile_y) not in self.wall_tiles:
+                self.create_wall_tile(tile_x, tile_y)
+
+    def get_visible_tile_positions(self):
+        horizontal_radius = ceil((VIRTUAL_WIDTH / 2) / self.FLOOR_TILE_WIDTH) + self.TILE_RENDER_BUFFER
+        vertical_radius = ceil((VIRTUAL_HEIGHT / 2) / self.FLOOR_TILE_HEIGHT) + self.TILE_RENDER_BUFFER
+        visible_tiles = set()
+
+        start_y = max(0, self.player_tile_y - vertical_radius)
+        end_y = min(len(self.map_tiles), self.player_tile_y + vertical_radius + 1)
+
+        for tile_y in range(start_y, end_y):
+            row = self.map_tiles[tile_y]
+            start_x = max(0, self.player_tile_x - horizontal_radius)
+            end_x = min(len(row), self.player_tile_x + horizontal_radius + 1)
+
+            for tile_x in range(start_x, end_x):
+                visible_tiles.add((tile_x, tile_y))
+
+        return visible_tiles
+
+    def remove_hidden_tiles(self, tile_renderers, visible_tiles):
+        for tile_position, renderer in list(tile_renderers.items()):
+            if tile_position in visible_tiles:
+                continue
+
+            renderer.destroy()
+            self.maze_renderers.remove(renderer)
+            del tile_renderers[tile_position]
+
+    def create_floor_tile(self, tile_x, tile_y):
+        tile = FloorTileRenderer(
+            self,
+            self.get_tile_screen_x(tile_x),
+            self.get_tile_screen_y(tile_y),
+            self.FLOOR_TILE_WIDTH,
+            self.FLOOR_TILE_HEIGHT,
+        )
+        self.set_maze_base_position(tile)
+        self.floor_tiles[(tile_x, tile_y)] = tile
+        self.maze_renderers.append(tile)
+
+    def create_wall_tile(self, tile_x, tile_y):
         wall_y_offset = (self.WALL_TILE_HEIGHT - self.FLOOR_TILE_HEIGHT) // 2
 
-        for tile_x, tile_y in self.wall_positions:
-            wall = WallTileRenderer(
-                self,
-                self.get_tile_screen_x(tile_x),
-                self.get_tile_screen_y(tile_y) - wall_y_offset,
-                self.FLOOR_TILE_WIDTH,
-                self.WALL_TILE_HEIGHT,
-                self.get_wall_connections(tile_x, tile_y),
-            )
-            self.set_maze_base_position(wall)
-            self.wall_tiles.append(wall)
-            self.maze_renderers.append(wall)
+        wall = WallTileRenderer(
+            self,
+            self.get_tile_screen_x(tile_x),
+            self.get_tile_screen_y(tile_y) - wall_y_offset,
+            self.FLOOR_TILE_WIDTH,
+            self.WALL_TILE_HEIGHT,
+            self.get_wall_connections(tile_x, tile_y),
+        )
+        self.set_maze_base_position(wall)
+        self.wall_tiles[(tile_x, tile_y)] = wall
+        self.maze_renderers.append(wall)
 
     def get_wall_positions(self):
         wall_positions = set()
@@ -442,10 +483,11 @@ class DungeonScene(Scene):
         self.player_tile_x += move["move_x"]
         self.player_tile_y += move["move_y"]
         self.active_move = None
+        self.refresh_visible_tiles()
 
     def set_maze_base_position(self, renderer):
-        renderer.maze_base_x = renderer.rect.centerx
-        renderer.maze_base_y = renderer.rect.centery
+        renderer.maze_base_x = renderer.rect.centerx - self.maze_offset_x
+        renderer.maze_base_y = renderer.rect.centery - self.maze_offset_y
 
     def refresh_maze_positions(self):
         for renderer in self.maze_renderers:

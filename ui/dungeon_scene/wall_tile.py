@@ -1,12 +1,25 @@
 import pygame
 
 from ui.renderer import Renderer
+from .textures import DUNGEON_TEXTURES
 
 
 class WallTileRenderer(Renderer):
     draw_layer = -50
+    texture_key = "wall"
+    texture_images = {}
 
     def __init__(self, scene, pos_x, pos_y, width, height, connections=None):
+        texture_size = (int(width), int(height))
+
+        if texture_size not in self.__class__.texture_images:
+            self.__class__.texture_images[texture_size] = DUNGEON_TEXTURES.get_scaled(
+                self.texture_key,
+                width,
+                height,
+            )
+
+        self.texture_image = self.__class__.texture_images[texture_size]
         super().__init__(scene, pos_x, pos_y, width, height)
         self.connections = connections or {}
         self.configure_draw_variant()
@@ -14,6 +27,11 @@ class WallTileRenderer(Renderer):
     def draw(self, screen):
         previous_clip = screen.get_clip()
         screen.set_clip(screen.get_rect())
+
+        if self.texture_image is not None:
+            screen.blit(self.texture_image, self.rect)
+            screen.set_clip(previous_clip)
+            return
 
         cap_height = self.rect.height - self.scene.FLOOR_TILE_HEIGHT
         cap_rect = pygame.Rect(self.rect.left, self.rect.top, self.rect.width, cap_height)
