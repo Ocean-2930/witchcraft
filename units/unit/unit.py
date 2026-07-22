@@ -39,6 +39,7 @@ class AttackResult:
 
 @dataclass(frozen=True)
 class DamagePreview:
+    expected_damage: float
     normal_damage: int
     under_critical_damage: int
     critical_damage: int
@@ -75,6 +76,8 @@ class Unit:
     gold_drop_amount: float = 0.0
     hp: int | None = None
     mp: int | None = None
+    tile_x: int = 0
+    tile_y: int = 0
     skills: list = field(default_factory=list)
     buffs: list = field(default_factory=list)
 
@@ -192,28 +195,38 @@ class Unit:
 
         normal_probability = hit_rate - critical_probability - under_critical_probability
 
+        normal_damage = self.get_attack_damage(
+            damage_block,
+            "normal",
+            critical_damage_conversion,
+            damage_increase_conversion,
+            preview_random_modifier,
+        )
+        under_critical_damage = self.get_attack_damage(
+            damage_block,
+            "under_critical",
+            critical_damage_conversion,
+            damage_increase_conversion,
+            preview_random_modifier,
+        )
+        critical_damage = self.get_attack_damage(
+            damage_block,
+            "critical",
+            critical_damage_conversion,
+            damage_increase_conversion,
+            preview_random_modifier,
+        )
+        expected_damage = (
+            normal_damage * normal_probability
+            + under_critical_damage * under_critical_probability
+            + critical_damage * critical_probability
+        ) / 100
+
         return DamagePreview(
-            normal_damage=self.get_attack_damage(
-                damage_block,
-                "normal",
-                critical_damage_conversion,
-                damage_increase_conversion,
-                preview_random_modifier,
-            ),
-            under_critical_damage=self.get_attack_damage(
-                damage_block,
-                "under_critical",
-                critical_damage_conversion,
-                damage_increase_conversion,
-                preview_random_modifier,
-            ),
-            critical_damage=self.get_attack_damage(
-                damage_block,
-                "critical",
-                critical_damage_conversion,
-                damage_increase_conversion,
-                preview_random_modifier,
-            ),
+            expected_damage=expected_damage,
+            normal_damage=normal_damage,
+            under_critical_damage=under_critical_damage,
+            critical_damage=critical_damage,
             miss_probability=DamageBlock.MAX_HIT_RATE - hit_rate,
             normal_probability=normal_probability,
             under_critical_probability=under_critical_probability,

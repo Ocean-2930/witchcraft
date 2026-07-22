@@ -33,3 +33,6 @@ class ActiveSkill(SkillBase):
 
         self.spend_cost(caster)
         return self.make_damage_block(caster, target).apply(rng)
+
+
+Skill = ActiveSkill

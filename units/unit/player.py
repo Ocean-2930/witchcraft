@@ -10,7 +10,7 @@ class Player(Unit):
         super().__init__(
             name=name,
             max_hp=100,
-            attack_power=0,
+            attack_power=100,
             max_mp=30,
             accuracy=5,
             hp=100,

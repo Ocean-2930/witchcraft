@@ -1,5 +1,7 @@
 from math import ceil
 
+import pygame
+
 from .scene import Scene
 from settings import (
     ARROW_DOWN,
@@ -22,11 +24,14 @@ from settings import (
 from ui import (
     FloorTileRenderer,
     HotbarRenderer,
+    MonsterMarkerRenderer,
     PauseButton,
     PlayerMarkerRenderer,
     SkillLogRenderer,
     WallTileRenderer,
 )
+from units.unit.enemy import Enemy
+from units.unit.player import Player
 
 
 class DungeonScene(Scene):
@@ -36,6 +41,10 @@ class DungeonScene(Scene):
     TILE_RENDER_BUFFER = 2
     MOVE_DURATION = 0.16
     MOVE_REPEAT_DELAY = 0.24
+    MONSTER_MARKER_SIZE = 54
+    DEPTH_FLOOR = 0
+    DEPTH_UNIT = 1
+    DEPTH_WALL = 2
     HOTBAR_KEYS = (
         (KEY_1, "1"),
         (KEY_2, "2"),
@@ -62,7 +71,11 @@ class DungeonScene(Scene):
 
     def scene_initialize(self):
         self.map_tiles = self.dungeon_map["map"]
-        self.player_tile_x, self.player_tile_y = self.dungeon_map["position"]
+        self.player = Player("플레이어")
+        self.player.tile_x, self.player.tile_y = self.dungeon_map["position"]
+        self.monsters = []
+        self.hovered_monster = None
+        self.peek_font = pygame.font.SysFont("malgungothic", 16, bold=True)
         self.wall_positions = self.get_wall_positions()
         self.active_move = None
         self.held_direction = None
@@ -86,9 +99,11 @@ class DungeonScene(Scene):
             self,
             VIRTUAL_WIDTH // 2,
             VIRTUAL_HEIGHT // 2,
-            42,
-            42,
+            72,
+            72,
         )
+        self.set_dungeon_draw_order(self.player_marker, self.player.tile_x, self.player.tile_y, self.DEPTH_UNIT)
+        self.create_monster(6, 3)
         self.hotbar = HotbarRenderer(
             self,
             28 + (72 * 4 + 8 * 3) // 2,
@@ -133,13 +148,13 @@ class DungeonScene(Scene):
         vertical_radius = ceil((VIRTUAL_HEIGHT / 2) / self.FLOOR_TILE_HEIGHT) + self.TILE_RENDER_BUFFER
         visible_tiles = set()
 
-        start_y = max(0, self.player_tile_y - vertical_radius)
-        end_y = min(len(self.map_tiles), self.player_tile_y + vertical_radius + 1)
+        start_y = max(0, self.player.tile_y - vertical_radius)
+        end_y = min(len(self.map_tiles), self.player.tile_y + vertical_radius + 1)
 
         for tile_y in range(start_y, end_y):
             row = self.map_tiles[tile_y]
-            start_x = max(0, self.player_tile_x - horizontal_radius)
-            end_x = min(len(row), self.player_tile_x + horizontal_radius + 1)
+            start_x = max(0, self.player.tile_x - horizontal_radius)
+            end_x = min(len(row), self.player.tile_x + horizontal_radius + 1)
 
             for tile_x in range(start_x, end_x):
                 visible_tiles.add((tile_x, tile_y))
@@ -163,9 +178,28 @@ class DungeonScene(Scene):
             self.FLOOR_TILE_WIDTH,
             self.FLOOR_TILE_HEIGHT,
         )
+        self.set_dungeon_draw_order(tile, tile_x, tile_y, self.DEPTH_FLOOR)
         self.set_maze_base_position(tile)
         self.floor_tiles[(tile_x, tile_y)] = tile
         self.maze_renderers.append(tile)
+
+    def create_monster(self, tile_x, tile_y):
+        unit = Enemy("적 몬스터", max_hp=100, attack_power=0, tile_x=tile_x, tile_y=tile_y)
+        monster = {
+            "unit": unit,
+            "renderer": MonsterMarkerRenderer(
+                self,
+                self.get_tile_screen_x(unit.tile_x),
+                self.get_tile_screen_y(unit.tile_y),
+                self.MONSTER_MARKER_SIZE,
+                self.MONSTER_MARKER_SIZE,
+            ),
+        }
+        self.set_dungeon_draw_order(monster["renderer"], unit.tile_x, unit.tile_y, self.DEPTH_UNIT)
+        self.set_maze_base_position(monster["renderer"])
+        self.maze_renderers.append(monster["renderer"])
+        self.monsters.append(monster)
+        return monster
 
     def create_wall_tile(self, tile_x, tile_y):
         wall_y_offset = (self.WALL_TILE_HEIGHT - self.FLOOR_TILE_HEIGHT) // 2
@@ -178,6 +212,7 @@ class DungeonScene(Scene):
             self.WALL_TILE_HEIGHT,
             self.get_wall_connections(tile_x, tile_y),
         )
+        self.set_dungeon_draw_order(wall, tile_x, tile_y, self.DEPTH_WALL)
         self.set_maze_base_position(wall)
         self.wall_tiles[(tile_x, tile_y)] = wall
         self.maze_renderers.append(wall)
@@ -210,10 +245,43 @@ class DungeonScene(Scene):
         }
 
     def get_tile_screen_x(self, tile_x):
-        return VIRTUAL_WIDTH // 2 + (tile_x - self.player_tile_x) * self.FLOOR_TILE_WIDTH
+        return VIRTUAL_WIDTH // 2 + (tile_x - self.player.tile_x) * self.FLOOR_TILE_WIDTH
 
     def get_tile_screen_y(self, tile_y):
-        return VIRTUAL_HEIGHT // 2 + (tile_y - self.player_tile_y) * self.FLOOR_TILE_HEIGHT
+        return VIRTUAL_HEIGHT // 2 + (tile_y - self.player.tile_y) * self.FLOOR_TILE_HEIGHT
+
+    @staticmethod
+    def set_dungeon_draw_order(renderer, tile_x, tile_y, depth_order):
+        renderer.dungeon_tile_x = tile_x
+        renderer.dungeon_tile_y = tile_y
+        renderer.dungeon_depth_order = depth_order
+
+    def set_player_draw_order(self, move=None):
+        tile_x = self.player.tile_x
+        tile_y = self.player.tile_y
+
+        if move is not None:
+            tile_x += move["move_x"]
+            tile_y = max(tile_y, tile_y + move["move_y"])
+
+        self.set_dungeon_draw_order(
+            self.player_marker,
+            tile_x,
+            tile_y,
+            self.DEPTH_UNIT,
+        )
+
+    def get_draw_order(self, listener):
+        if hasattr(listener, "dungeon_tile_y"):
+            return (
+                -1000,
+                listener.dungeon_tile_y,
+                listener.dungeon_depth_order,
+                listener.dungeon_tile_x,
+                getattr(listener, "draw_layer", 0),
+            )
+
+        return super().get_draw_order(listener)
 
     def open_pause(self):
         from .pause_scene import PauseScene
@@ -224,16 +292,37 @@ class DungeonScene(Scene):
         if game_events[ESCAPE]["keydown"]:
             self.open_pause()
 
+        self.update_hovered_monster(mouse_position)
         self.update_hotbar_input(game_events)
         self.update_maze_move(delta_time)
 
         if self.can_use_movement_input(game_events):
+            self.update_player_facing(game_events)
             self.update_held_direction(delta_time, game_events)
             self.try_start_maze_move(game_events)
         else:
             self.reset_movement_repeat()
 
         super().scene_update(delta_time, game_events, mouse_position, wheel_move)
+
+    def update_hovered_monster(self, mouse_position):
+        self.hovered_monster = None
+
+        if mouse_position is None:
+            return
+
+        for monster in reversed(self.monsters):
+            if self.is_mouse_over_monster(monster, mouse_position):
+                self.hovered_monster = monster
+                return
+
+    @staticmethod
+    def is_mouse_over_monster(monster, mouse_position):
+        renderer = monster["renderer"]
+        dx = mouse_position[0] - renderer.rect.centerx
+        dy = mouse_position[1] - renderer.rect.centery
+        radius = min(renderer.rect.width, renderer.rect.height) / 2
+        return dx * dx + dy * dy <= radius * radius
 
     def update_hotbar_input(self, game_events):
         if self.active_hotbar_key is None:
@@ -353,6 +442,23 @@ class DungeonScene(Scene):
 
         return (direction_x, direction_y)
 
+    def update_player_facing(self, game_events):
+        direction = self.get_combined_direction(game_events)
+
+        if direction is None:
+            return
+
+        direction_x, direction_y = direction
+
+        if direction_x < 0:
+            self.player_marker.set_facing_left(True)
+        elif direction_x > 0:
+            self.player_marker.set_facing_left(False)
+        elif direction_y < 0:
+            self.player_marker.set_facing_left(True)
+        elif direction_y > 0:
+            self.player_marker.set_facing_left(False)
+
     def can_use_movement_input(self, game_events):
         if self.active_hotbar_key is not None:
             return False
@@ -440,7 +546,7 @@ class DungeonScene(Scene):
         shift_x = -move_x * self.FLOOR_TILE_WIDTH
         shift_y = -move_y * self.FLOOR_TILE_HEIGHT
 
-        target_tile = (self.player_tile_x + move_x, self.player_tile_y + move_y)
+        target_tile = (self.player.tile_x + move_x, self.player.tile_y + move_y)
 
         if not self.can_move_to(target_tile):
             return
@@ -454,6 +560,7 @@ class DungeonScene(Scene):
             "shift_x": shift_x,
             "shift_y": shift_y,
         }
+        self.set_player_draw_order(self.active_move)
 
     def can_move_to(self, target_tile):
         tile_x, tile_y = target_tile
@@ -463,7 +570,13 @@ class DungeonScene(Scene):
         if tile_x < 0 or tile_x >= len(self.map_tiles[tile_y]):
             return False
 
-        return target_tile not in self.wall_positions
+        return target_tile not in self.wall_positions and not self.has_monster_at(target_tile)
+
+    def has_monster_at(self, tile_position):
+        return any(
+            monster["unit"].is_alive and (monster["unit"].tile_x, monster["unit"].tile_y) == tile_position
+            for monster in self.monsters
+        )
 
     def update_maze_move(self, delta_time):
         if self.active_move is None:
@@ -475,13 +588,15 @@ class DungeonScene(Scene):
 
         self.maze_offset_x = move["start_offset_x"] + move["shift_x"] * progress
         self.maze_offset_y = move["start_offset_y"] + move["shift_y"] * progress
+        self.set_player_draw_order(move)
         self.refresh_maze_positions()
 
         if move["elapsed"] < self.MOVE_DURATION:
             return
 
-        self.player_tile_x += move["move_x"]
-        self.player_tile_y += move["move_y"]
+        self.player.tile_x += move["move_x"]
+        self.player.tile_y += move["move_y"]
+        self.set_player_draw_order()
         self.active_move = None
         self.refresh_visible_tiles()
 
@@ -501,3 +616,35 @@ class DungeonScene(Scene):
         screen.fill((42, 48, 50))
 
         super().scene_draw()
+        self.draw_monster_peek(screen)
+
+    def draw_monster_peek(self, screen):
+        if self.hovered_monster is None:
+            return
+
+        monster = self.hovered_monster
+        monster_unit = monster["unit"]
+        preview = self.player.make_damage_block(monster_unit).peek()
+        marker_rect = monster["renderer"].rect
+        lines = [
+            f"{monster_unit.name}",
+            f"일반 {preview.normal_damage} / 치명 {preview.critical_damage}",
+            f"명중 {preview.hit_rate:.0f}% / 치명 {preview.critical_rate:.0f}%",
+            f"기대 {preview.expected_damage:.1f}",
+        ]
+        text_surfaces = [self.peek_font.render(line, True, (238, 234, 220)) for line in lines]
+        padding = 10
+        line_gap = 4
+        width = max(surface.get_width() for surface in text_surfaces) + padding * 2
+        height = sum(surface.get_height() for surface in text_surfaces) + line_gap * (len(lines) - 1) + padding * 2
+        tooltip_rect = pygame.Rect(0, 0, width, height)
+        tooltip_rect.midbottom = (marker_rect.centerx, marker_rect.top - 8)
+        tooltip_rect.clamp_ip(screen.get_rect())
+
+        pygame.draw.rect(screen, (18, 22, 25), tooltip_rect, border_radius=4)
+        pygame.draw.rect(screen, (126, 132, 134), tooltip_rect, width=2, border_radius=4)
+
+        text_y = tooltip_rect.top + padding
+        for text_surface in text_surfaces:
+            screen.blit(text_surface, (tooltip_rect.left + padding, text_y))
+            text_y += text_surface.get_height() + line_gap
