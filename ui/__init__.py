@@ -6,6 +6,7 @@ from .renderer import Renderer
 from .dungeon_scene import (
     FloorTileRenderer,
     HotbarRenderer,
+    MonsterMarkerRenderer,
     PlayerMarkerRenderer,
     SkillLogRenderer,
     WallTileRenderer,
@@ -28,6 +29,7 @@ __all__ = [
     # dungeon_scene
     "FloorTileRenderer",
     "HotbarRenderer",
+    "MonsterMarkerRenderer",
     "PlayerMarkerRenderer",
     "SkillLogRenderer",
     "WallTileRenderer",

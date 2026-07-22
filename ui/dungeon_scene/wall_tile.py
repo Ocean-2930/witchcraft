@@ -6,20 +6,9 @@ from .textures import DUNGEON_TEXTURES
 
 class WallTileRenderer(Renderer):
     draw_layer = -50
-    texture_key = "wall"
     texture_images = {}
 
     def __init__(self, scene, pos_x, pos_y, width, height, connections=None):
-        texture_size = (int(width), int(height))
-
-        if texture_size not in self.__class__.texture_images:
-            self.__class__.texture_images[texture_size] = DUNGEON_TEXTURES.get_scaled(
-                self.texture_key,
-                width,
-                height,
-            )
-
-        self.texture_image = self.__class__.texture_images[texture_size]
         super().__init__(scene, pos_x, pos_y, width, height)
         self.connections = connections or {}
         self.configure_draw_variant()
@@ -27,11 +16,6 @@ class WallTileRenderer(Renderer):
     def draw(self, screen):
         previous_clip = screen.get_clip()
         screen.set_clip(screen.get_rect())
-
-        if self.texture_image is not None:
-            screen.blit(self.texture_image, self.rect)
-            screen.set_clip(previous_clip)
-            return
 
         cap_height = self.rect.height - self.scene.FLOOR_TILE_HEIGHT
         cap_rect = pygame.Rect(self.rect.left, self.rect.top, self.rect.width, cap_height)
@@ -45,6 +29,15 @@ class WallTileRenderer(Renderer):
         self.draw_variant(screen, cap_rect, body_rect)
 
         screen.set_clip(previous_clip)
+
+    @classmethod
+    def get_texture_image(cls, key, width, height):
+        texture_size = (key, int(width), int(height))
+
+        if texture_size not in cls.texture_images:
+            cls.texture_images[texture_size] = DUNGEON_TEXTURES.get_scaled(key, width, height)
+
+        return cls.texture_images[texture_size]
 
     def configure_draw_variant(self):
         self.cap_borders = self.build_cap_borders()
@@ -76,8 +69,13 @@ class WallTileRenderer(Renderer):
         self.draw_connected_body(screen, body_rect)
 
     def draw_brown_body(self, screen, body_rect, draw_top_border):
-        pygame.draw.rect(screen, (82, 52, 32), body_rect)
-        pygame.draw.rect(screen, (58, 37, 24), body_rect, width=2)
+        body_texture = self.get_texture_image("wall", body_rect.width, body_rect.height)
+
+        if body_texture is not None:
+            screen.blit(body_texture, body_rect)
+        else:
+            pygame.draw.rect(screen, (82, 52, 32), body_rect)
+            pygame.draw.rect(screen, (58, 37, 24), body_rect, width=2)
 
         if draw_top_border:
             self.draw_border_line(screen, body_rect.left, body_rect.top, body_rect.right, body_rect.top)
@@ -126,19 +124,41 @@ class WallTileRenderer(Renderer):
         pygame.draw.rect(screen, black_color, rect)
 
         if borders["top"]:
-            pygame.draw.rect(screen, border_color, (rect.left, rect.top, rect.width, border_width))
+            self.draw_edge_rect(
+                screen,
+                pygame.Rect(rect.left, rect.top, rect.width, border_width),
+                border_color,
+            )
         if borders["bottom"]:
-            pygame.draw.rect(screen, border_color, (rect.left, rect.bottom - border_width, rect.width, border_width))
+            self.draw_edge_rect(
+                screen,
+                pygame.Rect(rect.left, rect.bottom - border_width, rect.width, border_width),
+                border_color,
+            )
         if borders["left"]:
-            pygame.draw.rect(screen, border_color, (rect.left, rect.top, border_width, rect.height))
+            self.draw_edge_rect(
+                screen,
+                pygame.Rect(rect.left, rect.top, border_width, rect.height),
+                border_color,
+            )
         if borders["right"]:
-            pygame.draw.rect(screen, border_color, (rect.right - border_width, rect.top, border_width, rect.height))
+            self.draw_edge_rect(
+                screen,
+                pygame.Rect(rect.right - border_width, rect.top, border_width, rect.height),
+                border_color,
+            )
+
+    def draw_edge_rect(self, screen, rect, fallback_color):
+        edge_texture = self.get_texture_image("wall_edge", rect.width, rect.height)
+
+        if edge_texture is not None:
+            screen.blit(edge_texture, rect)
+        else:
+            pygame.draw.rect(screen, fallback_color, rect)
 
     def draw_border_line(self, screen, start_x, start_y, end_x, end_y):
-        pygame.draw.line(
+        self.draw_edge_rect(
             screen,
+            pygame.Rect(start_x, start_y, end_x - start_x, 4),
             (172, 44, 38),
-            (start_x, start_y),
-            (end_x - 1, end_y),
-            4,
         )
