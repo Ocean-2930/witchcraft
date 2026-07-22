@@ -386,6 +386,7 @@ class DungeonScene(Scene):
         self.use_hotbar_skill(self.active_hotbar_label, self.active_hotbar_direction)
 
     def use_hotbar_skill(self, label, direction):
+        self.set_player_facing_by_direction(direction)
         self.last_skill_call = {
             "label": label,
             "direction": direction,
@@ -442,9 +443,7 @@ class DungeonScene(Scene):
 
         return (direction_x, direction_y)
 
-    def update_player_facing(self, game_events):
-        direction = self.get_combined_direction(game_events)
-
+    def set_player_facing_by_direction(self, direction):
         if direction is None:
             return
 
@@ -458,6 +457,10 @@ class DungeonScene(Scene):
             self.player_marker.set_facing_left(True)
         elif direction_y > 0:
             self.player_marker.set_facing_left(False)
+
+    def update_player_facing(self, game_events):
+        direction = self.get_combined_direction(game_events)
+        self.set_player_facing_by_direction(direction)
 
     def can_use_movement_input(self, game_events):
         if self.active_hotbar_key is not None:
