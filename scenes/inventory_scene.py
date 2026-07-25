@@ -15,6 +15,46 @@ class InventoryScene(Scene):
         ("accessory_1", "장신구 1"),
         ("accessory_2", "장신구 2"),
     )
+    STAT_GROUPS = (
+        (
+            "기본 능력",
+            (
+                ("max_hp", "최대 체력", False),
+                ("max_mp", "최대 마나", False),
+                ("attack_speed", "공격 속도", False),
+                ("move_speed", "이동 속도", False),
+                ("overloaded", "과부화", False),
+            ),
+        ),
+        (
+            "공격 능력",
+            (
+                ("attack_power", "공격력", False),
+                ("penetration", "관통력", False),
+                ("accuracy", "명중", False),
+                ("critical_chance", "치명타 확률", True),
+                ("critical_damage", "치명타 피해", True),
+                ("damage_increase", "피해 증가", True),
+            ),
+        ),
+        (
+            "방어 능력",
+            (
+                ("defense", "방어력", False),
+                ("evasion", "회피", False),
+                ("critical_defense", "치명타 방어", True),
+                ("incoming_damage_reduction", "받는 피해 감소", True),
+            ),
+        ),
+        (
+            "수집 능력",
+            (
+                ("luck", "행운", False),
+                ("equipment_drop_rate", "장비 드롭률", True),
+                ("gold_drop_amount", "골드 획득량", True),
+            ),
+        ),
+    )
     ITEM_SLOT_COUNT = 20
     PANEL_WIDTH = 960
     PANEL_HEIGHT = 600
@@ -236,6 +276,8 @@ class InventoryScene(Scene):
             self.draw_equipment_titles(screen, panel_rect)
         elif self.selected_tab == "스킬":
             self.draw_skill_title(screen, panel_rect)
+        elif self.selected_tab == "스탯":
+            self.draw_stat_tab(screen, panel_rect)
 
         super().scene_draw()
 
@@ -269,6 +311,117 @@ class InventoryScene(Scene):
             (232, 238, 243),
         )
         screen.blit(title_surface, (panel_rect.left + 46, panel_rect.top + 112))
+
+    def draw_stat_tab(self, screen, panel_rect):
+        dungeon_inventory = getattr(self.parent_scene, "dungeon_inventory", None)
+        if dungeon_inventory is None:
+            return
+
+        try:
+            calculated_stat = dungeon_inventory.get_stat()
+        except ValueError:
+            return
+
+        name = getattr(calculated_stat, "name", "")
+        title_text = f"스탯  ·  {name}" if name else "스탯"
+        title_surface = self.section_font.render(
+            title_text,
+            True,
+            (232, 238, 243),
+        )
+        screen.blit(title_surface, (panel_rect.left + 46, panel_rect.top + 112))
+
+        column_gap = 22
+        content_left = panel_rect.left + 46
+        content_right = panel_rect.right - 46
+        column_width = (
+            content_right
+            - content_left
+            - column_gap * (len(self.STAT_GROUPS) - 1)
+        ) // len(self.STAT_GROUPS)
+        column_top = panel_rect.top + 158
+        column_height = panel_rect.bottom - column_top - 38
+
+        for index, (group_title, stat_rows) in enumerate(self.STAT_GROUPS):
+            column_rect = pygame.Rect(
+                content_left + index * (column_width + column_gap),
+                column_top,
+                column_width,
+                column_height,
+            )
+            self.draw_stat_group(
+                screen,
+                column_rect,
+                group_title,
+                stat_rows,
+                calculated_stat,
+            )
+
+    def draw_stat_group(
+        self,
+        screen,
+        column_rect,
+        group_title,
+        stat_rows,
+        calculated_stat,
+    ):
+        pygame.draw.rect(screen, (31, 39, 49), column_rect, border_radius=6)
+        pygame.draw.rect(
+            screen,
+            (103, 119, 135),
+            column_rect,
+            width=2,
+            border_radius=6,
+        )
+
+        group_surface = self.slot_label_font.render(
+            group_title,
+            True,
+            (218, 228, 236),
+        )
+        screen.blit(
+            group_surface,
+            (column_rect.left + 18, column_rect.top + 15),
+        )
+        pygame.draw.line(
+            screen,
+            (82, 96, 110),
+            (column_rect.left + 16, column_rect.top + 46),
+            (column_rect.right - 16, column_rect.top + 46),
+            width=1,
+        )
+
+        row_y = column_rect.top + 62
+        row_gap = 43
+        for attribute_name, label, is_percentage in stat_rows:
+            value = getattr(calculated_stat, attribute_name, 0)
+            value_text = self.format_stat_value(value, is_percentage)
+
+            label_surface = self.item_font.render(
+                label,
+                True,
+                (174, 187, 199),
+            )
+            value_surface = self.slot_label_font.render(
+                value_text,
+                True,
+                (239, 243, 246),
+            )
+            screen.blit(label_surface, (column_rect.left + 18, row_y))
+            value_rect = value_surface.get_rect(
+                topright=(column_rect.right - 18, row_y - 2)
+            )
+            screen.blit(value_surface, value_rect)
+            row_y += row_gap
+
+    @staticmethod
+    def format_stat_value(value, is_percentage):
+        if isinstance(value, float):
+            value_text = f"{value:.2f}".rstrip("0").rstrip(".")
+        else:
+            value_text = str(value)
+
+        return f"{value_text}%" if is_percentage else value_text
 
     @classmethod
     def get_item_instance_text(cls, item_instance):
