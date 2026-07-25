@@ -31,6 +31,7 @@ from ui import (
     SkillLogRenderer,
     WallTileRenderer,
 )
+from units.skill import Skill
 from units.unit.enemy import Enemy
 from units.unit.player import Player
 
@@ -46,6 +47,16 @@ class DungeonScene(Scene):
     DEPTH_FLOOR = 0
     DEPTH_UNIT = 1
     DEPTH_WALL = 2
+    DIRECTION_LABELS = {
+        (-1, 0): "왼쪽",
+        (1, 0): "오른쪽",
+        (0, -1): "위",
+        (0, 1): "아래",
+        (-1, -1): "왼쪽 위",
+        (1, -1): "오른쪽 위",
+        (-1, 1): "왼쪽 아래",
+        (1, 1): "오른쪽 아래",
+    }
     HOTBAR_KEYS = (
         (KEY_1, "1"),
         (KEY_2, "2"),
@@ -74,6 +85,7 @@ class DungeonScene(Scene):
         self.map_tiles = self.dungeon_map["map"]
         self.player = Player("플레이어")
         self.player.tile_x, self.player.tile_y = self.dungeon_map["position"]
+        self.hotbar_skills = self.create_hotbar_skills()
         self.monsters = []
         self.hovered_monster = None
         self.peek_font = pygame.font.SysFont("malgungothic", 16, bold=True)
@@ -128,6 +140,18 @@ class DungeonScene(Scene):
             48,
             self.open_pause,
         )
+
+    def create_hotbar_skills(self):
+        return {
+            "1": Skill("1", range_vectors=[(0, -1)]),
+            "2": Skill("2", range_vectors=[(0, -1)]),
+            "3": Skill("3", range_vectors=[(0, -1)]),
+            "4": Skill("4", range_vectors=[(0, -1)]),
+            "Q": Skill("Q", range_vectors=[(0, -1)]),
+            "W": Skill("W", range_vectors=[(0, -1)]),
+            "E": Skill("E", range_vectors=[(0, -1)]),
+            "R": Skill("R", range_vectors=[(0, -1), (0, -2)]),
+        }
 
     def refresh_visible_tiles(self):
         visible_tiles = self.get_visible_tile_positions()
@@ -398,11 +422,32 @@ class DungeonScene(Scene):
 
     def use_hotbar_skill(self, label, direction):
         self.set_player_facing_by_direction(direction)
+        skill = self.get_hotbar_skill(label)
+        target_vectors = self.get_skill_target_vectors(skill, direction)
+        target_tiles = self.get_relative_target_tiles(target_vectors)
         self.last_skill_call = {
             "label": label,
+            "skill": skill,
             "direction": direction,
+            "target_vectors": target_vectors,
+            "target_tiles": target_tiles,
         }
-        self.skill_log.set_text(f"스킬 {label}: {self.format_direction(direction)}")
+        self.skill_log.set_text(
+            f"스킬 {label}: {self.format_direction(direction)} {self.format_vectors(target_vectors)}"
+        )
+
+    def get_hotbar_skill(self, label):
+        return self.hotbar_skills[label]
+
+    @staticmethod
+    def get_skill_target_vectors(skill, direction):
+        return skill.get_range_vectors(direction)
+
+    def get_relative_target_tiles(self, target_vectors):
+        return [
+            (self.player.tile_x + target_x, self.player.tile_y + target_y)
+            for target_x, target_y in target_vectors
+        ]
 
     def cancel_hotbar_skill(self, label):
         self.last_skill_call = {
@@ -412,20 +457,15 @@ class DungeonScene(Scene):
         }
         self.skill_log.set_text(f"스킬 {label}: 취소")
 
-    @staticmethod
-    def format_direction(direction):
-        direction_labels = {
-            (-1, 0): "왼쪽",
-            (1, 0): "오른쪽",
-            (0, -1): "위",
-            (0, 1): "아래",
-            (-1, -1): "왼쪽 위",
-            (1, -1): "오른쪽 위",
-            (-1, 1): "왼쪽 아래",
-            (1, 1): "오른쪽 아래",
-        }
+    def format_direction(self, direction):
+        return self.DIRECTION_LABELS.get(direction, "중립")
 
-        return direction_labels.get(direction, "중립")
+    @staticmethod
+    def format_vectors(vectors):
+        if not vectors:
+            return "[]"
+
+        return "[" + ", ".join(f"({x},{y})" for x, y in vectors) + "]"
 
     def has_direction_pressed(self, game_events):
         return any(game_events[key]["status"] for key, _ in self.DIRECTION_KEYS)

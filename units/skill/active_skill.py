@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from .attack_effect import AttackEffect
 from .skill_base import SkillBase
 
 if TYPE_CHECKING:
@@ -14,15 +15,28 @@ class ActiveSkill(SkillBase):
     skill_coefficient: float = 1.0
     mp_cost: int = 0
 
-    def __init__(self, name: str, mp_cost: int = 0, skill_coefficient: float = 1.0):
-        super().__init__(name, mp_cost)
+    def __init__(
+        self,
+        name: str,
+        mp_cost: int = 0,
+        skill_coefficient: float = 1.0,
+        range_vectors: list[tuple[int, int]] | None = None,
+        allow_diagonal: bool = False,
+    ):
+        super().__init__(
+            name=name,
+            mp_cost=mp_cost,
+            range_vectors=range_vectors or [(0, -1)],
+            allow_diagonal=allow_diagonal,
+            effects=[AttackEffect(skill_coefficient=skill_coefficient)],
+        )
         self.skill_coefficient = skill_coefficient
 
     def can_use(self, caster: Unit, target: Unit | None = None):
-        return target is not None and target.is_alive and super().can_use(caster, target)
+        return super().can_use(caster, target)
 
     def make_damage_block(self, caster: Unit, target: Unit) -> DamageBlock:
-        return caster.make_damage_block(target, skill_coefficient=self.skill_coefficient)
+        return self.effects[0].make_damage_block(caster, target)
 
     def peek(self, caster: Unit, target: Unit) -> DamagePreview:
         return self.make_damage_block(caster, target).peek()
@@ -31,8 +45,7 @@ class ActiveSkill(SkillBase):
         if not self.can_use(caster, target):
             raise ValueError(f"{caster.name} cannot use {self.name}.")
 
-        self.spend_cost(caster)
-        return self.make_damage_block(caster, target).apply(rng)
+        return super().use(caster, target, rng)[0]
 
 
 Skill = ActiveSkill
