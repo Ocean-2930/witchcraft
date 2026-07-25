@@ -7,6 +7,7 @@ from ui import InventoryTabButton
 
 class InventoryScene(Scene):
     TAB_LABELS = ("장비", "스킬", "영웅", "스탯")
+    SKILL_SLOT_LABELS = ("1", "2", "3", "4", "Q", "W", "E", "R")
     EQUIPMENT_SLOTS = (
         ("weapon", "무기"),
         ("sub_weapon", "보조 무기"),
@@ -81,6 +82,8 @@ class InventoryScene(Scene):
 
         if self.selected_tab == "장비":
             self.draw_equipment_tab(screen, panel_rect)
+        elif self.selected_tab == "스킬":
+            self.draw_skill_tab(screen, panel_rect)
 
         super().scene_draw()
 
@@ -88,7 +91,7 @@ class InventoryScene(Scene):
         dungeon_inventory = getattr(self.parent_scene, "dungeon_inventory", None)
 
         equipment_title = self.section_font.render("장비", True, (232, 238, 243))
-        screen.blit(equipment_title, (panel_rect.left + 46, panel_rect.top + 122))
+        screen.blit(equipment_title, (panel_rect.left + 46, panel_rect.top + 112))
 
         slot_size = 96
         slot_gap = 22
@@ -193,6 +196,52 @@ class InventoryScene(Scene):
                 bottomright=(slot_rect.right - 7, slot_rect.bottom - 5)
             )
             screen.blit(stack_surface, stack_rect)
+
+    def draw_skill_tab(self, screen, panel_rect):
+        title_surface = self.section_font.render(
+            "장착 스킬",
+            True,
+            (232, 238, 243),
+        )
+        screen.blit(title_surface, (panel_rect.left + 46, panel_rect.top + 112))
+
+        columns = 4
+        slot_size = 72
+        slot_gap = 8
+        row_gap = 8
+        total_width = slot_size * columns + slot_gap * (columns - 1)
+        first_slot_x = panel_rect.centerx - total_width // 2
+        first_slot_y = panel_rect.top + 148
+
+        for index, key_label in enumerate(self.SKILL_SLOT_LABELS):
+            row, column = divmod(index, columns)
+            slot_rect = pygame.Rect(
+                first_slot_x + column * (slot_size + slot_gap),
+                first_slot_y + row * (slot_size + row_gap),
+                slot_size,
+                slot_size,
+            )
+            self.draw_skill_slot(screen, slot_rect, key_label)
+
+    def draw_skill_slot(self, screen, slot_rect, key_label):
+        pygame.draw.rect(screen, (31, 39, 49), slot_rect, border_radius=5)
+        pygame.draw.rect(
+            screen,
+            (103, 119, 135),
+            slot_rect,
+            width=2,
+            border_radius=5,
+        )
+
+        key_surface = self.slot_label_font.render(
+            key_label,
+            True,
+            (230, 234, 232),
+        )
+        key_text_rect = key_surface.get_rect(
+            topleft=(slot_rect.left + 6, slot_rect.top + 4)
+        )
+        screen.blit(key_surface, key_text_rect)
 
     @staticmethod
     def get_item_display_name(item):
