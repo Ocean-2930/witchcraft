@@ -9,6 +9,7 @@ from settings import (
     ARROW_RIGHT,
     ARROW_UP,
     ESCAPE,
+    TAB,
     KEY_1,
     KEY_2,
     KEY_3,
@@ -288,9 +289,19 @@ class DungeonScene(Scene):
 
         self.add_overlay(PauseScene(self.game))
 
+    def open_inventory(self):
+        from .inventory_scene import InventoryScene
+
+        self.add_overlay(InventoryScene(self.game))
+
     def scene_update(self, delta_time, game_events, mouse_position, wheel_move):
         if game_events[ESCAPE]["keydown"]:
             self.open_pause()
+            return
+
+        if game_events[TAB]["keydown"]:
+            self.open_inventory()
+            return
 
         self.update_hovered_monster(mouse_position)
         self.update_hotbar_input(game_events)

@@ -15,6 +15,9 @@ from .dungeon_scene import (
 # game_entry_scene
 from .game_entry_scene import GameEntryStartButton
 
+# inventory_scene
+from .inventory_scene import InventoryTabButton
+
 # global
 PauseButton = import_module(f"{__name__}.global").PauseButton
 
@@ -35,6 +38,8 @@ __all__ = [
     "WallTileRenderer",
     # game_entry_scene
     "GameEntryStartButton",
+    # inventory_scene
+    "InventoryTabButton",
     # global
     "PauseButton",
     # title_scene
