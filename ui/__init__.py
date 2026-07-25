@@ -15,7 +15,12 @@ from .dungeon_scene import (
 from .game_entry_scene import GameEntryStartButton
 
 # inventory_scene
-from .inventory_scene import InventoryTabButton
+from .inventory_scene import (
+    EquipmentSlot,
+    InventoryTabButton,
+    ItemSlot,
+    SkillEquipSlot,
+)
 
 # global
 PauseButton = import_module(f"{__name__}.global").PauseButton
@@ -37,7 +42,10 @@ __all__ = [
     # game_entry_scene
     "GameEntryStartButton",
     # inventory_scene
+    "EquipmentSlot",
     "InventoryTabButton",
+    "ItemSlot",
+    "SkillEquipSlot",
     # global
     "PauseButton",
     # title_scene

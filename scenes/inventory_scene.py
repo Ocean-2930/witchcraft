@@ -2,7 +2,7 @@ import pygame
 
 from .scene import Scene
 from settings import ESCAPE, TAB, VIRTUAL_HEIGHT, VIRTUAL_WIDTH
-from ui import InventoryTabButton
+from ui import EquipmentSlot, InventoryTabButton, ItemSlot, SkillEquipSlot
 
 
 class InventoryScene(Scene):
@@ -15,6 +15,7 @@ class InventoryScene(Scene):
         ("accessory_1", "장신구 1"),
         ("accessory_2", "장신구 2"),
     )
+    ITEM_SLOT_COUNT = 20
     PANEL_WIDTH = 960
     PANEL_HEIGHT = 600
 
@@ -25,12 +26,27 @@ class InventoryScene(Scene):
         self.item_font = pygame.font.SysFont("malgungothic", 14)
         self.selected_tab = self.TAB_LABELS[0]
         self.tab_buttons = []
+        self.equipment_slots = []
+        self.item_slots = []
+        self.skill_equip_slots = []
 
+        self.create_tab_buttons()
+        self.create_equipment_slots()
+        self.create_item_slots()
+        self.create_skill_equip_slots()
+        self.update_slot_visibility()
+
+    def create_tab_buttons(self):
         tab_width = 180
         tab_height = 58
         tab_gap = 12
-        total_tab_width = tab_width * len(self.TAB_LABELS) + tab_gap * (len(self.TAB_LABELS) - 1)
-        first_tab_x = VIRTUAL_WIDTH // 2 - total_tab_width // 2 + tab_width // 2
+        total_tab_width = (
+            tab_width * len(self.TAB_LABELS)
+            + tab_gap * (len(self.TAB_LABELS) - 1)
+        )
+        first_tab_x = (
+            VIRTUAL_WIDTH // 2 - total_tab_width // 2 + tab_width // 2
+        )
         tab_y = (VIRTUAL_HEIGHT - self.PANEL_HEIGHT) // 2 + 56
 
         for index, label in enumerate(self.TAB_LABELS):
@@ -45,18 +61,146 @@ class InventoryScene(Scene):
             )
             self.tab_buttons.append(button)
 
+    def create_equipment_slots(self):
+        slot_size = 96
+        slot_gap = 22
+        total_width = (
+            slot_size * len(self.EQUIPMENT_SLOTS)
+            + slot_gap * (len(self.EQUIPMENT_SLOTS) - 1)
+        )
+        first_slot_x = VIRTUAL_WIDTH // 2 - total_width // 2
+        slot_y = (VIRTUAL_HEIGHT - self.PANEL_HEIGHT) // 2 + 158
+
+        for index, (_, label_text) in enumerate(self.EQUIPMENT_SLOTS):
+            slot_rect = pygame.Rect(
+                first_slot_x + index * (slot_size + slot_gap),
+                slot_y,
+                slot_size,
+                slot_size,
+            )
+            self.equipment_slots.append(
+                EquipmentSlot(
+                    self,
+                    label_text,
+                    "",
+                    slot_rect.centerx,
+                    slot_rect.centery,
+                    slot_size,
+                    slot_size,
+                )
+            )
+
+    def create_item_slots(self):
+        columns = 10
+        slot_size = 72
+        slot_gap = 10
+        total_width = slot_size * columns + slot_gap * (columns - 1)
+        first_slot_x = VIRTUAL_WIDTH // 2 - total_width // 2
+        first_slot_y = (VIRTUAL_HEIGHT - self.PANEL_HEIGHT) // 2 + 316
+
+        for index in range(self.ITEM_SLOT_COUNT):
+            row, column = divmod(index, columns)
+            slot_rect = pygame.Rect(
+                first_slot_x + column * (slot_size + slot_gap),
+                first_slot_y + row * (slot_size + slot_gap),
+                slot_size,
+                slot_size,
+            )
+            self.item_slots.append(
+                ItemSlot(
+                    self,
+                    "",
+                    "",
+                    slot_rect.centerx,
+                    slot_rect.centery,
+                    slot_size,
+                    slot_size,
+                )
+            )
+
+    def create_skill_equip_slots(self):
+        columns = 4
+        slot_size = 72
+        slot_gap = 8
+        total_width = slot_size * columns + slot_gap * (columns - 1)
+        first_slot_x = VIRTUAL_WIDTH // 2 - total_width // 2
+        first_slot_y = (VIRTUAL_HEIGHT - self.PANEL_HEIGHT) // 2 + 148
+
+        for index, key_text in enumerate(self.SKILL_SLOT_LABELS):
+            row, column = divmod(index, columns)
+            slot_rect = pygame.Rect(
+                first_slot_x + column * (slot_size + slot_gap),
+                first_slot_y + row * (slot_size + slot_gap),
+                slot_size,
+                slot_size,
+            )
+            self.skill_equip_slots.append(
+                SkillEquipSlot(
+                    self,
+                    key_text,
+                    "",
+                    slot_rect.centerx,
+                    slot_rect.centery,
+                    slot_size,
+                    slot_size,
+                )
+            )
+
     def select_tab(self, label):
         self.selected_tab = label
+        self.update_slot_visibility()
+
+    def update_slot_visibility(self):
+        equipment_visible = self.selected_tab == "장비"
+        skill_visible = self.selected_tab == "스킬"
+
+        for slot in (*self.equipment_slots, *self.item_slots):
+            slot.set_visible(equipment_visible)
+
+        for slot in self.skill_equip_slots:
+            slot.set_visible(skill_visible)
+
+    def refresh_inventory_texts(self):
+        dungeon_inventory = getattr(self.parent_scene, "dungeon_inventory", None)
+
+        for slot, (attribute_name, _) in zip(
+            self.equipment_slots,
+            self.EQUIPMENT_SLOTS,
+        ):
+            item_instance = (
+                getattr(dungeon_inventory, attribute_name, None)
+                if dungeon_inventory is not None
+                else None
+            )
+            slot.set_item_text(self.get_item_instance_text(item_instance))
+
+        inventory = (
+            getattr(dungeon_inventory, "item_inventory", None)
+            if dungeon_inventory is not None
+            else None
+        )
+        inventory_items = getattr(inventory, "items", [])
+
+        for index, slot in enumerate(self.item_slots):
+            item_instance = (
+                inventory_items[index] if index < len(inventory_items) else None
+            )
+            item_text = self.get_item_instance_text(item_instance)
+            stack = getattr(item_instance, "stack", 1)
+            stack_text = str(stack) if item_instance is not None and stack > 1 else ""
+            slot.set_text(item_text, stack_text)
 
     def scene_update(self, delta_time, game_events, mouse_position, wheel_move):
         if game_events[TAB]["keydown"] or game_events[ESCAPE]["keydown"]:
             self.exit_scene()
             return
 
+        self.refresh_inventory_texts()
         super().scene_update(delta_time, game_events, mouse_position, wheel_move)
 
     def scene_draw(self):
         screen = self.game.virtual_screen
+        self.refresh_inventory_texts()
 
         dim_surface = pygame.Surface((VIRTUAL_WIDTH, VIRTUAL_HEIGHT), pygame.SRCALPHA)
         dim_surface.fill((4, 7, 11, 110))
@@ -67,9 +211,17 @@ class InventoryScene(Scene):
             pygame.SRCALPHA,
         )
         panel_surface.fill((22, 28, 36, 225))
-        panel_rect = panel_surface.get_rect(center=(VIRTUAL_WIDTH // 2, VIRTUAL_HEIGHT // 2))
+        panel_rect = panel_surface.get_rect(
+            center=(VIRTUAL_WIDTH // 2, VIRTUAL_HEIGHT // 2)
+        )
         screen.blit(panel_surface, panel_rect)
-        pygame.draw.rect(screen, (132, 148, 164), panel_rect, width=2, border_radius=8)
+        pygame.draw.rect(
+            screen,
+            (132, 148, 164),
+            panel_rect,
+            width=2,
+            border_radius=8,
+        )
 
         divider_y = panel_rect.top + 104
         pygame.draw.line(
@@ -81,123 +233,36 @@ class InventoryScene(Scene):
         )
 
         if self.selected_tab == "장비":
-            self.draw_equipment_tab(screen, panel_rect)
+            self.draw_equipment_titles(screen, panel_rect)
         elif self.selected_tab == "스킬":
-            self.draw_skill_tab(screen, panel_rect)
+            self.draw_skill_title(screen, panel_rect)
 
         super().scene_draw()
 
-    def draw_equipment_tab(self, screen, panel_rect):
-        dungeon_inventory = getattr(self.parent_scene, "dungeon_inventory", None)
-
-        equipment_title = self.section_font.render("장비", True, (232, 238, 243))
+    def draw_equipment_titles(self, screen, panel_rect):
+        equipment_title = self.section_font.render(
+            "장비",
+            True,
+            (232, 238, 243),
+        )
         screen.blit(equipment_title, (panel_rect.left + 46, panel_rect.top + 112))
 
-        slot_size = 96
-        slot_gap = 22
-        total_width = slot_size * len(self.EQUIPMENT_SLOTS) + slot_gap * (
-            len(self.EQUIPMENT_SLOTS) - 1
-        )
-        first_slot_x = panel_rect.centerx - total_width // 2
-        equipment_y = panel_rect.top + 158
-
-        for index, (attribute_name, label) in enumerate(self.EQUIPMENT_SLOTS):
-            slot_rect = pygame.Rect(
-                first_slot_x + index * (slot_size + slot_gap),
-                equipment_y,
-                slot_size,
-                slot_size,
-            )
-            item_instance = (
-                getattr(dungeon_inventory, attribute_name, None)
-                if dungeon_inventory is not None
-                else None
-            )
-            self.draw_item_slot(screen, slot_rect, item_instance, label)
-
+        dungeon_inventory = getattr(self.parent_scene, "dungeon_inventory", None)
         inventory = (
             getattr(dungeon_inventory, "item_inventory", None)
             if dungeon_inventory is not None
             else None
         )
-        inventory_items = getattr(inventory, "items", [])
-        inventory_capacity = getattr(inventory, "capacity", 20)
-
+        item_count = len(getattr(inventory, "items", []))
+        capacity = getattr(inventory, "capacity", self.ITEM_SLOT_COUNT)
         inventory_title = self.section_font.render(
-            f"인벤토리  {len(inventory_items)} / {inventory_capacity}",
+            f"인벤토리  {item_count} / {capacity}",
             True,
             (232, 238, 243),
         )
         screen.blit(inventory_title, (panel_rect.left + 46, panel_rect.top + 274))
 
-        columns = 10
-        inventory_slot_size = 72
-        inventory_gap = 10
-        inventory_width = (
-            inventory_slot_size * columns + inventory_gap * (columns - 1)
-        )
-        inventory_x = panel_rect.centerx - inventory_width // 2
-        inventory_y = panel_rect.top + 316
-
-        for index in range(inventory_capacity):
-            row, column = divmod(index, columns)
-            slot_rect = pygame.Rect(
-                inventory_x + column * (inventory_slot_size + inventory_gap),
-                inventory_y + row * (inventory_slot_size + inventory_gap),
-                inventory_slot_size,
-                inventory_slot_size,
-            )
-            item_instance = (
-                inventory_items[index] if index < len(inventory_items) else None
-            )
-            self.draw_item_slot(screen, slot_rect, item_instance)
-
-    def draw_item_slot(self, screen, slot_rect, item_instance, slot_label=None):
-        pygame.draw.rect(screen, (31, 39, 49), slot_rect, border_radius=5)
-        pygame.draw.rect(
-            screen,
-            (103, 119, 135),
-            slot_rect,
-            width=2,
-            border_radius=5,
-        )
-
-        if slot_label is not None:
-            label_surface = self.slot_label_font.render(
-                slot_label,
-                True,
-                (182, 195, 207),
-            )
-            label_rect = label_surface.get_rect(
-                center=(slot_rect.centerx, slot_rect.top + 17)
-            )
-            screen.blit(label_surface, label_rect)
-
-        if item_instance is None:
-            return
-
-        item = getattr(item_instance, "item", None)
-        if item is None:
-            return
-
-        item_name = self.get_item_display_name(item)
-        name_surface = self.item_font.render(item_name, True, (238, 241, 244))
-        name_rect = name_surface.get_rect(center=slot_rect.center)
-        screen.blit(name_surface, name_rect)
-
-        stack = getattr(item_instance, "stack", 1)
-        if stack > 1:
-            stack_surface = self.item_font.render(
-                str(stack),
-                True,
-                (246, 224, 148),
-            )
-            stack_rect = stack_surface.get_rect(
-                bottomright=(slot_rect.right - 7, slot_rect.bottom - 5)
-            )
-            screen.blit(stack_surface, stack_rect)
-
-    def draw_skill_tab(self, screen, panel_rect):
+    def draw_skill_title(self, screen, panel_rect):
         title_surface = self.section_font.render(
             "장착 스킬",
             True,
@@ -205,43 +270,10 @@ class InventoryScene(Scene):
         )
         screen.blit(title_surface, (panel_rect.left + 46, panel_rect.top + 112))
 
-        columns = 4
-        slot_size = 72
-        slot_gap = 8
-        row_gap = 8
-        total_width = slot_size * columns + slot_gap * (columns - 1)
-        first_slot_x = panel_rect.centerx - total_width // 2
-        first_slot_y = panel_rect.top + 148
-
-        for index, key_label in enumerate(self.SKILL_SLOT_LABELS):
-            row, column = divmod(index, columns)
-            slot_rect = pygame.Rect(
-                first_slot_x + column * (slot_size + slot_gap),
-                first_slot_y + row * (slot_size + row_gap),
-                slot_size,
-                slot_size,
-            )
-            self.draw_skill_slot(screen, slot_rect, key_label)
-
-    def draw_skill_slot(self, screen, slot_rect, key_label):
-        pygame.draw.rect(screen, (31, 39, 49), slot_rect, border_radius=5)
-        pygame.draw.rect(
-            screen,
-            (103, 119, 135),
-            slot_rect,
-            width=2,
-            border_radius=5,
-        )
-
-        key_surface = self.slot_label_font.render(
-            key_label,
-            True,
-            (230, 234, 232),
-        )
-        key_text_rect = key_surface.get_rect(
-            topleft=(slot_rect.left + 6, slot_rect.top + 4)
-        )
-        screen.blit(key_surface, key_text_rect)
+    @classmethod
+    def get_item_instance_text(cls, item_instance):
+        item = getattr(item_instance, "item", None)
+        return cls.get_item_display_name(item) if item is not None else ""
 
     @staticmethod
     def get_item_display_name(item):
