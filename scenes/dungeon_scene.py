@@ -28,7 +28,6 @@ from ui import (
     MonsterMarkerRenderer,
     PauseButton,
     PlayerMarkerRenderer,
-    SkillLogRenderer,
     WallTileRenderer,
 )
 from units.skill import Skill
@@ -124,14 +123,6 @@ class DungeonScene(Scene):
             72,
             8,
         )
-        self.skill_log = SkillLogRenderer(
-            self,
-            28 + 280 // 2,
-            VIRTUAL_HEIGHT - 28 - (72 * 2 + 8) - 14 - 34 // 2,
-            280,
-            34,
-        )
-
         self.pause_button = PauseButton(
             self,
             VIRTUAL_WIDTH - 42,
@@ -432,9 +423,6 @@ class DungeonScene(Scene):
             "target_vectors": target_vectors,
             "target_tiles": target_tiles,
         }
-        self.skill_log.set_text(
-            f"스킬 {label}: {self.format_direction(direction)} {self.format_vectors(target_vectors)}"
-        )
 
     def get_hotbar_skill(self, label):
         return self.hotbar_skills[label]
@@ -455,7 +443,6 @@ class DungeonScene(Scene):
             "direction": None,
             "cancelled": True,
         }
-        self.skill_log.set_text(f"스킬 {label}: 취소")
 
     def format_direction(self, direction):
         return self.DIRECTION_LABELS.get(direction, "중립")
