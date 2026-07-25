@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 from .equip import Equip
 
 if TYPE_CHECKING:
-    from ..skill import Skill
+    from units.skill import Skill
 
 
 @dataclass

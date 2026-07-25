@@ -3,13 +3,15 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, ClassVar
 
+from .item import Item
+
 if TYPE_CHECKING:
-    from ..skill.skill_base import SkillBase
-    from ..unit import Player
+    from units.skill.skill_base import SkillBase
+    from units.unit import Player
 
 
 @dataclass
-class Equip:
+class Equip(Item):
     TYPE_WEAPON: ClassVar[str] = "weapon"
     TYPE_SUB_WEAPON: ClassVar[str] = "sub_weapon"
     TYPE_ARMOR: ClassVar[str] = "armor"

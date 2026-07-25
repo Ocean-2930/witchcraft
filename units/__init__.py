@@ -1,4 +1,4 @@
-from .equip import Equip, SubWeapon
+from items import Equip, SubWeapon
 from .skill import Skill
 from .unit import AttackResult, DamageBlock, DamagePreview, Enemy, Player, Unit
 

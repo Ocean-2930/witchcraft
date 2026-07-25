@@ -1,7 +1,6 @@
 from __future__ import annotations
 
-from ..equip import Equip, SubWeapon
-from ..equip.skilled_equip import SkilledEquip
+from items import Equip, SkilledEquip, SubWeapon
 from .unit import Unit
 
 

@@ -1,4 +1,6 @@
+.agents
 .project
+.venv
 
 assets/**/*
 !assets/**/.gitkeep
