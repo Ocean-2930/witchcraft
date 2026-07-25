@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 
-from units.skill import SkillInstance
+from skills import SkillInstance
 
 
 @dataclass

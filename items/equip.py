@@ -6,8 +6,8 @@ from typing import TYPE_CHECKING, ClassVar
 from .item import Item
 
 if TYPE_CHECKING:
-    from units.skill.skill_base import SkillBase
-    from units.unit import Player
+    from skills.skill_base import SkillBase
+    from units import Player
 
 
 @dataclass

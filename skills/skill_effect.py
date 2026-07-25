@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from random import Random
 
-    from ..unit import Unit
+    from units import Unit
 
 
 class SkillEffect:

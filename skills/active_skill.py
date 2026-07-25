@@ -8,7 +8,7 @@ from .skill_base import SkillBase
 if TYPE_CHECKING:
     from random import Random
 
-    from ..unit import AttackResult, DamageBlock, DamagePreview, Unit
+    from units import AttackResult, DamageBlock, DamagePreview, Unit
 
 
 class ActiveSkill(SkillBase):
@@ -23,9 +23,11 @@ class ActiveSkill(SkillBase):
         range_vectors: list[tuple[int, int]] | None = None,
         allow_diagonal: bool = False,
         max_level: int = 1,
+        skill_code: str | None = None,
     ):
         super().__init__(
             name=name,
+            skill_code=skill_code or name,
             max_level=max_level,
             mp_cost=mp_cost,
             range_vectors=range_vectors or [(0, -1)],

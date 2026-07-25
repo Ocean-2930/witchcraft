@@ -4,6 +4,8 @@ from dataclasses import dataclass, field
 from math import floor
 from random import Random
 
+from utilities.unit_base import UnitBase
+
 from .damage_block import DamageBlock
 from .variable import (
     BASE_TURN_COST,
@@ -54,31 +56,11 @@ class DamagePreview:
 
 
 @dataclass
-class Unit:
-    name: str
-    max_hp: int
-    attack_power: int
-    max_mp: int = 0
-    defense: int = 0
-    penetration: int = 0
-    accuracy: int = 0
-    evasion: int = 0
-    attack_speed: int = 0
-    move_speed: int = 0
-    luck: int = 0
-    overloaded: int = 0
-    critical_chance: float = 0.0
-    critical_defense: float = 0.0
-    critical_damage: float = 0.0
-    damage_increase: float = 0.0
-    incoming_damage_reduction: float = 0.0
-    equipment_drop_rate: float = 0.0
-    gold_drop_amount: float = 0.0
+class Unit(UnitBase):
     hp: int | None = None
     mp: int | None = None
     tile_x: int = 0
     tile_y: int = 0
-    skills: list = field(default_factory=list)
     buffs: list = field(default_factory=list)
 
     def __post_init__(self):
@@ -134,17 +116,6 @@ class Unit:
             return False
 
         self.mp -= amount
-        return True
-
-    def add_skill(self, skill):
-        self.skills.append(skill)
-        return skill
-
-    def remove_skill(self, skill):
-        if skill not in self.skills:
-            return False
-
-        self.skills.remove(skill)
         return True
 
     def add_buff(self, buff):

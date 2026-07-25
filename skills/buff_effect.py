@@ -8,7 +8,7 @@ from .skill_effect import SkillEffect
 if TYPE_CHECKING:
     from random import Random
 
-    from ..unit import Unit
+    from units import Unit
 
 
 @dataclass

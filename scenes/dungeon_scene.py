@@ -30,9 +30,8 @@ from ui import (
     PlayerMarkerRenderer,
     WallTileRenderer,
 )
-from units.skill import Skill
-from units.unit.enemy import Enemy
-from units.unit.player import Player
+from skills import Skill
+from units import Enemy, Player
 
 
 class DungeonScene(Scene):

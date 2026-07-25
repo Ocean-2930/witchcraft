@@ -1,11 +1,13 @@
 from __future__ import annotations
 
+from copy import deepcopy
 from dataclasses import dataclass, field
 
 from items import Equip, ItemInstance, SkilledEquip, SubWeapon
+from skills import SkillInstance
 
 from .item_inventory import ItemInventory
-from .unit_base import UnitBase
+from ..unit_base import UnitBase
 
 
 @dataclass
@@ -35,3 +37,85 @@ class DungeonInventory:
 
     def remove_item(self, item_instance: ItemInstance):
         return self.item_inventory.remove_item(item_instance)
+
+    def get_stat(self):
+        if self.unit_base is None:
+            raise ValueError("스탯을 계산할 UnitBase가 없습니다.")
+
+        calculated_stat = deepcopy(self.unit_base)
+
+        for skill_instance in self.passive_skills():
+            for effect in skill_instance.skill.effects:
+                if effect.is_active_effect:
+                    continue
+
+                apply_passive = getattr(effect, "apply_passive", None)
+                if apply_passive is None:
+                    continue
+
+                result = apply_passive(
+                    calculated_stat,
+                    level=skill_instance.level,
+                    stack=skill_instance.stack,
+                )
+                if isinstance(result, UnitBase):
+                    calculated_stat = result
+
+        return calculated_stat
+
+    def active_skills(self):
+        return self._stack_skills(
+            skill_instance
+            for skill_instance in self._all_skill_instances()
+            if any(
+                effect.is_active_effect
+                for effect in skill_instance.skill.effects
+            )
+        )
+
+    def passive_skills(self):
+        return self._stack_skills(
+            skill_instance
+            for skill_instance in self._all_skill_instances()
+            if not any(
+                effect.is_active_effect
+                for effect in skill_instance.skill.effects
+            )
+        )
+
+    def _all_skill_instances(self):
+        if self.unit_base is not None:
+            yield from self.unit_base.skill_tree.skills
+
+        for equipment in (
+            self.weapon,
+            self.sub_weapon,
+            self.armor,
+            self.accessory_1,
+            self.accessory_2,
+        ):
+            if isinstance(equipment.item, SkilledEquip):
+                yield from equipment.item.skills
+
+    @staticmethod
+    def _stack_skills(skill_instances):
+        stacked_skills: dict[str, SkillInstance] = {}
+
+        for skill_instance in skill_instances:
+            skill_code = skill_instance.skill.skill_code
+            stacked_skill = stacked_skills.get(skill_code)
+
+            if stacked_skill is None:
+                stacked_skills[skill_code] = SkillInstance(
+                    skill=skill_instance.skill,
+                    level=skill_instance.level,
+                    stack=skill_instance.stack,
+                )
+                continue
+
+            if skill_instance.level > stacked_skill.level:
+                stacked_skill.skill = skill_instance.skill
+                stacked_skill.level = skill_instance.level
+            stacked_skill.stack += skill_instance.stack
+
+        return list(stacked_skills.values())

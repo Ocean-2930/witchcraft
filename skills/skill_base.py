@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 if TYPE_CHECKING:
     from random import Random
 
-    from ..unit import Unit
+    from units import Unit
     from .skill_effect import SkillEffect
 
 
@@ -16,11 +16,16 @@ RangeVector = tuple[int, int]
 @dataclass
 class SkillBase:
     name: str
+    skill_code: str = ""
     max_level: int = 1
     mp_cost: int = 0
     range_vectors: list[RangeVector] = field(default_factory=list)
     allow_diagonal: bool = False
     effects: list[SkillEffect] = field(default_factory=list)
+
+    def __post_init__(self):
+        if not self.skill_code:
+            self.skill_code = self.name
 
     def can_use(self, caster: Unit, target: Unit | None = None):
         return (
