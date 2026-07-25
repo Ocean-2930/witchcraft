@@ -6,12 +6,12 @@ from typing import TYPE_CHECKING
 from .equip import Equip
 
 if TYPE_CHECKING:
-    from units.skill import Skill
+    from units.skill import SkillInstance
 
 
 @dataclass
 class SkilledEquip(Equip):
-    skills: list[Skill] = field(default_factory=list)
+    skills: list[SkillInstance] = field(default_factory=list)
 
     def getstar(self) -> int:
         return len(self.skills)

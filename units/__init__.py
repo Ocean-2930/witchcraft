@@ -1,5 +1,5 @@
 from items import Equip, SubWeapon
-from .skill import Skill
+from .skill import Skill, SkillInstance
 from .unit import AttackResult, DamageBlock, DamagePreview, Enemy, Player, Unit
 
 __all__ = [
@@ -10,6 +10,7 @@ __all__ = [
     "Equip",
     "Player",
     "Skill",
+    "SkillInstance",
     "SubWeapon",
     "Unit",
 ]

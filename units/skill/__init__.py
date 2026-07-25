@@ -4,6 +4,7 @@ from .buff_effect import BuffEffect
 from .passive_effect import PassiveEffect
 from .skill_base import RangeVector, SkillBase
 from .skill_effect import SkillEffect
+from .skill_instance import SkillInstance
 
 __all__ = [
     "AttackEffect",
@@ -13,4 +14,5 @@ __all__ = [
     "Skill",
     "SkillBase",
     "SkillEffect",
+    "SkillInstance",
 ]

@@ -22,9 +22,11 @@ class ActiveSkill(SkillBase):
         skill_coefficient: float = 1.0,
         range_vectors: list[tuple[int, int]] | None = None,
         allow_diagonal: bool = False,
+        max_level: int = 1,
     ):
         super().__init__(
             name=name,
+            max_level=max_level,
             mp_cost=mp_cost,
             range_vectors=range_vectors or [(0, -1)],
             allow_diagonal=allow_diagonal,

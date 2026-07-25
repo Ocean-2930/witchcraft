@@ -16,7 +16,6 @@ RangeVector = tuple[int, int]
 @dataclass
 class SkillBase:
     name: str
-    level: int = 1
     max_level: int = 1
     mp_cost: int = 0
     range_vectors: list[RangeVector] = field(default_factory=list)
