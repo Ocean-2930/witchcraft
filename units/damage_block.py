@@ -28,6 +28,7 @@ class DamageBlock:
     MAX_CRITICAL_RATE: ClassVar[float] = 100.0
     BASE_CRITICAL_DAMAGE: ClassVar[float] = 75.0
     MIN_CRITICAL_DAMAGE: ClassVar[float] = 0.0
+    MAX_CRITICAL_DAMAGE_REDUCTION: ClassVar[float] = 80.0
     UNDER_CRITICAL_DAMAGE_MODIFIER: ClassVar[float] = 0.25
 
     MIN_DAMAGE_INCREASE: ClassVar[float] = -80.0

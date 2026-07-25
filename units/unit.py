@@ -282,6 +282,7 @@ class Unit(UnitBase):
                 critical_type,
                 critical_damage_conversion,
                 damage_block.critical_damage_bonus,
+                target.critical_damage_reduction,
             )
             * self.get_damage_increase_modifier(damage_increase_conversion, damage_block.damage_increase_bonus)
             * self.get_overloaded_damage_modifier()
@@ -316,7 +317,12 @@ class Unit(UnitBase):
             0.0,
             DamageBlock.MIN_HIT_RATE - calculated_hit_rate,
         )
-        return derived_critical_rate + self.critical_chance + critical_chance_bonus - target.critical_defense
+        return (
+            derived_critical_rate
+            + self.critical_chance
+            + critical_chance_bonus
+            - target.critical_evasion
+        )
 
     def get_defense_modifier(self, target, penetration_bonus=0):
         effective_defense = max(0, target.defense - (self.penetration + penetration_bonus))
@@ -332,7 +338,13 @@ class Unit(UnitBase):
             * DamageBlock.EXCESS_PENETRATION_LOW_EFFICIENCY_DAMAGE_RATE
         )
 
-    def get_critical_modifier(self, critical_type, critical_damage_conversion=0.0, critical_damage_bonus=0.0):
+    def get_critical_modifier(
+        self,
+        critical_type,
+        critical_damage_conversion=0.0,
+        critical_damage_bonus=0.0,
+        critical_damage_reduction=0.0,
+    ):
         if critical_type == "critical":
             critical_damage = max(
                 DamageBlock.MIN_CRITICAL_DAMAGE,
@@ -341,7 +353,11 @@ class Unit(UnitBase):
                 + critical_damage_bonus
                 + critical_damage_conversion,
             )
-            return 1 + critical_damage / 100
+            reduction_modifier = 1 - min(
+                critical_damage_reduction,
+                DamageBlock.MAX_CRITICAL_DAMAGE_REDUCTION,
+            ) / 100
+            return (1 + critical_damage / 100) * reduction_modifier
         if critical_type == "under_critical":
             return DamageBlock.UNDER_CRITICAL_DAMAGE_MODIFIER
 

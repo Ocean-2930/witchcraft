@@ -21,6 +21,7 @@ class InventoryScene(Scene):
             (
                 ("max_hp", "최대 체력", False),
                 ("max_mp", "최대 마나", False),
+                ("attack_power", "공격력", False),
                 ("attack_speed", "공격 속도", False),
                 ("move_speed", "이동 속도", False),
                 ("overloaded", "과부화", False),
@@ -29,7 +30,6 @@ class InventoryScene(Scene):
         (
             "공격 능력",
             (
-                ("attack_power", "공격력", False),
                 ("penetration", "관통력", False),
                 ("accuracy", "명중", False),
                 ("critical_chance", "치명타 확률", True),
@@ -42,7 +42,8 @@ class InventoryScene(Scene):
             (
                 ("defense", "방어력", False),
                 ("evasion", "회피", False),
-                ("critical_defense", "치명타 방어", True),
+                ("critical_evasion", "치명타 회피", True),
+                ("critical_damage_reduction", "치명타 피해 감소", True),
                 ("incoming_damage_reduction", "받는 피해 감소", True),
             ),
         ),

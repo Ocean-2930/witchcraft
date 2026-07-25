@@ -30,8 +30,9 @@ class UnitBase:
     luck: int = 0
     overloaded: int = 0
     critical_chance: float = 0.0
-    critical_defense: float = 0.0
+    critical_evasion: float = 0.0
     critical_damage: float = 0.0
+    critical_damage_reduction: float = 0.0
     damage_increase: float = 0.0
     incoming_damage_reduction: float = 0.0
     equipment_drop_rate: float = 0.0
