@@ -32,6 +32,7 @@ from ui import (
 )
 from skills import Skill
 from units import Enemy, Player
+from utilities import DungeonInventory
 
 
 class DungeonScene(Scene):
@@ -82,6 +83,7 @@ class DungeonScene(Scene):
     def scene_initialize(self):
         self.map_tiles = self.dungeon_map["map"]
         self.player = Player("플레이어")
+        self.dungeon_inventory = DungeonInventory(unit_base=self.player)
         self.player.tile_x, self.player.tile_y = self.dungeon_map["position"]
         self.hotbar_skills = self.create_hotbar_skills()
         self.monsters = []
