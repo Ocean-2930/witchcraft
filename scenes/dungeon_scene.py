@@ -28,6 +28,7 @@ from ui import (
     MonsterMarkerRenderer,
     PauseButton,
     PlayerMarkerRenderer,
+    PlayerStatusRenderer,
     WallTileRenderer,
 )
 from skills import Skill
@@ -85,6 +86,12 @@ class DungeonScene(Scene):
         self.player = Player("플레이어")
         self.dungeon_inventory = DungeonInventory(unit_base=self.player)
         self.player.tile_x, self.player.tile_y = self.dungeon_map["position"]
+        self.player_status = PlayerStatusRenderer(
+            self,
+            self.player,
+            28 + (92 + 10 + 82 + 10 + 220) // 2,
+            28 + 92 // 2,
+        )
         self.hotbar_skills = self.create_hotbar_skills()
         self.monsters = []
         self.hovered_monster = None
