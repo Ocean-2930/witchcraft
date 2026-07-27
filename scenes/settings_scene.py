@@ -3,7 +3,7 @@ import pygame
 import settings
 from .scene import Scene
 from settings import VIRTUAL_WIDTH
-from ui import SettingsButton, SettingsSlider
+from ui import SettingsButton, SettingsContentRenderer, SettingsSlider
 
 
 class SettingsScene(Scene):
@@ -56,6 +56,7 @@ class SettingsScene(Scene):
         self.resolution_buttons.append(self.fullscreen_button)
 
         self.back_button = SettingsButton(self, "뒤로가기", center_x, 568, 220, 58, self.go_back)
+        self.content_renderer = SettingsContentRenderer(self)
 
     def get_bgm(self):
         return settings.BGM
@@ -89,37 +90,7 @@ class SettingsScene(Scene):
     def scene_draw(self):
         screen = self.game.virtual_screen
         screen.fill((18, 25, 34))
-
-        title_surface = self.title_font.render("설정", True, (239, 249, 252))
-        title_rect = title_surface.get_rect(center=(VIRTUAL_WIDTH // 2, 112))
-        screen.blit(title_surface, title_rect)
-
-        self.draw_setting_row(screen, "배경음", self.format_volume(settings.BGM), 242)
-        self.draw_setting_row(screen, "효과음", self.format_volume(settings.SFX), 318)
-        self.draw_resolution_row(screen)
-
         super().scene_draw()
-
-    def draw_setting_row(self, screen, label, value, center_y):
-        label_surface = self.label_font.render(label, True, (218, 237, 242))
-        label_rect = label_surface.get_rect(midleft=(360, center_y))
-        screen.blit(label_surface, label_rect)
-
-        value_surface = self.value_font.render(value, True, (245, 251, 255))
-        value_rect = value_surface.get_rect(midleft=(VIRTUAL_WIDTH // 2 + 380, center_y))
-        screen.blit(value_surface, value_rect)
-
-    def draw_resolution_row(self, screen):
-        label_surface = self.label_font.render("화면 크기", True, (218, 237, 242))
-        label_rect = label_surface.get_rect(center=(VIRTUAL_WIDTH // 2, 374))
-        screen.blit(label_surface, label_rect)
-
-        current_size = settings.get_screen_size()
-        for button in self.resolution_buttons:
-            if settings.FULLSCREEN and button.text == "전체 화면":
-                pygame.draw.rect(screen, (178, 226, 236), button.rect.inflate(8, 8), width=3, border_radius=10)
-            elif not settings.FULLSCREEN and button.text == f"{current_size[0]} x {current_size[1]}":
-                pygame.draw.rect(screen, (178, 226, 236), button.rect.inflate(8, 8), width=3, border_radius=10)
 
     @staticmethod
     def clamp_volume(value):

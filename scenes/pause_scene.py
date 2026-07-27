@@ -2,13 +2,14 @@ import pygame
 
 from .scene import Scene
 from settings import ESCAPE, VIRTUAL_HEIGHT, VIRTUAL_WIDTH
-from ui import SettingsButton
+from ui import PausePanelRenderer, SettingsButton
 
 
 class PauseScene(Scene):
     def scene_initialize(self):
         self.title_font = pygame.font.SysFont("malgungothic", 48, bold=True)
         self.button_font = pygame.font.SysFont("malgungothic", 26, bold=True)
+        self.panel_renderer = PausePanelRenderer(self)
 
         center_x = VIRTUAL_WIDTH // 2
         button_width = 240
@@ -79,20 +80,3 @@ class PauseScene(Scene):
             self.parent_scene.overlay_scene = None
 
         self.switch_scene(TitleScene(self.game))
-
-    def scene_draw(self):
-        screen = self.game.virtual_screen
-        overlay = pygame.Surface((VIRTUAL_WIDTH, VIRTUAL_HEIGHT), pygame.SRCALPHA)
-        overlay.fill((5, 8, 12, 150))
-        screen.blit(overlay, (0, 0))
-
-        panel_rect = pygame.Rect(0, 0, 360, 390)
-        panel_rect.center = (VIRTUAL_WIDTH // 2, VIRTUAL_HEIGHT // 2)
-        pygame.draw.rect(screen, (24, 29, 34), panel_rect, border_radius=8)
-        pygame.draw.rect(screen, (142, 151, 158), panel_rect, width=2, border_radius=8)
-
-        title_surface = self.title_font.render("일시 정지", True, (242, 240, 230))
-        title_rect = title_surface.get_rect(center=(VIRTUAL_WIDTH // 2, panel_rect.top + 62))
-        screen.blit(title_surface, title_rect)
-
-        super().scene_draw()

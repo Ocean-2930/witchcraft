@@ -5,7 +5,10 @@ from .scene import Scene
 from settings import ESCAPE, MOUSE_LEFT, TAB, VIRTUAL_HEIGHT, VIRTUAL_WIDTH
 from ui import (
     EquipmentSlot,
+    InventoryContentRenderer,
+    InventoryPanelRenderer,
     InventoryPopupButton,
+    InventoryPopupRenderer,
     InventoryTabButton,
     ItemSlot,
     SkillEquipSlot,
@@ -85,6 +88,17 @@ class InventoryScene(Scene):
         self.selected_item_index = None
         self.discard_amount = 1
 
+        self.panel_renderer = InventoryPanelRenderer(
+            self,
+            self.PANEL_WIDTH,
+            self.PANEL_HEIGHT,
+        )
+        self.content_renderer = InventoryContentRenderer(
+            self,
+            self.PANEL_WIDTH,
+            self.PANEL_HEIGHT,
+        )
+        self.popup_renderer = InventoryPopupRenderer(self)
         self.create_tab_buttons()
         self.create_equipment_slots()
         self.create_item_slots()
@@ -479,6 +493,7 @@ class InventoryScene(Scene):
                 slot_size,
                 slot_size,
             )
+            slot.renderer.draw_layer = 110
 
     def restore_skill_equip_slot_positions(self):
         for slot, transform in zip(
@@ -486,6 +501,7 @@ class InventoryScene(Scene):
             self.skill_slot_default_transforms,
         ):
             slot.set_transform(*transform)
+            slot.renderer.draw_layer = 0
 
     def get_context_popup_left(self, selected_rect, popup_width):
         panel_right = (VIRTUAL_WIDTH + self.PANEL_WIDTH) // 2
@@ -766,243 +782,9 @@ class InventoryScene(Scene):
         self.refresh_inventory_texts()
         super().scene_update(delta_time, game_events, mouse_position, wheel_move)
 
-    def scene_draw(self):
-        screen = self.game.virtual_screen
+    def draw(self):
         self.refresh_inventory_texts()
-
-        dim_surface = pygame.Surface((VIRTUAL_WIDTH, VIRTUAL_HEIGHT), pygame.SRCALPHA)
-        dim_surface.fill((4, 7, 11, 110))
-        screen.blit(dim_surface, (0, 0))
-
-        panel_surface = pygame.Surface(
-            (self.PANEL_WIDTH, self.PANEL_HEIGHT),
-            pygame.SRCALPHA,
-        )
-        panel_surface.fill((22, 28, 36, 225))
-        panel_rect = panel_surface.get_rect(
-            center=(VIRTUAL_WIDTH // 2, VIRTUAL_HEIGHT // 2)
-        )
-        screen.blit(panel_surface, panel_rect)
-        pygame.draw.rect(
-            screen,
-            (132, 148, 164),
-            panel_rect,
-            width=2,
-            border_radius=8,
-        )
-
-        divider_y = panel_rect.top + 104
-        pygame.draw.line(
-            screen,
-            (105, 119, 133),
-            (panel_rect.left + 30, divider_y),
-            (panel_rect.right - 30, divider_y),
-            width=2,
-        )
-
-        if self.selected_tab == "장비":
-            self.draw_equipment_titles(screen, panel_rect)
-        elif self.selected_tab == "스킬":
-            self.draw_skill_title(screen, panel_rect)
-        elif self.selected_tab == "스탯":
-            self.draw_stat_tab(screen, panel_rect)
-
-        super().scene_draw()
-
-        if self.popup_mode is not None:
-            self.draw_item_popup(screen)
-            if self.popup_mode == "shortcut":
-                for slot in self.skill_equip_slots:
-                    slot.renderer.draw(screen)
-            for button in self.popup_buttons.values():
-                button.renderer.draw(screen)
-
-    def draw_item_popup(self, screen):
-        if self.popup_mode not in ("discard", "shortcut") or self.popup_rect is None:
-            return
-
-        popup_rect = self.popup_rect
-        pygame.draw.rect(screen, (25, 32, 41), popup_rect, border_radius=8)
-        pygame.draw.rect(
-            screen,
-            (135, 151, 166),
-            popup_rect,
-            width=2,
-            border_radius=8,
-        )
-
-        title_surface = self.section_font.render(
-            (
-                "단축키 선택"
-                if self.popup_mode == "shortcut"
-                else "버릴 수량"
-            ),
-            True,
-            (237, 242, 245),
-        )
-        screen.blit(
-            title_surface,
-            title_surface.get_rect(
-                center=(popup_rect.centerx, popup_rect.top + 18)
-            ),
-        )
-
-        if self.popup_mode == "shortcut":
-            return
-
-        amount_surface = self.button_font.render(
-            str(self.discard_amount),
-            True,
-            (244, 226, 166),
-        )
-        screen.blit(
-            amount_surface,
-            amount_surface.get_rect(
-                center=(popup_rect.centerx, popup_rect.top + 50)
-            ),
-        )
-
-    def draw_equipment_titles(self, screen, panel_rect):
-        equipment_title = self.section_font.render(
-            "장비",
-            True,
-            (232, 238, 243),
-        )
-        screen.blit(equipment_title, (panel_rect.left + 46, panel_rect.top + 112))
-
-        dungeon_inventory = getattr(self.parent_scene, "dungeon_inventory", None)
-        inventory = (
-            getattr(dungeon_inventory, "item_inventory", None)
-            if dungeon_inventory is not None
-            else None
-        )
-        item_count = len(getattr(inventory, "items", []))
-        capacity = getattr(inventory, "capacity", self.ITEM_SLOT_COUNT)
-        inventory_title = self.section_font.render(
-            f"인벤토리  {item_count} / {capacity}",
-            True,
-            (232, 238, 243),
-        )
-        screen.blit(inventory_title, (panel_rect.left + 46, panel_rect.top + 274))
-
-    def draw_skill_title(self, screen, panel_rect):
-        title_surface = self.section_font.render(
-            "장착 스킬",
-            True,
-            (232, 238, 243),
-        )
-        screen.blit(title_surface, (panel_rect.left + 46, panel_rect.top + 112))
-
-    def draw_stat_tab(self, screen, panel_rect):
-        dungeon_inventory = getattr(self.parent_scene, "dungeon_inventory", None)
-        if dungeon_inventory is None:
-            return
-
-        try:
-            calculated_stat = dungeon_inventory.get_stat()
-        except ValueError:
-            return
-
-        name = getattr(calculated_stat, "name", "")
-        title_text = f"스탯  ·  {name}" if name else "스탯"
-        title_surface = self.section_font.render(
-            title_text,
-            True,
-            (232, 238, 243),
-        )
-        screen.blit(title_surface, (panel_rect.left + 46, panel_rect.top + 112))
-
-        column_gap = 22
-        content_left = panel_rect.left + 46
-        content_right = panel_rect.right - 46
-        column_width = (
-            content_right
-            - content_left
-            - column_gap * (len(self.STAT_GROUPS) - 1)
-        ) // len(self.STAT_GROUPS)
-        column_top = panel_rect.top + 158
-        column_height = panel_rect.bottom - column_top - 38
-
-        for index, (group_title, stat_rows) in enumerate(self.STAT_GROUPS):
-            column_rect = pygame.Rect(
-                content_left + index * (column_width + column_gap),
-                column_top,
-                column_width,
-                column_height,
-            )
-            self.draw_stat_group(
-                screen,
-                column_rect,
-                group_title,
-                stat_rows,
-                calculated_stat,
-            )
-
-    def draw_stat_group(
-        self,
-        screen,
-        column_rect,
-        group_title,
-        stat_rows,
-        calculated_stat,
-    ):
-        pygame.draw.rect(screen, (31, 39, 49), column_rect, border_radius=6)
-        pygame.draw.rect(
-            screen,
-            (103, 119, 135),
-            column_rect,
-            width=2,
-            border_radius=6,
-        )
-
-        group_surface = self.slot_label_font.render(
-            group_title,
-            True,
-            (218, 228, 236),
-        )
-        screen.blit(
-            group_surface,
-            (column_rect.left + 18, column_rect.top + 15),
-        )
-        pygame.draw.line(
-            screen,
-            (82, 96, 110),
-            (column_rect.left + 16, column_rect.top + 46),
-            (column_rect.right - 16, column_rect.top + 46),
-            width=1,
-        )
-
-        row_y = column_rect.top + 62
-        row_gap = 43
-        for attribute_name, label, is_percentage in stat_rows:
-            value = getattr(calculated_stat, attribute_name, 0)
-            value_text = self.format_stat_value(value, is_percentage)
-
-            label_surface = self.item_font.render(
-                label,
-                True,
-                (174, 187, 199),
-            )
-            value_surface = self.slot_label_font.render(
-                value_text,
-                True,
-                (239, 243, 246),
-            )
-            screen.blit(label_surface, (column_rect.left + 18, row_y))
-            value_rect = value_surface.get_rect(
-                topright=(column_rect.right - 18, row_y - 2)
-            )
-            screen.blit(value_surface, value_rect)
-            row_y += row_gap
-
-    @staticmethod
-    def format_stat_value(value, is_percentage):
-        if isinstance(value, float):
-            value_text = f"{value:.2f}".rstrip("0").rstrip(".")
-        else:
-            value_text = str(value)
-
-        return f"{value_text}%" if is_percentage else value_text
+        super().draw()
 
     @classmethod
     def get_item_instance_text(cls, item_instance):

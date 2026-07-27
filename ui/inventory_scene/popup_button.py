@@ -5,6 +5,8 @@ from ui.ui import UIElement
 
 
 class InventoryPopupButtonRenderer(Renderer):
+    draw_layer = 110
+
     def __init__(self, scene, pos_x, pos_y, width, height, button):
         super().__init__(scene, pos_x, pos_y, width, height)
         self.button = button

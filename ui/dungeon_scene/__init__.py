@@ -1,6 +1,7 @@
 from .floor_tile import FloorTileRenderer
 from .hotbar import HotbarRenderer
 from .monster_marker import MonsterMarkerRenderer
+from .monster_tooltip import MonsterTooltipRenderer
 from .player_marker import PlayerMarkerRenderer
 from .player_status import PlayerStatusRenderer
 from .textures import DUNGEON_TEXTURES, DungeonTextureStore
@@ -12,6 +13,7 @@ __all__ = [
     "FloorTileRenderer",
     "HotbarRenderer",
     "MonsterMarkerRenderer",
+    "MonsterTooltipRenderer",
     "PlayerMarkerRenderer",
     "PlayerStatusRenderer",
     "WallTileRenderer",

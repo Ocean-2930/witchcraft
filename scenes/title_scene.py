@@ -2,7 +2,7 @@ import pygame
 
 from .scene import Scene
 from settings import VIRTUAL_HEIGHT, VIRTUAL_WIDTH
-from ui import TitleButton
+from ui import TitleButton, TitleContentRenderer
 
 
 class TitleScene(Scene):
@@ -17,6 +17,7 @@ class TitleScene(Scene):
         self.button_font = pygame.font.SysFont("malgungothic", 30, bold=True)
         self.notice_font = pygame.font.SysFont("malgungothic", 22)
         self.notice_text = ""
+        self.content_renderer = TitleContentRenderer(self)
 
         self.start_button = TitleButton(
             self,
@@ -59,18 +60,4 @@ class TitleScene(Scene):
     def scene_draw(self):
         screen = self.game.virtual_screen
         screen.fill((20, 18, 28))
-
-        title_surface = self.title_font.render("Witchcraft", True, (246, 239, 255))
-        title_rect = title_surface.get_rect(center=(VIRTUAL_WIDTH // 2, 168))
-        screen.blit(title_surface, title_rect)
-
-        subtitle_surface = self.notice_font.render("마법의 밤을 시작하세요", True, (184, 174, 208))
-        subtitle_rect = subtitle_surface.get_rect(center=(VIRTUAL_WIDTH // 2, 228))
-        screen.blit(subtitle_surface, subtitle_rect)
-
         super().scene_draw()
-
-        if self.notice_text:
-            notice_surface = self.notice_font.render(self.notice_text, True, (220, 214, 238))
-            notice_rect = notice_surface.get_rect(center=(VIRTUAL_WIDTH // 2, VIRTUAL_HEIGHT - 118))
-            screen.blit(notice_surface, notice_rect)

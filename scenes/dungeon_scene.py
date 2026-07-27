@@ -27,6 +27,7 @@ from ui import (
     FloorTileRenderer,
     HotbarRenderer,
     MonsterMarkerRenderer,
+    MonsterTooltipRenderer,
     PauseButton,
     PlayerMarkerRenderer,
     PlayerStatusRenderer,
@@ -97,6 +98,7 @@ class DungeonScene(Scene):
         self.monsters = []
         self.hovered_monster = None
         self.peek_font = pygame.font.SysFont("malgungothic", 16, bold=True)
+        self.monster_tooltip = MonsterTooltipRenderer(self)
         self.wall_positions = self.get_wall_positions()
         self.active_move = None
         self.held_direction = None
@@ -719,35 +721,3 @@ class DungeonScene(Scene):
         screen.fill((42, 48, 50))
 
         super().scene_draw()
-        self.draw_monster_peek(screen)
-
-    def draw_monster_peek(self, screen):
-        if self.hovered_monster is None:
-            return
-
-        monster = self.hovered_monster
-        monster_unit = monster["unit"]
-        preview = self.player.make_damage_block(monster_unit).peek()
-        marker_rect = monster["renderer"].rect
-        lines = [
-            f"{monster_unit.name}",
-            f"일반 {preview.normal_damage} / 치명 {preview.critical_damage}",
-            f"명중 {preview.hit_rate:.0f}% / 치명 {preview.critical_rate:.0f}%",
-            f"기대 {preview.expected_damage:.1f}",
-        ]
-        text_surfaces = [self.peek_font.render(line, True, (238, 234, 220)) for line in lines]
-        padding = 10
-        line_gap = 4
-        width = max(surface.get_width() for surface in text_surfaces) + padding * 2
-        height = sum(surface.get_height() for surface in text_surfaces) + line_gap * (len(lines) - 1) + padding * 2
-        tooltip_rect = pygame.Rect(0, 0, width, height)
-        tooltip_rect.midbottom = (marker_rect.centerx, marker_rect.top - 8)
-        tooltip_rect.clamp_ip(screen.get_rect())
-
-        pygame.draw.rect(screen, (18, 22, 25), tooltip_rect, border_radius=4)
-        pygame.draw.rect(screen, (126, 132, 134), tooltip_rect, width=2, border_radius=4)
-
-        text_y = tooltip_rect.top + padding
-        for text_surface in text_surfaces:
-            screen.blit(text_surface, (tooltip_rect.left + padding, text_y))
-            text_y += text_surface.get_height() + line_gap
