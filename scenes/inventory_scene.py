@@ -229,7 +229,9 @@ class InventoryScene(Scene):
             item_text = self.get_item_instance_text(item_instance)
             stack = getattr(item_instance, "stack", 1)
             stack_text = str(stack) if item_instance is not None and stack > 1 else ""
-            slot.set_text(item_text, stack_text)
+            item = getattr(item_instance, "item", None)
+            item_code = getattr(item, "item_code", "")
+            slot.set_text(item_text, stack_text, item_code)
 
     def scene_update(self, delta_time, game_events, mouse_position, wheel_move):
         if game_events[TAB]["keydown"] or game_events[ESCAPE]["keydown"]:

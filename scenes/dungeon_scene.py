@@ -1,6 +1,7 @@
 from math import ceil
 
 import pygame
+import settings
 
 from .scene import Scene
 from settings import (
@@ -139,6 +140,11 @@ class DungeonScene(Scene):
             48,
             self.open_pause,
         )
+
+        if settings.ENABLE_TEST_SCENARIO:
+            from .test_scenario import senario
+
+            senario(self)
 
     def create_hotbar_skills(self):
         return {

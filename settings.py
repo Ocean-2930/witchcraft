@@ -32,6 +32,7 @@ KEY_R = pygame.K_r
 KEY_T = pygame.K_t
 
 # develop settings
+ENABLE_TEST_SCENARIO = True
 FPS = 60
 __FRAME_DURATION = 0
 def get_frame_duration() -> float:
