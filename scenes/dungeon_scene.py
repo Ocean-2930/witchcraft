@@ -365,6 +365,12 @@ class DungeonScene(Scene):
         return dx * dx + dy * dy <= radius * radius
 
     def update_hotbar_input(self, game_events):
+        if self.try_use_hotbar_item(game_events):
+            self.hotbar.set_active_label(None)
+            self.movement_input_guard = True
+            self.update_movement_input_guard(game_events)
+            return
+
         if self.active_hotbar_key is None:
             self.start_hotbar_input(game_events)
 
@@ -391,6 +397,9 @@ class DungeonScene(Scene):
 
     def start_hotbar_input(self, game_events):
         for key, label in self.HOTBAR_KEYS:
+            if label in self.dungeon_inventory.hotbar_items:
+                continue
+
             if game_events[key]["keydown"] or game_events[key]["status"]:
                 self.active_hotbar_key = key
                 self.active_hotbar_label = label
@@ -398,6 +407,45 @@ class DungeonScene(Scene):
                 self.active_hotbar_cancelled = False
                 self.active_hotbar_direction_touched = False
                 return
+
+    def try_use_hotbar_item(self, game_events):
+        for key, label in self.HOTBAR_KEYS:
+            if label not in self.dungeon_inventory.hotbar_items:
+                continue
+            if not game_events[key]["keydown"]:
+                continue
+
+            self.use_hotbar_item(label)
+            return True
+
+        return False
+
+    def use_hotbar_item(self, label):
+        item_code = self.dungeon_inventory.hotbar_items.get(label)
+        item_instance = next(
+            (
+                owned_item
+                for owned_item in self.dungeon_inventory.item_inventory.items
+                if owned_item.item.item_code == item_code
+            ),
+            None,
+        )
+        use = getattr(getattr(item_instance, "item", None), "use", None)
+        used_amount = use(self.player) if callable(use) else 0
+
+        if used_amount:
+            self.dungeon_inventory.item_inventory.remove_amount(
+                item_instance,
+                1,
+            )
+
+        self.last_skill_call = {
+            "label": label,
+            "item": item_instance,
+            "item_code": item_code,
+            "used": bool(used_amount),
+        }
+        return bool(used_amount)
 
     def update_active_hotbar_direction(self, game_events):
         if self.has_direction_pressed(game_events):

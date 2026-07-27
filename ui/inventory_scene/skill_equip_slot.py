@@ -39,12 +39,18 @@ class SkillEquipSlot(InventorySlot):
         pos_y,
         width,
         height,
+        on_click=None,
     ):
         self.key_text = key_text
         self.skill_text = skill_text
+        self.on_click = on_click
         self.key_font = scene.slot_label_font
         self.skill_font = scene.item_font
         super().__init__(scene, pos_x, pos_y, width, height)
 
     def set_skill_text(self, skill_text):
         self.skill_text = skill_text
+
+    def on_left_click(self):
+        if self.on_click is not None:
+            self.on_click()

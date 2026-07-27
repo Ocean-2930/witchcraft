@@ -20,6 +20,7 @@ from .inventory_scene import (
     EquipmentSlot,
     InventoryTabButton,
     ItemSlot,
+    InventoryPopupButton,
     SkillEquipSlot,
 )
 
@@ -47,6 +48,7 @@ __all__ = [
     "EquipmentSlot",
     "InventoryTabButton",
     "ItemSlot",
+    "InventoryPopupButton",
     "SkillEquipSlot",
     # global
     "PauseButton",

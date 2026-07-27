@@ -1,3 +1,6 @@
+import pygame
+
+from .item_slot import ItemSlot
 from .slot_base import InventorySlot, InventorySlotRenderer
 
 
@@ -14,6 +17,14 @@ class EquipmentSlotRenderer(InventorySlotRenderer):
             center=(self.rect.centerx, self.rect.top + 17)
         )
         screen.blit(label_surface, label_rect)
+
+        if slot.item_image is not None:
+            image = pygame.transform.smoothscale(slot.item_image, (62, 62))
+            image_rect = image.get_rect(
+                midbottom=(self.rect.centerx, self.rect.bottom - 5)
+            )
+            screen.blit(image, image_rect)
+            return
 
         if not slot.item_text:
             return
@@ -39,12 +50,26 @@ class EquipmentSlot(InventorySlot):
         pos_y,
         width,
         height,
+        on_right_click=None,
     ):
         self.label_text = label_text
         self.item_text = item_text
+        self.item_code = ""
+        self.item_image = None
+        self.on_right_click_callback = on_right_click
         self.label_font = scene.slot_label_font
         self.item_font = scene.item_font
         super().__init__(scene, pos_x, pos_y, width, height)
 
-    def set_item_text(self, item_text):
+    def set_item(self, item_text, item_code=""):
         self.item_text = item_text
+
+        if item_code == self.item_code:
+            return
+
+        self.item_code = item_code
+        self.item_image = ItemSlot.load_item_image(item_code)
+
+    def on_right_click(self):
+        if self.on_right_click_callback is not None:
+            self.on_right_click_callback()

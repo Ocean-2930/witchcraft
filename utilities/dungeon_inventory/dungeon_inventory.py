@@ -3,7 +3,7 @@ from __future__ import annotations
 from copy import deepcopy
 from dataclasses import dataclass, field
 
-from items import Equip, ItemInstance, SkilledEquip, SubWeapon
+from items import ItemInstance, SkilledEquip
 from skills import SkillInstance
 
 from .item_inventory import ItemInventory
@@ -16,21 +16,12 @@ class DungeonInventory:
 
     unit_base: UnitBase | None = None
     item_inventory: ItemInventory = field(default_factory=ItemInventory)
-    weapon: ItemInstance = field(
-        default_factory=lambda: ItemInstance(SkilledEquip(Equip.TYPE_WEAPON))
-    )
-    sub_weapon: ItemInstance = field(
-        default_factory=lambda: ItemInstance(SubWeapon(Equip.TYPE_SUB_WEAPON))
-    )
-    armor: ItemInstance = field(
-        default_factory=lambda: ItemInstance(SkilledEquip(Equip.TYPE_ARMOR))
-    )
-    accessory_1: ItemInstance = field(
-        default_factory=lambda: ItemInstance(SkilledEquip(Equip.TYPE_ACCESSORY))
-    )
-    accessory_2: ItemInstance = field(
-        default_factory=lambda: ItemInstance(SkilledEquip(Equip.TYPE_ACCESSORY))
-    )
+    hotbar_items: dict[str, str] = field(default_factory=dict)
+    weapon: ItemInstance | None = None
+    sub_weapon: ItemInstance | None = None
+    armor: ItemInstance | None = None
+    accessory_1: ItemInstance | None = None
+    accessory_2: ItemInstance | None = None
 
     def add_item(self, item_instance: ItemInstance):
         return self.item_inventory.add_item(item_instance)
@@ -94,7 +85,10 @@ class DungeonInventory:
             self.accessory_1,
             self.accessory_2,
         ):
-            if isinstance(equipment.item, SkilledEquip):
+            if (
+                equipment is not None
+                and isinstance(equipment.item, SkilledEquip)
+            ):
                 yield from equipment.item.skills
 
     @staticmethod

@@ -58,11 +58,15 @@ class ItemSlot(InventorySlot):
         pos_y,
         width,
         height,
+        on_click=None,
+        on_right_click=None,
     ):
         self.item_text = item_text
         self.stack_text = stack_text
         self.item_code = ""
         self.item_image = None
+        self.on_click = on_click
+        self.on_right_click_callback = on_right_click
         self.item_font = scene.item_font
         super().__init__(scene, pos_x, pos_y, width, height)
 
@@ -92,3 +96,11 @@ class ItemSlot(InventorySlot):
         )
         cls.image_cache[item_code] = image
         return image
+
+    def on_left_click(self):
+        if self.on_click is not None:
+            self.on_click()
+
+    def on_right_click(self):
+        if self.on_right_click_callback is not None:
+            self.on_right_click_callback()

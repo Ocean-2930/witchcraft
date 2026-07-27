@@ -38,3 +38,15 @@ class ItemInventory:
 
         self.items.remove(item)
         return True
+
+    def remove_amount(self, item: ItemInstance, amount: int):
+        if item not in self.items:
+            return False
+        if amount < 1 or amount > item.stack:
+            return False
+
+        item.stack -= amount
+        if item.stack == 0:
+            self.items.remove(item)
+
+        return True

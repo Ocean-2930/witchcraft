@@ -1,8 +1,15 @@
 import pygame
 
+from items import Equip
 from .scene import Scene
-from settings import ESCAPE, TAB, VIRTUAL_HEIGHT, VIRTUAL_WIDTH
-from ui import EquipmentSlot, InventoryTabButton, ItemSlot, SkillEquipSlot
+from settings import ESCAPE, MOUSE_LEFT, TAB, VIRTUAL_HEIGHT, VIRTUAL_WIDTH
+from ui import (
+    EquipmentSlot,
+    InventoryPopupButton,
+    InventoryTabButton,
+    ItemSlot,
+    SkillEquipSlot,
+)
 
 
 class InventoryScene(Scene):
@@ -70,11 +77,19 @@ class InventoryScene(Scene):
         self.equipment_slots = []
         self.item_slots = []
         self.skill_equip_slots = []
+        self.skill_slot_default_transforms = []
+        self.popup_buttons = {}
+        self.popup_mode = None
+        self.popup_rect = None
+        self.popup_interacted_this_frame = False
+        self.selected_item_index = None
+        self.discard_amount = 1
 
         self.create_tab_buttons()
         self.create_equipment_slots()
         self.create_item_slots()
         self.create_skill_equip_slots()
+        self.create_popup_buttons()
         self.update_slot_visibility()
 
     def create_tab_buttons(self):
@@ -112,7 +127,9 @@ class InventoryScene(Scene):
         first_slot_x = VIRTUAL_WIDTH // 2 - total_width // 2
         slot_y = (VIRTUAL_HEIGHT - self.PANEL_HEIGHT) // 2 + 158
 
-        for index, (_, label_text) in enumerate(self.EQUIPMENT_SLOTS):
+        for index, (attribute_name, label_text) in enumerate(
+            self.EQUIPMENT_SLOTS
+        ):
             slot_rect = pygame.Rect(
                 first_slot_x + index * (slot_size + slot_gap),
                 slot_y,
@@ -128,6 +145,9 @@ class InventoryScene(Scene):
                     slot_rect.centery,
                     slot_size,
                     slot_size,
+                    lambda equipment_attribute=attribute_name: (
+                        self.unequip_item(equipment_attribute)
+                    ),
                 )
             )
 
@@ -156,6 +176,12 @@ class InventoryScene(Scene):
                     slot_rect.centery,
                     slot_size,
                     slot_size,
+                    lambda selected_index=index: self.open_item_actions(
+                        selected_index
+                    ),
+                    lambda selected_index=index: self.equip_item_at_index(
+                        selected_index
+                    ),
                 )
             )
 
@@ -184,16 +210,469 @@ class InventoryScene(Scene):
                     slot_rect.centery,
                     slot_size,
                     slot_size,
+                    lambda selected_key=key_text: self.assign_item_to_hotbar(
+                        selected_key
+                    ),
+                )
+            )
+            self.skill_slot_default_transforms.append(
+                (
+                    slot_rect.centerx,
+                    slot_rect.centery,
+                    slot_size,
+                    slot_size,
                 )
             )
 
+    def create_popup_buttons(self):
+        button_specs = (
+            (
+                "equip",
+                "장착",
+                VIRTUAL_WIDTH // 2,
+                280,
+                200,
+                44,
+                self.equip_selected_item,
+            ),
+            ("use", "사용", VIRTUAL_WIDTH // 2, 320, 200, 44, self.use_selected_item),
+            (
+                "shortcut",
+                "단축키",
+                VIRTUAL_WIDTH // 2,
+                374,
+                200,
+                44,
+                self.assign_selected_item_shortcut,
+            ),
+            (
+                "discard",
+                "버리기",
+                VIRTUAL_WIDTH // 2,
+                428,
+                200,
+                44,
+                self.open_discard_popup,
+            ),
+            (
+                "decrease",
+                "<",
+                VIRTUAL_WIDTH // 2 - 80,
+                350,
+                48,
+                48,
+                lambda: self.change_discard_amount(-1),
+            ),
+            (
+                "increase",
+                ">",
+                VIRTUAL_WIDTH // 2 + 80,
+                350,
+                48,
+                48,
+                lambda: self.change_discard_amount(1),
+            ),
+            (
+                "confirm_discard",
+                "버리기",
+                VIRTUAL_WIDTH // 2 - 62,
+                430,
+                112,
+                44,
+                self.discard_selected_item,
+            ),
+            (
+                "cancel",
+                "취소",
+                VIRTUAL_WIDTH // 2 + 62,
+                430,
+                112,
+                44,
+                self.close_item_popup,
+            ),
+        )
+
+        for key, text, pos_x, pos_y, width, height, on_click in button_specs:
+            self.popup_buttons[key] = InventoryPopupButton(
+                self,
+                text,
+                pos_x,
+                pos_y,
+                width,
+                height,
+                on_click,
+            )
+
     def select_tab(self, label):
+        self.close_item_popup()
         self.selected_tab = label
         self.update_slot_visibility()
 
+    def open_item_actions(self, item_index):
+        if self.selected_tab != "장비":
+            return
+
+        inventory_items = self.get_inventory_items()
+        if item_index >= len(inventory_items):
+            return
+
+        self.selected_item_index = item_index
+        self.popup_mode = "actions"
+        self.popup_interacted_this_frame = True
+        self.position_action_buttons()
+        self.update_popup_visibility()
+
+    def open_discard_popup(self):
+        item_instance = self.get_selected_item()
+        if item_instance is None:
+            self.close_item_popup()
+            return
+
+        self.discard_amount = 1
+        self.popup_mode = "discard"
+        self.popup_interacted_this_frame = True
+        self.position_discard_popup()
+        self.update_popup_visibility()
+
+    def close_item_popup(self):
+        self.popup_mode = None
+        self.popup_rect = None
+        self.selected_item_index = None
+        self.discard_amount = 1
+        self.restore_skill_equip_slot_positions()
+        self.update_popup_visibility()
+        self.update_slot_visibility()
+
+    def update_popup_visibility(self):
+        item = getattr(self.get_selected_item(), "item", None)
+        can_use = callable(getattr(item, "use", None))
+        can_equip = isinstance(item, Equip)
+
+        action_visibility = {
+            "equip": self.popup_mode == "actions" and can_equip,
+            "use": self.popup_mode == "actions" and can_use,
+            "shortcut": self.popup_mode == "actions" and can_use,
+            "discard": self.popup_mode == "actions",
+        }
+        discard_keys = ("decrease", "increase", "confirm_discard", "cancel")
+
+        for key, visible in action_visibility.items():
+            self.popup_buttons[key].set_visible(visible)
+        for key in discard_keys:
+            self.popup_buttons[key].set_visible(self.popup_mode == "discard")
+
+    def position_action_buttons(self):
+        item_instance = self.get_selected_item()
+        item = getattr(item_instance, "item", None)
+        can_use = callable(getattr(item, "use", None))
+        can_equip = isinstance(item, Equip)
+        if can_equip:
+            visible_keys = ("equip", "discard")
+        elif can_use:
+            visible_keys = ("use", "shortcut", "discard")
+        else:
+            visible_keys = ("discard",)
+        selected_slot = self.item_slots[self.selected_item_index]
+        button_width = 104
+        button_height = 36
+        button_gap = 4
+        total_height = (
+            button_height * len(visible_keys)
+            + button_gap * (len(visible_keys) - 1)
+        )
+        popup_left = self.get_context_popup_left(
+            selected_slot.rect,
+            button_width,
+        )
+        panel_bottom = (VIRTUAL_HEIGHT + self.PANEL_HEIGHT) // 2
+        popup_top = min(
+            selected_slot.rect.top,
+            panel_bottom - total_height - 12,
+        )
+
+        for index, key in enumerate(visible_keys):
+            self.popup_buttons[key].set_transform(
+                popup_left + button_width // 2,
+                popup_top + button_height // 2 + index * (
+                    button_height + button_gap
+                ),
+                button_width,
+                button_height,
+            )
+
+        self.popup_rect = pygame.Rect(
+            popup_left,
+            popup_top,
+            button_width,
+            total_height,
+        )
+
+    def position_discard_popup(self):
+        selected_slot = self.item_slots[self.selected_item_index]
+        popup_width = 164
+        popup_height = 118
+        popup_left = self.get_context_popup_left(
+            selected_slot.rect,
+            popup_width,
+        )
+        panel_bottom = (VIRTUAL_HEIGHT + self.PANEL_HEIGHT) // 2
+        popup_top = min(
+            selected_slot.rect.top,
+            panel_bottom - popup_height - 12,
+        )
+        self.popup_rect = pygame.Rect(
+            popup_left,
+            popup_top,
+            popup_width,
+            popup_height,
+        )
+
+        self.popup_buttons["decrease"].set_transform(
+            popup_left + 34,
+            popup_top + 50,
+            34,
+            30,
+        )
+        self.popup_buttons["increase"].set_transform(
+            popup_left + popup_width - 34,
+            popup_top + 50,
+            34,
+            30,
+        )
+        self.popup_buttons["confirm_discard"].set_transform(
+            popup_left + 42,
+            popup_top + 94,
+            72,
+            30,
+        )
+        self.popup_buttons["cancel"].set_transform(
+            popup_left + popup_width - 42,
+            popup_top + 94,
+            72,
+            30,
+        )
+
+    def position_shortcut_popup(self):
+        popup_width = 352
+        popup_height = 220
+        popup_left = VIRTUAL_WIDTH // 2 - popup_width // 2
+        popup_top = VIRTUAL_HEIGHT // 2 - popup_height // 2
+        self.popup_rect = pygame.Rect(
+            popup_left,
+            popup_top,
+            popup_width,
+            popup_height,
+        )
+
+        columns = 4
+        slot_size = 72
+        slot_gap = 8
+        slots_width = slot_size * columns + slot_gap * (columns - 1)
+        first_left = self.popup_rect.centerx - slots_width // 2
+        first_top = popup_top + 48
+
+        for index, slot in enumerate(self.skill_equip_slots):
+            row, column = divmod(index, columns)
+            slot.set_transform(
+                first_left + column * (slot_size + slot_gap) + slot_size // 2,
+                first_top + row * (slot_size + slot_gap) + slot_size // 2,
+                slot_size,
+                slot_size,
+            )
+
+    def restore_skill_equip_slot_positions(self):
+        for slot, transform in zip(
+            self.skill_equip_slots,
+            self.skill_slot_default_transforms,
+        ):
+            slot.set_transform(*transform)
+
+    def get_context_popup_left(self, selected_rect, popup_width):
+        panel_right = (VIRTUAL_WIDTH + self.PANEL_WIDTH) // 2
+        right_side = selected_rect.right + 8
+        if right_side + popup_width <= panel_right - 12:
+            return right_side
+
+        return selected_rect.left - popup_width - 8
+
+    def change_discard_amount(self, amount):
+        self.popup_interacted_this_frame = True
+        item_instance = self.get_selected_item()
+        if item_instance is None:
+            self.close_item_popup()
+            return
+
+        self.discard_amount = max(
+            1,
+            min(item_instance.stack, self.discard_amount + amount),
+        )
+
+    def discard_selected_item(self):
+        item_instance = self.get_selected_item()
+        inventory = self.get_item_inventory()
+        if item_instance is not None and inventory is not None:
+            inventory.remove_amount(item_instance, self.discard_amount)
+
+        self.close_item_popup()
+
+    def use_selected_item(self):
+        item_instance = self.get_selected_item()
+        inventory = self.get_item_inventory()
+        player = getattr(self.parent_scene, "player", None)
+        use = getattr(getattr(item_instance, "item", None), "use", None)
+
+        if item_instance is None or inventory is None or player is None or use is None:
+            self.close_item_popup()
+            return
+
+        result = use(player)
+        if result:
+            inventory.remove_amount(item_instance, 1)
+
+        self.close_item_popup()
+
+    def equip_selected_item(self):
+        item_instance = self.get_selected_item()
+        equipment = getattr(item_instance, "item", None)
+        equipment_attribute = self.get_equipment_attribute(equipment)
+        dungeon_inventory = getattr(
+            self.parent_scene,
+            "dungeon_inventory",
+            None,
+        )
+        player = getattr(self.parent_scene, "player", None)
+
+        if (
+            item_instance is None
+            or equipment_attribute is None
+            or dungeon_inventory is None
+            or player is None
+        ):
+            self.close_item_popup()
+            return
+
+        equipped_instance = getattr(
+            dungeon_inventory,
+            equipment_attribute,
+            None,
+        )
+        equipped_item = getattr(equipped_instance, "item", None)
+        if not equipment.equipcheck(player, equipped_item):
+            self.close_item_popup()
+            return
+
+        inventory_items = self.get_inventory_items()
+        if equipped_instance is None:
+            inventory_items.pop(self.selected_item_index)
+        else:
+            inventory_items[self.selected_item_index] = equipped_instance
+        setattr(dungeon_inventory, equipment_attribute, item_instance)
+        setattr(player, equipment_attribute, equipment)
+        self.close_item_popup()
+
+    def equip_item_at_index(self, item_index):
+        inventory_items = self.get_inventory_items()
+        if item_index >= len(inventory_items):
+            return
+        if not isinstance(inventory_items[item_index].item, Equip):
+            return
+
+        self.selected_item_index = item_index
+        self.equip_selected_item()
+
+    def unequip_item(self, equipment_attribute):
+        dungeon_inventory = getattr(
+            self.parent_scene,
+            "dungeon_inventory",
+            None,
+        )
+        player = getattr(self.parent_scene, "player", None)
+        if dungeon_inventory is None or player is None:
+            return
+
+        equipped_instance = getattr(
+            dungeon_inventory,
+            equipment_attribute,
+            None,
+        )
+        equipment = getattr(equipped_instance, "item", None)
+        if equipment is None or not equipment.unequipcheck(player):
+            return
+        if not dungeon_inventory.add_item(equipped_instance):
+            return
+
+        setattr(dungeon_inventory, equipment_attribute, None)
+        setattr(player, equipment_attribute, None)
+        self.close_item_popup()
+
+    @staticmethod
+    def get_equipment_attribute(equipment):
+        if not isinstance(equipment, Equip):
+            return None
+
+        equipment_attributes = {
+            Equip.TYPE_WEAPON: "weapon",
+            Equip.TYPE_SUB_WEAPON: "sub_weapon",
+            Equip.TYPE_ARMOR: "armor",
+            Equip.TYPE_ACCESSORY: "accessory_1",
+        }
+        return equipment_attributes.get(equipment.type)
+
+    def assign_selected_item_shortcut(self):
+        if self.get_selected_item() is None:
+            self.close_item_popup()
+            return
+
+        self.popup_mode = "shortcut"
+        self.popup_interacted_this_frame = True
+        self.position_shortcut_popup()
+        self.update_popup_visibility()
+        self.update_slot_visibility()
+
+    def assign_item_to_hotbar(self, key_label):
+        if self.popup_mode != "shortcut":
+            return
+
+        item = getattr(self.get_selected_item(), "item", None)
+        item_code = getattr(item, "item_code", "")
+        dungeon_inventory = getattr(
+            self.parent_scene,
+            "dungeon_inventory",
+            None,
+        )
+        hotbar_items = getattr(dungeon_inventory, "hotbar_items", None)
+        if item_code and hotbar_items is not None:
+            hotbar_items[key_label] = item_code
+
+        self.close_item_popup()
+
+    def get_item_inventory(self):
+        dungeon_inventory = getattr(self.parent_scene, "dungeon_inventory", None)
+        return (
+            getattr(dungeon_inventory, "item_inventory", None)
+            if dungeon_inventory is not None
+            else None
+        )
+
+    def get_inventory_items(self):
+        return getattr(self.get_item_inventory(), "items", [])
+
+    def get_selected_item(self):
+        if self.selected_item_index is None:
+            return None
+
+        inventory_items = self.get_inventory_items()
+        if self.selected_item_index >= len(inventory_items):
+            return None
+
+        return inventory_items[self.selected_item_index]
+
     def update_slot_visibility(self):
         equipment_visible = self.selected_tab == "장비"
-        skill_visible = self.selected_tab == "스킬"
+        skill_visible = (
+            self.selected_tab == "스킬"
+            or self.popup_mode == "shortcut"
+        )
 
         for slot in (*self.equipment_slots, *self.item_slots):
             slot.set_visible(equipment_visible)
@@ -213,7 +692,11 @@ class InventoryScene(Scene):
                 if dungeon_inventory is not None
                 else None
             )
-            slot.set_item_text(self.get_item_instance_text(item_instance))
+            item = getattr(item_instance, "item", None)
+            slot.set_item(
+                self.get_item_instance_text(item_instance),
+                getattr(item, "item_code", ""),
+            )
 
         inventory = (
             getattr(dungeon_inventory, "item_inventory", None)
@@ -228,15 +711,57 @@ class InventoryScene(Scene):
             )
             item_text = self.get_item_instance_text(item_instance)
             stack = getattr(item_instance, "stack", 1)
-            stack_text = str(stack) if item_instance is not None and stack > 1 else ""
+            max_stack = getattr(item_instance, "max_stack", 1)
+            stack_text = (
+                str(stack)
+                if item_instance is not None and max_stack != 1
+                else ""
+            )
             item = getattr(item_instance, "item", None)
             item_code = getattr(item, "item_code", "")
             slot.set_text(item_text, stack_text, item_code)
 
+        dungeon_inventory = getattr(
+            self.parent_scene,
+            "dungeon_inventory",
+            None,
+        )
+        hotbar_items = getattr(dungeon_inventory, "hotbar_items", {})
+        hotbar_skills = getattr(self.parent_scene, "hotbar_skills", {})
+        for slot, key_label in zip(
+            self.skill_equip_slots,
+            self.SKILL_SLOT_LABELS,
+        ):
+            item_code = hotbar_items.get(key_label)
+            if item_code:
+                slot.set_skill_text(item_code)
+                continue
+
+            skill = hotbar_skills.get(key_label)
+            slot.set_skill_text(getattr(skill, "name", ""))
+
     def scene_update(self, delta_time, game_events, mouse_position, wheel_move):
-        if game_events[TAB]["keydown"] or game_events[ESCAPE]["keydown"]:
+        if game_events[TAB]["keydown"]:
             self.exit_scene()
             return
+        if game_events[ESCAPE]["keydown"]:
+            if self.popup_mode is not None:
+                self.close_item_popup()
+            else:
+                self.exit_scene()
+            return
+
+        if self.popup_mode is not None and game_events[MOUSE_LEFT]["keydown"]:
+            if self.popup_interacted_this_frame:
+                self.popup_interacted_this_frame = False
+            elif (
+                mouse_position is None
+                or self.popup_rect is None
+                or not self.popup_rect.collidepoint(mouse_position)
+            ):
+                self.close_item_popup()
+        else:
+            self.popup_interacted_this_frame = False
 
         self.refresh_inventory_texts()
         super().scene_update(delta_time, game_events, mouse_position, wheel_move)
@@ -283,6 +808,59 @@ class InventoryScene(Scene):
             self.draw_stat_tab(screen, panel_rect)
 
         super().scene_draw()
+
+        if self.popup_mode is not None:
+            self.draw_item_popup(screen)
+            if self.popup_mode == "shortcut":
+                for slot in self.skill_equip_slots:
+                    slot.renderer.draw(screen)
+            for button in self.popup_buttons.values():
+                button.renderer.draw(screen)
+
+    def draw_item_popup(self, screen):
+        if self.popup_mode not in ("discard", "shortcut") or self.popup_rect is None:
+            return
+
+        popup_rect = self.popup_rect
+        pygame.draw.rect(screen, (25, 32, 41), popup_rect, border_radius=8)
+        pygame.draw.rect(
+            screen,
+            (135, 151, 166),
+            popup_rect,
+            width=2,
+            border_radius=8,
+        )
+
+        title_surface = self.section_font.render(
+            (
+                "단축키 선택"
+                if self.popup_mode == "shortcut"
+                else "버릴 수량"
+            ),
+            True,
+            (237, 242, 245),
+        )
+        screen.blit(
+            title_surface,
+            title_surface.get_rect(
+                center=(popup_rect.centerx, popup_rect.top + 18)
+            ),
+        )
+
+        if self.popup_mode == "shortcut":
+            return
+
+        amount_surface = self.button_font.render(
+            str(self.discard_amount),
+            True,
+            (244, 226, 166),
+        )
+        screen.blit(
+            amount_surface,
+            amount_surface.get_rect(
+                center=(popup_rect.centerx, popup_rect.top + 50)
+            ),
+        )
 
     def draw_equipment_titles(self, screen, panel_rect):
         equipment_title = self.section_font.render(

@@ -16,8 +16,8 @@ class Player(Unit):
             mp=0,
         )
 
-        self.weapon: SkilledEquip = SkilledEquip(Equip.TYPE_WEAPON)
-        self.sub_weapon: SubWeapon = SubWeapon(Equip.TYPE_SUB_WEAPON)
-        self.armor: SkilledEquip = SkilledEquip(Equip.TYPE_ARMOR)
-        self.accessory_1: SkilledEquip = SkilledEquip(Equip.TYPE_ACCESSORY)
-        self.accessory_2: SkilledEquip = SkilledEquip(Equip.TYPE_ACCESSORY)
+        self.weapon: SkilledEquip | None = None
+        self.sub_weapon: SubWeapon | None = None
+        self.armor: SkilledEquip | None = None
+        self.accessory_1: SkilledEquip | None = None
+        self.accessory_2: SkilledEquip | None = None
