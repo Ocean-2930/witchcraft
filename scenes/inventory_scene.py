@@ -711,7 +711,7 @@ class InventoryScene(Scene):
             item = getattr(item_instance, "item", None)
             slot.set_item(
                 self.get_item_instance_text(item_instance),
-                getattr(item, "item_code", ""),
+                item,
             )
 
         inventory = (
@@ -734,8 +734,7 @@ class InventoryScene(Scene):
                 else ""
             )
             item = getattr(item_instance, "item", None)
-            item_code = getattr(item, "item_code", "")
-            slot.set_text(item_text, stack_text, item_code)
+            slot.set_text(item_text, stack_text, item)
 
         dungeon_inventory = getattr(
             self.parent_scene,
@@ -750,7 +749,7 @@ class InventoryScene(Scene):
         ):
             item_code = hotbar_items.get(key_label)
             if item_code:
-                slot.set_skill_text(item_code)
+                slot.set_item(item_code)
                 continue
 
             skill = hotbar_skills.get(key_label)

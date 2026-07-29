@@ -1,5 +1,3 @@
-from pathlib import Path
-
 import pygame
 
 from .slot_base import InventorySlot, InventorySlotRenderer
@@ -44,10 +42,6 @@ class ItemSlotRenderer(InventorySlotRenderer):
 
 class ItemSlot(InventorySlot):
     renderer_class = ItemSlotRenderer
-    IMAGE_DIRECTORY = (
-        Path(__file__).resolve().parents[2] / "assets" / "images" / "items"
-    )
-    image_cache = {}
 
     def __init__(
         self,
@@ -63,39 +57,26 @@ class ItemSlot(InventorySlot):
     ):
         self.item_text = item_text
         self.stack_text = stack_text
-        self.item_code = ""
+        self.item = None
         self.item_image = None
         self.on_click = on_click
         self.on_right_click_callback = on_right_click
         self.item_font = scene.item_font
         super().__init__(scene, pos_x, pos_y, width, height)
 
-    def set_text(self, item_text, stack_text="", item_code=""):
+    def set_text(self, item_text, stack_text="", item=None):
         self.item_text = item_text
         self.stack_text = stack_text
 
-        if item_code == self.item_code:
+        if item is self.item:
             return
 
-        self.item_code = item_code
-        self.item_image = self.load_item_image(item_code)
-
-    @classmethod
-    def load_item_image(cls, item_code):
-        if not item_code:
-            return None
-
-        if item_code in cls.image_cache:
-            return cls.image_cache[item_code]
-
-        image_path = cls.IMAGE_DIRECTORY / f"{item_code}.png"
-        image = (
-            pygame.image.load(str(image_path)).convert_alpha()
-            if image_path.is_file()
+        self.item = item
+        self.item_image = (
+            item.get_sprite(item.item_code)
+            if item is not None
             else None
         )
-        cls.image_cache[item_code] = image
-        return image
 
     def on_left_click(self):
         if self.on_click is not None:

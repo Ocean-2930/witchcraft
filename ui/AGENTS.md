@@ -29,6 +29,14 @@
 - 부모 UI를 먼저 만들고 자식 UI를 나중에 만든 뒤 `add_sub_ui(...)`로 연결한다.
 - scene은 `ui_listener`를 뒤에서부터 검사하므로 생성 순서가 focus 순서에 영향을 준다.
 
+## Reuse
+
+- 새 UI를 만들기 전에 `ui/global/`뿐 아니라 다른 `ui/{scene_name}/` 폴더에 유사한 구현이 있는지 확인한다.
+- 다른 scene에서 사용하던 UI가 현재 scene에서도 재사용 가능하다고 판단되면 같은 구현을 새로 만들지 않는다.
+- 이 경우 기존 UI를 원래 scene 폴더에 둔 채 다른 scene에서 가져오지 말고 `ui/global/`로 이동한다.
+- 기존 scene과 새 scene은 모두 `ui/global/`로 이동한 하나의 공용 구현을 import해서 사용하도록 수정한다.
+- 공용화할 때 특정 scene에 종속된 이름, 상태 접근, callback을 제거하고 필요한 데이터와 동작은 생성자 인자로 받도록 정리한다.
+
 ## Exports
 
 - `Renderer`, `AnimatedRenderer`, `ShiftRenderer`, `UIElement`처럼 상속해서 쓰는 클래스는 루트 `AGENTS.md`의 scene별 구현체 관리 규칙을 따른다.

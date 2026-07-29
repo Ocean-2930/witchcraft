@@ -1,9 +1,30 @@
+import pygame
+
 from .slot_base import InventorySlot, InventorySlotRenderer
 
 
 class SkillEquipSlotRenderer(InventorySlotRenderer):
+    IMAGE_PADDING = 9
+
     def draw_contents(self, screen):
         slot = self.slot
+
+        if slot.item_image is not None:
+            image_size = (
+                self.rect.width - self.IMAGE_PADDING * 2,
+                self.rect.height - self.IMAGE_PADDING * 2,
+            )
+            image = pygame.transform.smoothscale(slot.item_image, image_size)
+            image_rect = image.get_rect(center=self.rect.center)
+            screen.blit(image, image_rect)
+        elif slot.skill_text:
+            skill_surface = slot.skill_font.render(
+                slot.skill_text,
+                True,
+                (238, 241, 244),
+            )
+            skill_rect = skill_surface.get_rect(center=self.rect.center)
+            screen.blit(skill_surface, skill_rect)
 
         key_surface = slot.key_font.render(
             slot.key_text,
@@ -14,17 +35,6 @@ class SkillEquipSlotRenderer(InventorySlotRenderer):
             topleft=(self.rect.left + 6, self.rect.top + 4)
         )
         screen.blit(key_surface, key_rect)
-
-        if not slot.skill_text:
-            return
-
-        skill_surface = slot.skill_font.render(
-            slot.skill_text,
-            True,
-            (238, 241, 244),
-        )
-        skill_rect = skill_surface.get_rect(center=self.rect.center)
-        screen.blit(skill_surface, skill_rect)
 
 
 class SkillEquipSlot(InventorySlot):
@@ -43,6 +53,7 @@ class SkillEquipSlot(InventorySlot):
     ):
         self.key_text = key_text
         self.skill_text = skill_text
+        self.item_image = None
         self.on_click = on_click
         self.key_font = scene.slot_label_font
         self.skill_font = scene.item_font
@@ -50,6 +61,13 @@ class SkillEquipSlot(InventorySlot):
 
     def set_skill_text(self, skill_text):
         self.skill_text = skill_text
+        self.item_image = None
+
+    def set_item(self, item_code):
+        from items import Item
+
+        self.skill_text = item_code
+        self.item_image = Item.get_sprite(item_code)
 
     def on_left_click(self):
         if self.on_click is not None:
