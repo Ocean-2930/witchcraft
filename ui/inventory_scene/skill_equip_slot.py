@@ -26,6 +26,17 @@ class SkillEquipSlotRenderer(InventorySlotRenderer):
             skill_rect = skill_surface.get_rect(center=self.rect.center)
             screen.blit(skill_surface, skill_rect)
 
+        if slot.stack_text:
+            stack_surface = slot.skill_font.render(
+                slot.stack_text,
+                True,
+                (246, 224, 148),
+            )
+            stack_rect = stack_surface.get_rect(
+                bottomright=(self.rect.right - 7, self.rect.bottom - 5)
+            )
+            screen.blit(stack_surface, stack_rect)
+
         key_surface = slot.key_font.render(
             slot.key_text,
             True,
@@ -54,6 +65,7 @@ class SkillEquipSlot(InventorySlot):
         self.key_text = key_text
         self.skill_text = skill_text
         self.item_image = None
+        self.stack_text = ""
         self.on_click = on_click
         self.key_font = scene.slot_label_font
         self.skill_font = scene.item_font
@@ -62,12 +74,13 @@ class SkillEquipSlot(InventorySlot):
     def set_skill_text(self, skill_text):
         self.skill_text = skill_text
         self.item_image = None
+        self.stack_text = ""
 
-    def set_item(self, item_code):
-        from items import Item
-
-        self.skill_text = item_code
-        self.item_image = Item.get_sprite(item_code)
+    def set_item(self, item_instance):
+        item = item_instance.item
+        self.skill_text = item.item_code
+        self.item_image = item.get_sprite(item.item_code)
+        self.stack_text = str(item_instance.stack)
 
     def on_left_click(self):
         if self.on_click is not None:

@@ -1,6 +1,5 @@
 import pygame
 
-from items import Item
 from ui.renderer import Renderer
 
 
@@ -42,13 +41,29 @@ class HotbarRenderer(Renderer):
                 pygame.draw.rect(screen, fill_color, slot_rect, border_radius=4)
                 pygame.draw.rect(screen, border_color, slot_rect, width=2, border_radius=4)
 
-                item_code = self.scene.dungeon_inventory.hotbar_items.get(label)
-                item_sprite = Item.get_sprite(item_code)
+                item_instance = self.scene.dungeon_inventory.get_hotbar_item(label)
+                item = getattr(item_instance, "item", None)
+                item_sprite = (
+                    item.get_sprite(item.item_code)
+                    if item is not None
+                    else None
+                )
                 if item_sprite is not None:
                     image_size = (self.slot_size - 16, self.slot_size - 16)
                     image = pygame.transform.smoothscale(item_sprite, image_size)
                     image_rect = image.get_rect(center=slot_rect.center)
                     screen.blit(image, image_rect)
+
+                if item_instance is not None:
+                    stack_surface = self.font.render(
+                        str(item_instance.stack),
+                        True,
+                        (246, 224, 148),
+                    )
+                    stack_rect = stack_surface.get_rect(
+                        bottomright=(slot_rect.right - 7, slot_rect.bottom - 5)
+                    )
+                    screen.blit(stack_surface, stack_rect)
 
                 text_surface = self.font.render(label, True, text_color)
                 text_rect = text_surface.get_rect(

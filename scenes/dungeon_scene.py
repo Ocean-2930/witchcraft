@@ -399,7 +399,7 @@ class DungeonScene(Scene):
 
     def start_hotbar_input(self, game_events):
         for key, label in self.HOTBAR_KEYS:
-            if label in self.dungeon_inventory.hotbar_items:
+            if self.dungeon_inventory.get_hotbar_item(label) is not None:
                 continue
 
             if game_events[key]["keydown"] or game_events[key]["status"]:
@@ -412,7 +412,7 @@ class DungeonScene(Scene):
 
     def try_use_hotbar_item(self, game_events):
         for key, label in self.HOTBAR_KEYS:
-            if label not in self.dungeon_inventory.hotbar_items:
+            if self.dungeon_inventory.get_hotbar_item(label) is None:
                 continue
             if not game_events[key]["keydown"]:
                 continue
@@ -423,15 +423,8 @@ class DungeonScene(Scene):
         return False
 
     def use_hotbar_item(self, label):
-        item_code = self.dungeon_inventory.hotbar_items.get(label)
-        item_instance = next(
-            (
-                owned_item
-                for owned_item in self.dungeon_inventory.item_inventory.items
-                if owned_item.item.item_code == item_code
-            ),
-            None,
-        )
+        item_instance = self.dungeon_inventory.get_hotbar_item(label)
+        item_code = getattr(getattr(item_instance, "item", None), "item_code", None)
         use = getattr(getattr(item_instance, "item", None), "use", None)
         used_amount = use(self.player) if callable(use) else 0
 
@@ -440,6 +433,7 @@ class DungeonScene(Scene):
                 item_instance,
                 1,
             )
+            self.dungeon_inventory.get_hotbar_item(label)
 
         self.last_skill_call = {
             "label": label,

@@ -649,16 +649,15 @@ class InventoryScene(Scene):
         if self.popup_mode != "shortcut":
             return
 
-        item = getattr(self.get_selected_item(), "item", None)
-        item_code = getattr(item, "item_code", "")
+        item_instance = self.get_selected_item()
         dungeon_inventory = getattr(
             self.parent_scene,
             "dungeon_inventory",
             None,
         )
         hotbar_items = getattr(dungeon_inventory, "hotbar_items", None)
-        if item_code and hotbar_items is not None:
-            hotbar_items[key_label] = item_code
+        if item_instance is not None and hotbar_items is not None:
+            hotbar_items[key_label] = item_instance
 
         self.close_item_popup()
 
@@ -741,15 +740,18 @@ class InventoryScene(Scene):
             "dungeon_inventory",
             None,
         )
-        hotbar_items = getattr(dungeon_inventory, "hotbar_items", {})
         hotbar_skills = getattr(self.parent_scene, "hotbar_skills", {})
         for slot, key_label in zip(
             self.skill_equip_slots,
             self.SKILL_SLOT_LABELS,
         ):
-            item_code = hotbar_items.get(key_label)
-            if item_code:
-                slot.set_item(item_code)
+            item_instance = (
+                dungeon_inventory.get_hotbar_item(key_label)
+                if dungeon_inventory is not None
+                else None
+            )
+            if item_instance is not None:
+                slot.set_item(item_instance)
                 continue
 
             skill = hotbar_skills.get(key_label)

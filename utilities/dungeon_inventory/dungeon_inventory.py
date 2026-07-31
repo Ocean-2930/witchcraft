@@ -16,7 +16,7 @@ class DungeonInventory:
 
     unit_base: UnitBase | None = None
     item_inventory: ItemInventory = field(default_factory=ItemInventory)
-    hotbar_items: dict[str, str] = field(default_factory=dict)
+    hotbar_items: dict[str, ItemInstance] = field(default_factory=dict)
     weapon: ItemInstance | None = None
     sub_weapon: ItemInstance | None = None
     armor: ItemInstance | None = None
@@ -28,6 +28,20 @@ class DungeonInventory:
 
     def remove_item(self, item_instance: ItemInstance):
         return self.item_inventory.remove_item(item_instance)
+
+    def get_hotbar_item(self, label: str) -> ItemInstance | None:
+        item_instance = self.hotbar_items.get(label)
+        if (
+            item_instance is not None
+            and all(
+                owned_item is not item_instance
+                for owned_item in self.item_inventory.items
+            )
+        ):
+            self.hotbar_items.pop(label, None)
+            return None
+
+        return item_instance
 
     def get_stat(self):
         if self.unit_base is None:
