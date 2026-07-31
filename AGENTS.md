@@ -12,6 +12,10 @@
 - `ui/`는 transform, renderer, UI 상호작용 기반 클래스를 담당한다.
 - `assets/`는 이미지, 폰트, 사운드 리소스를 둔다.
 - `data/`는 저장 데이터와 런타임 데이터를 둔다.
+- `docs/`는 프로젝트 구조와 구현 흐름에 관한 문서를 둔다.
+- `items/`는 아이템 정의, 장비 계층, 아이템 인스턴스를 담당한다.
+- `skills/`는 스킬 정의, 효과, 스킬 인스턴스를 담당한다.
+- `units/`는 전투 유닛, 능력치, 피해 계산을 담당한다.
 - `utilities/`는 여러 모듈에서 재사용하는 보조 함수를 둔다.
 
 ## General Rules
@@ -34,7 +38,14 @@
 - global 구현체 import는 `__init__.py`의 `# global` 주석 아래에 모아둔다.
 - 나중에 `ui/` 외의 다른 관리 폴더가 생겨도 같은 방식으로 scene별 구현체를 배치한다.
 
+## Documentation
+
+- `docs/class_hierarchy.md`에 클래스 상속 구조를 문서화한다.
+- `class_hierarchy.md`에는 개별 UI, 몬스터, 아이템처럼 세부적인 구현 클래스까지 모두 나열하지 않고, 다른 클래스가 상속해서 사용하는 부모 클래스들 사이의 부모·자식 구조만 기록한다.
+- `docs/ui_flow.md`에 구현된 UI의 구성과 동작 흐름을 문서화한다.
+- 작업할 때마다 변경 사항이 위 문서의 내용에 영향을 주는지 확인하고, 영향이 있으면 해당 문서를 함께 갱신한다.
+
 ## Verification
 
-- 기본 확인은 `.venv\Scripts\python.exe -m compileall core scenes ui settings.py main.py develop.py`를 사용한다.
+- 기본 확인은 `.venv\Scripts\python.exe -m compileall core scenes ui items skills units utilities settings.py main.py develop.py`를 사용한다.
 - 데이터 파일을 수정했다면 UTF-8로 읽히는지와 JSON 문법이 유효한지 확인한다.
