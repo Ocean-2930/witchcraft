@@ -60,6 +60,9 @@ class InventoryContentRenderer(Renderer):
         )
 
     def draw_stat_tab(self, screen, panel_rect):
+        if self.scene.selected_stat_tab != "플레이어":
+            return
+
         dungeon_inventory = getattr(
             self.scene.parent_scene,
             "dungeon_inventory",
@@ -73,10 +76,6 @@ class InventoryContentRenderer(Renderer):
         except ValueError:
             return
 
-        name = getattr(calculated_stat, "name", "")
-        title_text = f"스탯  ·  {name}" if name else "스탯"
-        self.draw_section_title(screen, panel_rect, title_text)
-
         column_gap = 22
         content_left = panel_rect.left + 46
         content_right = panel_rect.right - 46
@@ -85,7 +84,7 @@ class InventoryContentRenderer(Renderer):
             - content_left
             - column_gap * (len(self.scene.STAT_GROUPS) - 1)
         ) // len(self.scene.STAT_GROUPS)
-        column_top = panel_rect.top + 158
+        column_top = panel_rect.top + 178
         column_height = panel_rect.bottom - column_top - 38
 
         for index, (group_title, stat_rows) in enumerate(

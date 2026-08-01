@@ -10,7 +10,10 @@ class InventoryTabButtonRenderer(Renderer):
         self.button = button
 
     def draw(self, screen):
-        is_selected = self.scene.selected_tab == self.button.label
+        if not self.button.visible:
+            return
+
+        is_selected = self.button.is_selected()
 
         if is_selected:
             color = (72, 102, 128)
@@ -31,10 +34,24 @@ class InventoryTabButtonRenderer(Renderer):
 
 
 class InventoryTabButton(UIElement):
-    def __init__(self, scene, label, pos_x, pos_y, width, height, on_click):
+    def __init__(
+        self,
+        scene,
+        label,
+        pos_x,
+        pos_y,
+        width,
+        height,
+        on_click,
+        is_selected=None,
+    ):
         self.label = label
         self.on_click = on_click
+        self.is_selected = is_selected or (
+            lambda: scene.selected_tab == self.label
+        )
         self.is_hovered = False
+        self.visible = True
         self.font = scene.button_font
 
         renderer = InventoryTabButtonRenderer(scene, pos_x, pos_y, width, height, self)
@@ -42,6 +59,14 @@ class InventoryTabButton(UIElement):
 
     def on_left_click(self):
         self.on_click()
+
+    def set_visible(self, visible):
+        self.visible = visible
+        if not visible and self.scene.ui_focus is self:
+            self.scene.ui_focus = None
+
+    def pos_check(self, mouse_pos):
+        return self.visible and super().pos_check(mouse_pos)
 
     def on_enter(self):
         self.is_hovered = True

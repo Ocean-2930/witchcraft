@@ -17,6 +17,7 @@ from ui import (
 
 class InventoryScene(Scene):
     TAB_LABELS = ("장비", "스킬", "영웅", "스탯")
+    STAT_TAB_LABELS = ("플레이어", "패시브")
     SKILL_SLOT_LABELS = ("1", "2", "3", "4", "Q", "W", "E", "R")
     EQUIPMENT_SLOTS = (
         ("weapon", "무기"),
@@ -76,7 +77,9 @@ class InventoryScene(Scene):
         self.slot_label_font = pygame.font.SysFont("malgungothic", 16, bold=True)
         self.item_font = pygame.font.SysFont("malgungothic", 14)
         self.selected_tab = self.TAB_LABELS[0]
+        self.selected_stat_tab = self.STAT_TAB_LABELS[0]
         self.tab_buttons = []
+        self.stat_tab_buttons = []
         self.equipment_slots = []
         self.item_slots = []
         self.skill_equip_slots = []
@@ -100,6 +103,7 @@ class InventoryScene(Scene):
         )
         self.popup_renderer = InventoryPopupRenderer(self)
         self.create_tab_buttons()
+        self.create_stat_tab_buttons()
         self.create_equipment_slots()
         self.create_item_slots()
         self.create_skill_equip_slots()
@@ -164,6 +168,32 @@ class InventoryScene(Scene):
                     ),
                 )
             )
+
+    def create_stat_tab_buttons(self):
+        button_width = 150
+        button_height = 42
+        button_gap = 10
+        panel_left = (VIRTUAL_WIDTH - self.PANEL_WIDTH) // 2
+        first_button_x = panel_left + 46 + button_width // 2
+        button_y = (VIRTUAL_HEIGHT - self.PANEL_HEIGHT) // 2 + 137
+
+        for index, label in enumerate(self.STAT_TAB_LABELS):
+            button = InventoryTabButton(
+                self,
+                label,
+                first_button_x + index * (button_width + button_gap),
+                button_y,
+                button_width,
+                button_height,
+                lambda selected_label=label: self.select_stat_tab(
+                    selected_label
+                ),
+                lambda selected_label=label: (
+                    self.selected_stat_tab == selected_label
+                ),
+            )
+            button.set_visible(False)
+            self.stat_tab_buttons.append(button)
 
     def create_item_slots(self):
         columns = 10
@@ -321,6 +351,12 @@ class InventoryScene(Scene):
         self.close_item_popup()
         self.selected_tab = label
         self.update_slot_visibility()
+
+    def select_stat_tab(self, label):
+        if label not in self.STAT_TAB_LABELS:
+            return
+
+        self.selected_stat_tab = label
 
     def open_item_actions(self, item_index):
         if self.selected_tab != "장비":
@@ -649,6 +685,9 @@ class InventoryScene(Scene):
 
         for slot in self.skill_equip_slots:
             slot.set_visible(skill_visible)
+
+        for button in self.stat_tab_buttons:
+            button.set_visible(self.selected_tab == "스탯")
 
     def refresh_inventory_texts(self):
         dungeon_inventory = getattr(self.parent_scene, "dungeon_inventory", None)
