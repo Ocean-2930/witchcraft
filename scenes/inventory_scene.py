@@ -13,6 +13,7 @@ from ui import (
     ItemSlot,
     SkillEquipSlot,
     LearnableSkillListView,
+    PassiveSkillGrid,
 )
 
 
@@ -109,6 +110,7 @@ class InventoryScene(Scene):
         self.create_item_slots()
         self.create_skill_equip_slots()
         self.create_learnable_skill_list_view()
+        self.create_passive_skill_grid()
         self.create_popup_buttons()
         self.update_slot_visibility()
 
@@ -288,6 +290,24 @@ class InventoryScene(Scene):
             lambda: getattr(self.parent_scene, "dungeon_inventory", None),
         )
 
+    def create_passive_skill_grid(self):
+        panel_left = (VIRTUAL_WIDTH - self.PANEL_WIDTH) // 2
+        panel_top = (VIRTUAL_HEIGHT - self.PANEL_HEIGHT) // 2
+        content_rect = pygame.Rect(
+            panel_left + 46,
+            panel_top + 178,
+            self.PANEL_WIDTH - 92,
+            self.PANEL_HEIGHT - 216,
+        )
+        self.passive_skill_grid = PassiveSkillGrid(
+            self,
+            content_rect.centerx,
+            content_rect.centery,
+            content_rect.width,
+            content_rect.height,
+            lambda: getattr(self.parent_scene, "dungeon_inventory", None),
+        )
+
     def create_popup_buttons(self):
         button_specs = (
             (
@@ -377,6 +397,7 @@ class InventoryScene(Scene):
             return
 
         self.selected_stat_tab = label
+        self.update_slot_visibility()
 
     def open_item_actions(self, item_index):
         if self.selected_tab != "장비":
@@ -710,6 +731,10 @@ class InventoryScene(Scene):
             button.set_visible(self.selected_tab == "스탯")
 
         self.learnable_skill_list_view.set_visible(self.selected_tab == "영웅")
+        self.passive_skill_grid.set_visible(
+            self.selected_tab == "스탯"
+            and self.selected_stat_tab == "패시브"
+        )
 
     def refresh_inventory_texts(self):
         dungeon_inventory = getattr(self.parent_scene, "dungeon_inventory", None)

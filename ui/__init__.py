@@ -28,6 +28,7 @@ from .inventory_scene import (
     InventoryPopupButton,
     SkillEquipSlot,
     LearnableSkillListView,
+    PassiveSkillGrid,
 )
 
 # global
@@ -67,6 +68,7 @@ __all__ = [
     "InventoryPopupButton",
     "SkillEquipSlot",
     "LearnableSkillListView",
+    "PassiveSkillGrid",
     # global
     "PauseButton",
     "SkillCard",
