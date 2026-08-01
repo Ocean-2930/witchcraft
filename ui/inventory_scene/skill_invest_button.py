@@ -48,7 +48,7 @@ class SkillInvestButton(UIElement):
         self.clip_rect_getter = clip_rect_getter
         self.visible = True
         self.is_hovered = False
-        renderer = SkillInvestButtonRenderer(scene, pos_x, pos_y, 22, self)
+        renderer = SkillInvestButtonRenderer(scene, pos_x, pos_y, 20, self)
         super().__init__(scene, renderer=renderer, background=False)
 
     def get_clip_rect(self):

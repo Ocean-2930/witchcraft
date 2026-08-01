@@ -28,24 +28,34 @@ class SkillCardRenderer(Renderer):
         name = self.card.name_font.render(
             self.card.skill_instance.skill.name, True, (238, 242, 246)
         )
-        screen.blit(name, (icon.right + 10, self.rect.top + 10))
+        screen.blit(
+            name,
+            (icon.right + 10, self.rect.top + self.card.NAME_TOP),
+        )
         pygame.draw.line(
             screen,
             (82, 99, 114),
-            (icon.right + 10, self.rect.top + 34),
-            (self.rect.right - 10, self.rect.top + 34),
+            (icon.right + 10, self.rect.top + self.card.SEPARATOR_TOP),
+            (self.rect.right - 10, self.rect.top + self.card.SEPARATOR_TOP),
         )
         level = self.card.level_font.render(
             f"Lv.{self.card.skill_instance.level}/{self.card.max_level}",
             True,
             (193, 204, 213),
         )
-        screen.blit(level, (icon.right + 10, self.rect.top + 42))
+        screen.blit(
+            level,
+            (icon.right + 10, self.rect.top + self.card.LEVEL_TOP),
+        )
         screen.set_clip(previous_clip)
 
 
 class SkillCard(UIElement):
     """투자 동작 없이 스킬 인스턴스의 요약을 표시하는 공용 카드."""
+
+    NAME_TOP = 8
+    SEPARATOR_TOP = 34
+    LEVEL_TOP = 41
 
     def __init__(
         self,
@@ -53,8 +63,8 @@ class SkillCard(UIElement):
         skill_instance,
         pos_x,
         pos_y,
-        width=190,
-        height=76,
+        width=228,
+        height=68,
         clip_rect_getter=None,
         on_icon_hover=None,
         max_level=None,
@@ -68,8 +78,8 @@ class SkillCard(UIElement):
         self.visible = True
         self.clip_rect_getter = clip_rect_getter
         self.on_icon_hover_callback = on_icon_hover
-        self.name_font = pygame.font.SysFont("malgungothic", 16, bold=True)
-        self.level_font = pygame.font.SysFont("malgungothic", 14)
+        self.name_font = pygame.font.SysFont("malgungothic", 14, bold=True)
+        self.level_font = pygame.font.SysFont("malgungothic", 13)
         self.info_window = SkillInfoWindow(
             scene,
             skill_instance,
@@ -80,7 +90,17 @@ class SkillCard(UIElement):
 
     @property
     def icon_rect(self):
-        return pygame.Rect(self.rect.left + 10, self.rect.top + 10, 48, 48)
+        icon_rect = pygame.Rect(0, 0, 48, 48)
+        icon_rect.midleft = (self.rect.left + 10, self.rect.centery)
+        return icon_rect
+
+    @property
+    def level_center_y(self):
+        return (
+            self.rect.top
+            + self.LEVEL_TOP
+            + self.level_font.get_height() // 2
+        )
 
     def get_clip_rect(self):
         return self.clip_rect_getter() if self.clip_rect_getter else None

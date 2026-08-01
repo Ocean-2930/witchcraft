@@ -25,11 +25,11 @@ class LearnableSkillListViewRenderer(Renderer):
 
 
 class LearnableSkillListView(UIElement):
-    TIER_WIDTH = 210
+    TIER_WIDTH = 248
     TIER_GAP = 18
     HEADER_HEIGHT = 64
     HEADER_BODY_GAP = 8
-    CARD_HEIGHT = 76
+    CARD_HEIGHT = 68
     CARD_GAP = 12
     BOTTOM_SCROLL_HEIGHT = 28
     SCROLL_STEP = 54
@@ -146,7 +146,7 @@ class LearnableSkillListView(UIElement):
                 card.set_transform(body_rect.centerx, card_y + self.CARD_HEIGHT // 2)
                 button.set_transform(
                     card.rect.right - 21,
-                    card.rect.top + 49,
+                    card.level_center_y,
                 )
                 card_y += self.CARD_HEIGHT + self.CARD_GAP
 

@@ -31,9 +31,9 @@ class PassiveSkillGridRenderer(Renderer):
 
 
 class PassiveSkillGrid(UIElement):
-    COLUMNS = 4
-    CARD_WIDTH = 190
-    CARD_HEIGHT = 76
+    COLUMNS = 3
+    CARD_WIDTH = 228
+    CARD_HEIGHT = 68
     COLUMN_GAP = 18
     ROW_GAP = 14
     PADDING = 16
