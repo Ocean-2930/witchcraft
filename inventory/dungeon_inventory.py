@@ -8,10 +8,21 @@ from items import Equip, ItemInstance, SkilledEquip
 from skills import SkillInstance
 
 from .item_inventory import ItemInventory
-from units.unit_base import UnitBase
-
 if TYPE_CHECKING:
     from units import Player
+    from units.unit_base import UnitBase
+
+
+@dataclass
+class SkillNode:
+    """던전의 티어별 스킬 목록에 배치되는 노드."""
+
+    tier: int
+    skill: SkillInstance
+
+    def __post_init__(self):
+        if self.tier < 1:
+            raise ValueError("tier는 1 이상이어야 합니다.")
 
 
 @dataclass
@@ -26,6 +37,8 @@ class DungeonInventory:
     armor: ItemInstance | None = None
     accessory_1: ItemInstance | None = None
     accessory_2: ItemInstance | None = None
+    skill_nodes: list[SkillNode] = field(default_factory=list)
+    tier_skill_points: dict[int, int] = field(default_factory=dict)
 
     EQUIPMENT_SLOTS_BY_TYPE: ClassVar[dict[str, tuple[str, ...]]] = {
         Equip.TYPE_WEAPON: ("weapon",),
@@ -144,10 +157,34 @@ class DungeonInventory:
                     level=skill_instance.level,
                     stack=skill_instance.stack,
                 )
-                if isinstance(result, UnitBase):
+                if result is not None:
                     calculated_stat = result
 
         return calculated_stat
+
+    def add_skill_node(self, node: SkillNode) -> bool:
+        if any(owned_node is node for owned_node in self.skill_nodes):
+            return False
+        self.skill_nodes.append(node)
+        self.tier_skill_points.setdefault(node.tier, 0)
+        return True
+
+    def set_tier_skill_points(self, tier: int, points: int):
+        if tier < 1 or points < 0:
+            raise ValueError("tier는 1 이상, points는 0 이상이어야 합니다.")
+        self.tier_skill_points[tier] = points
+
+    def invest_skill(self, node: SkillNode) -> bool:
+        if not any(owned_node is node for owned_node in self.skill_nodes):
+            return False
+        if node.skill.level >= node.skill.max_level:
+            return False
+        points = self.tier_skill_points.get(node.tier, 0)
+        if points < 1:
+            return False
+        node.skill.level += 1
+        self.tier_skill_points[node.tier] = points - 1
+        return True
 
     def active_skills(self):
         return self._stack_skills(
@@ -170,8 +207,9 @@ class DungeonInventory:
         )
 
     def _all_skill_instances(self):
-        if self.unit_base is not None:
-            yield from self.unit_base.skill_tree.skills
+        yield from (
+            node.skill for node in self.skill_nodes if node.skill.level > 0
+        )
 
         for equipment in (
             self.weapon,

@@ -12,6 +12,7 @@ from ui import (
     InventoryTabButton,
     ItemSlot,
     SkillEquipSlot,
+    SkillNodeListView,
 )
 
 
@@ -107,6 +108,7 @@ class InventoryScene(Scene):
         self.create_equipment_slots()
         self.create_item_slots()
         self.create_skill_equip_slots()
+        self.create_skill_node_list_view()
         self.create_popup_buttons()
         self.update_slot_visibility()
 
@@ -267,6 +269,24 @@ class InventoryScene(Scene):
                     slot_size,
                 )
             )
+
+    def create_skill_node_list_view(self):
+        panel_left = (VIRTUAL_WIDTH - self.PANEL_WIDTH) // 2
+        panel_top = (VIRTUAL_HEIGHT - self.PANEL_HEIGHT) // 2
+        content_rect = pygame.Rect(
+            panel_left + 38,
+            panel_top + 118,
+            self.PANEL_WIDTH - 76,
+            self.PANEL_HEIGHT - 146,
+        )
+        self.skill_node_list_view = SkillNodeListView(
+            self,
+            content_rect.centerx,
+            content_rect.centery,
+            content_rect.width,
+            content_rect.height,
+            lambda: getattr(self.parent_scene, "dungeon_inventory", None),
+        )
 
     def create_popup_buttons(self):
         button_specs = (
@@ -688,6 +708,8 @@ class InventoryScene(Scene):
 
         for button in self.stat_tab_buttons:
             button.set_visible(self.selected_tab == "스탯")
+
+        self.skill_node_list_view.set_visible(self.selected_tab == "영웅")
 
     def refresh_inventory_texts(self):
         dungeon_inventory = getattr(self.parent_scene, "dungeon_inventory", None)

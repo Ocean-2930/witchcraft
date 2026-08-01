@@ -13,9 +13,9 @@
 - `assets/`는 이미지, 폰트, 사운드 리소스를 둔다.
 - `data/`는 저장 데이터와 런타임 데이터를 둔다.
 - `docs/`는 프로젝트 구조와 구현 흐름에 관한 문서를 둔다.
-- `items/`는 아이템 정의, 장비 계층, 아이템 인스턴스를 담당한다.
+- `items/`는 아이템 기반 계층과 실제 아이템·장비 콘텐츠 구현을 담당한다. 실제 구현은 `items/items/`, `items/equips/{weapons,sub_weapons,armors,accessories}/` 아래에 둔다.
 - `inventory/`는 아이템 보관, 장비 슬롯, 단축키 연결을 담당한다.
-- `skills/`는 스킬 정의, 효과, 스킬 인스턴스를 담당한다.
+- `skills/`는 스킬 기반 정의, 효과, 스킬 인스턴스를 담당한다. 실제 개별 스킬 구현은 `skills/implementations/{item_skills,active_skills,passive_skills}/` 아래에 둔다.
 - `units/`는 전투 유닛, 능력치, 피해 계산을 담당한다.
 - `utilities/`는 여러 모듈에서 재사용하는 보조 함수를 둔다.
 

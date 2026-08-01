@@ -1,21 +1,11 @@
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from skills.skill_tree import SkillTree
-
-
-def _new_skill_tree():
-    from skills.skill_tree import SkillTree
-
-    return SkillTree()
+from dataclasses import dataclass
 
 
 @dataclass
 class UnitBase:
-    """유닛을 구성하는 기본 스탯과 보유 스킬 트리."""
+    """유닛을 구성하는 기본 스탯."""
 
     name: str
     max_hp: int
@@ -37,4 +27,3 @@ class UnitBase:
     incoming_damage_reduction: float = 0.0
     equipment_drop_rate: float = 0.0
     gold_drop_amount: float = 0.0
-    skill_tree: SkillTree = field(default_factory=_new_skill_tree)

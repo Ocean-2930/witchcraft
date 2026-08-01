@@ -31,6 +31,7 @@ class SkillTargetingInput:
 class SkillBase:
     name: str
     skill_code: str = ""
+    description: str = ""
     max_level: int = 1
     mp_cost: int = 0
     range_vectors: list[RangeVector] = field(default_factory=list)

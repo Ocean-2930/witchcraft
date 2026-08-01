@@ -9,6 +9,13 @@
 - 보유 수량, 강화처럼 개별 보유 상태는 아이템 원형과 분리하여 `ItemInstance`에서 관리한다.
 - 스킬이 포함된 장비는 허용 개수와 병합 조건을 `SkilledEquip` 계층에서 일관되게 처리한다.
 
+## Content Layout
+
+- 실제 소비·사용 아이템 구현은 `items/items/{item_name}.py`에 둔다.
+- 실제 장비 구현은 종류에 따라 `items/equips/weapons/`, `items/equips/sub_weapons/`, `items/equips/armors/`, `items/equips/accessories/`에 둔다.
+- 실제 스킬 구현은 이 패키지가 아니라 `skills/implementations/` 아래의 종류별 폴더에 둔다.
+- 새 실 아이템·장비 구현을 `items/` 루트에 직접 추가하지 않는다. 루트에는 공통 계층과 런타임 인스턴스만 둔다.
+
 ## Dependencies
 
 - 순환 import를 피하기 위한 타입 전용 의존성은 `TYPE_CHECKING` 아래에서 import한다.

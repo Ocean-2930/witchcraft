@@ -7,6 +7,7 @@
 - `ItemInventory`는 아이템 인스턴스의 보관과 수량 제거를 담당한다.
 - 아이템 소유 여부와 제거는 내용 동등성(`==`)이 아니라 실제 `ItemInstance` 객체 identity로 판정한다.
 - `DungeonInventory`는 한 번의 던전 진행에서 사용하는 아이템, 장비 슬롯, hotbar 연결을 단일 소유한다.
+- `DungeonInventory.skill_nodes`는 티어와 스킬 인스턴스를 묶은 `SkillNode` 목록을 관리하며 별도의 스킬 트리 모델을 두지 않는다.
 - 장착과 해제처럼 여러 컬렉션을 함께 바꾸는 연산은 scene에서 직접 수정하지 않고 `DungeonInventory` 메서드로 처리한다.
 
 ## Dependencies

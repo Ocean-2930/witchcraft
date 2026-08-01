@@ -14,9 +14,9 @@ class SkillInstance:
     stack: int = 1
 
     def __post_init__(self):
-        if not 1 <= self.level <= self.skill.max_level:
+        if not 0 <= self.level <= self.skill.max_level:
             raise ValueError(
-                f"level은 1 이상 {self.skill.max_level} 이하여야 합니다."
+                f"level은 0 이상 {self.skill.max_level} 이하여야 합니다."
             )
         if self.stack < 1:
             raise ValueError("stack은 1 이상이어야 합니다.")

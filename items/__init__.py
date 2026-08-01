@@ -1,4 +1,4 @@
-from .blue_potion import BluePotion
+from .items import BluePotion
 from .equip import Equip
 from .item import Item
 from .item_instance import ItemInstance

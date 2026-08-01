@@ -1,6 +1,6 @@
 from typing import ClassVar
 
-from .usable_item import UsableItem
+from ..usable_item import UsableItem
 
 
 class BluePotion(UsableItem):

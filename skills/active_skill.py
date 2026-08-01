@@ -25,10 +25,12 @@ class ActiveSkill(SkillBase):
         allow_diagonal: bool = False,
         max_level: int = 1,
         skill_code: str | None = None,
+        description: str = "",
     ):
         super().__init__(
             name=name,
             skill_code=skill_code or name,
+            description=description,
             max_level=max_level,
             mp_cost=mp_cost,
             range_vectors=[(0, -1)] if range_vectors is None else range_vectors,
