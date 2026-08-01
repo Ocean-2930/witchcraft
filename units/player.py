@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from items import Equip, SkilledEquip, SubWeapon
 from .unit import Unit
 
 
@@ -15,9 +14,3 @@ class Player(Unit):
             hp=100,
             mp=0,
         )
-
-        self.weapon: SkilledEquip | None = None
-        self.sub_weapon: SubWeapon | None = None
-        self.armor: SkilledEquip | None = None
-        self.accessory_1: SkilledEquip | None = None
-        self.accessory_2: SkilledEquip | None = None

@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from math import floor
 from random import Random
 
-from utilities.unit_base import UnitBase
+from .unit_base import UnitBase
 
 from .damage_block import DamageBlock
 from .variable import (

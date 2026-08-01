@@ -36,7 +36,7 @@ from ui import (
 )
 from skills import Skill, SkillDirectionStatus, SkillTargetingInput
 from units import Enemy, Player
-from utilities import DungeonInventory
+from inventory import DungeonInventory
 
 
 class DungeonScene(Scene):
@@ -100,7 +100,12 @@ class DungeonScene(Scene):
         self.monsters = []
         self.hovered_monster = None
         self.peek_font = pygame.font.SysFont("malgungothic", 16, bold=True)
-        self.monster_tooltip = MonsterTooltipRenderer(self)
+        self.monster_tooltip = MonsterTooltipRenderer(
+            self,
+            lambda: self.hovered_monster,
+            lambda unit: self.player.make_damage_block(unit).peek(),
+            self.peek_font,
+        )
         self.wall_positions = self.get_wall_positions()
         self.active_move = None
         self.held_direction = None
@@ -134,6 +139,7 @@ class DungeonScene(Scene):
             VIRTUAL_HEIGHT - 28 - (72 * 2 + 8) // 2,
             72,
             8,
+            self.dungeon_inventory.get_hotbar_item,
         )
         self.skill_direction_compass = SkillDirectionCompassRenderer(
             self,
@@ -141,6 +147,7 @@ class DungeonScene(Scene):
             self.hotbar.rect.centery,
             46,
             46,
+            lambda: self.saved_skill_direction,
         )
         self.pause_button = PauseButton(
             self,
@@ -250,6 +257,7 @@ class DungeonScene(Scene):
             self.get_tile_screen_y(tile_y) - wall_y_offset,
             self.FLOOR_TILE_WIDTH,
             self.WALL_TILE_HEIGHT,
+            self.FLOOR_TILE_HEIGHT,
             self.get_wall_connections(tile_x, tile_y),
         )
         self.set_dungeon_draw_order(wall, tile_x, tile_y, self.DEPTH_WALL)

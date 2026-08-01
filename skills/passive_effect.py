@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 from .skill_effect import SkillEffect
 
 if TYPE_CHECKING:
-    from utilities.unit_base import UnitBase
+    from units.unit_base import UnitBase
 
 
 @dataclass

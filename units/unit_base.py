@@ -4,11 +4,11 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from .dungeon_inventory.skill_tree import SkillTree
+    from skills.skill_tree import SkillTree
 
 
 def _new_skill_tree():
-    from .dungeon_inventory.skill_tree import SkillTree
+    from skills.skill_tree import SkillTree
 
     return SkillTree()
 

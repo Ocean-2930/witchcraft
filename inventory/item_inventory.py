@@ -25,28 +25,40 @@ class ItemInventory:
     def is_full(self):
         return len(self.items) >= self.capacity
 
+    def find_item_index(self, item: ItemInstance) -> int | None:
+        for index, owned_item in enumerate(self.items):
+            if owned_item is item:
+                return index
+
+        return None
+
+    def contains(self, item: ItemInstance) -> bool:
+        return self.find_item_index(item) is not None
+
     def add_item(self, item: ItemInstance):
-        if self.is_full:
+        if self.is_full or self.contains(item):
             return False
 
         self.items.append(item)
         return True
 
     def remove_item(self, item: ItemInstance):
-        if item not in self.items:
+        item_index = self.find_item_index(item)
+        if item_index is None:
             return False
 
-        self.items.remove(item)
+        self.items.pop(item_index)
         return True
 
     def remove_amount(self, item: ItemInstance, amount: int):
-        if item not in self.items:
+        item_index = self.find_item_index(item)
+        if item_index is None:
             return False
         if amount < 1 or amount > item.stack:
             return False
 
         item.stack -= amount
         if item.stack == 0:
-            self.items.remove(item)
+            self.items.pop(item_index)
 
         return True

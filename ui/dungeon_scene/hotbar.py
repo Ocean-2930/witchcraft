@@ -10,13 +10,14 @@ class HotbarRenderer(Renderer):
         ("Q", "W", "E", "R"),
     )
 
-    def __init__(self, scene, pos_x, pos_y, slot_size, slot_gap):
+    def __init__(self, scene, pos_x, pos_y, slot_size, slot_gap, item_getter):
         width = slot_size * 4 + slot_gap * 3
         height = slot_size * 2 + slot_gap
         super().__init__(scene, pos_x, pos_y, width, height)
 
         self.slot_size = slot_size
         self.slot_gap = slot_gap
+        self.item_getter = item_getter
         self.active_label = None
         self.font = pygame.font.SysFont("malgungothic", 16, bold=True)
 
@@ -41,7 +42,7 @@ class HotbarRenderer(Renderer):
                 pygame.draw.rect(screen, fill_color, slot_rect, border_radius=4)
                 pygame.draw.rect(screen, border_color, slot_rect, width=2, border_radius=4)
 
-                item_instance = self.scene.dungeon_inventory.get_hotbar_item(label)
+                item_instance = self.item_getter(label)
                 item = getattr(item_instance, "item", None)
                 item_sprite = (
                     item.get_sprite(item.item_code)

@@ -7,23 +7,26 @@ from ui.renderer import Renderer
 class MonsterTooltipRenderer(Renderer):
     draw_layer = 100
 
-    def __init__(self, scene):
+    def __init__(self, scene, monster_getter, preview_getter, font):
         super().__init__(scene, VIRTUAL_WIDTH // 2, VIRTUAL_HEIGHT // 2, VIRTUAL_WIDTH, VIRTUAL_HEIGHT)
+        self.monster_getter = monster_getter
+        self.preview_getter = preview_getter
+        self.font = font
 
     def draw(self, screen):
-        monster = self.scene.hovered_monster
+        monster = self.monster_getter()
         if monster is None:
             return
 
         unit = monster["unit"]
-        preview = self.scene.player.make_damage_block(unit).peek()
+        preview = self.preview_getter(unit)
         lines = (
             unit.name,
             f"일반 {preview.normal_damage} / 치명 {preview.critical_damage}",
             f"명중 {preview.hit_rate:.0f}% / 치명 {preview.critical_rate:.0f}%",
             f"기대 {preview.expected_damage:.1f}",
         )
-        surfaces = [self.scene.peek_font.render(line, True, (238, 234, 220)) for line in lines]
+        surfaces = [self.font.render(line, True, (238, 234, 220)) for line in lines]
         padding = 10
         gap = 4
         rect = pygame.Rect(

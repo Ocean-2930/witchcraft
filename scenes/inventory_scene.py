@@ -549,8 +549,6 @@ class InventoryScene(Scene):
 
     def equip_selected_item(self):
         item_instance = self.get_selected_item()
-        equipment = getattr(item_instance, "item", None)
-        equipment_attribute = self.get_equipment_attribute(equipment)
         dungeon_inventory = getattr(
             self.parent_scene,
             "dungeon_inventory",
@@ -560,30 +558,13 @@ class InventoryScene(Scene):
 
         if (
             item_instance is None
-            or equipment_attribute is None
             or dungeon_inventory is None
             or player is None
         ):
             self.close_item_popup()
             return
 
-        equipped_instance = getattr(
-            dungeon_inventory,
-            equipment_attribute,
-            None,
-        )
-        equipped_item = getattr(equipped_instance, "item", None)
-        if not equipment.equipcheck(player, equipped_item):
-            self.close_item_popup()
-            return
-
-        inventory_items = self.get_inventory_items()
-        if equipped_instance is None:
-            inventory_items.pop(self.selected_item_index)
-        else:
-            inventory_items[self.selected_item_index] = equipped_instance
-        setattr(dungeon_inventory, equipment_attribute, item_instance)
-        setattr(player, equipment_attribute, equipment)
+        dungeon_inventory.equip_item(item_instance, player)
         self.close_item_popup()
 
     def equip_item_at_index(self, item_index):
@@ -606,33 +587,8 @@ class InventoryScene(Scene):
         if dungeon_inventory is None or player is None:
             return
 
-        equipped_instance = getattr(
-            dungeon_inventory,
-            equipment_attribute,
-            None,
-        )
-        equipment = getattr(equipped_instance, "item", None)
-        if equipment is None or not equipment.unequipcheck(player):
-            return
-        if not dungeon_inventory.add_item(equipped_instance):
-            return
-
-        setattr(dungeon_inventory, equipment_attribute, None)
-        setattr(player, equipment_attribute, None)
-        self.close_item_popup()
-
-    @staticmethod
-    def get_equipment_attribute(equipment):
-        if not isinstance(equipment, Equip):
-            return None
-
-        equipment_attributes = {
-            Equip.TYPE_WEAPON: "weapon",
-            Equip.TYPE_SUB_WEAPON: "sub_weapon",
-            Equip.TYPE_ARMOR: "armor",
-            Equip.TYPE_ACCESSORY: "accessory_1",
-        }
-        return equipment_attributes.get(equipment.type)
+        if dungeon_inventory.unequip_item(equipment_attribute, player):
+            self.close_item_popup()
 
     def assign_selected_item_shortcut(self):
         if self.get_selected_item() is None:
@@ -655,9 +611,8 @@ class InventoryScene(Scene):
             "dungeon_inventory",
             None,
         )
-        hotbar_items = getattr(dungeon_inventory, "hotbar_items", None)
-        if item_instance is not None and hotbar_items is not None:
-            hotbar_items[key_label] = item_instance
+        if item_instance is not None and dungeon_inventory is not None:
+            dungeon_inventory.assign_hotbar_item(key_label, item_instance)
 
         self.close_item_popup()
 

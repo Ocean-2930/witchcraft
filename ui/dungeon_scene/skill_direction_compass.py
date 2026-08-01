@@ -8,6 +8,10 @@ from ui.renderer import Renderer
 class SkillDirectionCompassRenderer(Renderer):
     draw_layer = 50
 
+    def __init__(self, scene, pos_x, pos_y, width, height, direction_getter):
+        super().__init__(scene, pos_x, pos_y, width, height)
+        self.direction_getter = direction_getter
+
     def draw(self, screen):
         center = self.rect.center
         radius = min(self.rect.width, self.rect.height) // 2
@@ -38,7 +42,7 @@ class SkillDirectionCompassRenderer(Renderer):
             )
             pygame.draw.line(screen, (104, 111, 114), start, end, width=1)
 
-        direction = self.scene.saved_skill_direction
+        direction = self.direction_getter()
         if direction is None:
             pygame.draw.circle(screen, (104, 111, 114), center, 3)
             return

@@ -2,12 +2,16 @@ from __future__ import annotations
 
 from copy import deepcopy
 from dataclasses import dataclass, field
+from typing import TYPE_CHECKING, ClassVar
 
-from items import ItemInstance, SkilledEquip
+from items import Equip, ItemInstance, SkilledEquip
 from skills import SkillInstance
 
 from .item_inventory import ItemInventory
-from ..unit_base import UnitBase
+from units.unit_base import UnitBase
+
+if TYPE_CHECKING:
+    from units import Player
 
 
 @dataclass
@@ -23,11 +27,88 @@ class DungeonInventory:
     accessory_1: ItemInstance | None = None
     accessory_2: ItemInstance | None = None
 
+    EQUIPMENT_SLOTS_BY_TYPE: ClassVar[dict[str, tuple[str, ...]]] = {
+        Equip.TYPE_WEAPON: ("weapon",),
+        Equip.TYPE_SUB_WEAPON: ("sub_weapon",),
+        Equip.TYPE_ARMOR: ("armor",),
+        Equip.TYPE_ACCESSORY: ("accessory_1", "accessory_2"),
+    }
+    EQUIPMENT_SLOTS: ClassVar[tuple[str, ...]] = (
+        "weapon",
+        "sub_weapon",
+        "armor",
+        "accessory_1",
+        "accessory_2",
+    )
+
     def add_item(self, item_instance: ItemInstance):
         return self.item_inventory.add_item(item_instance)
 
     def remove_item(self, item_instance: ItemInstance):
         return self.item_inventory.remove_item(item_instance)
+
+    def equip_item(self, item_instance: ItemInstance, player: Player) -> bool:
+        item_index = self.item_inventory.find_item_index(item_instance)
+        if item_index is None:
+            return False
+
+        equipment = item_instance.item
+        if not isinstance(equipment, Equip):
+            return False
+
+        slot_names = self.EQUIPMENT_SLOTS_BY_TYPE.get(equipment.type)
+        if slot_names is None:
+            return False
+
+        slot_name = next(
+            (
+                candidate
+                for candidate in slot_names
+                if getattr(self, candidate) is None
+            ),
+            slot_names[0],
+        )
+
+        equipped_instance = getattr(self, slot_name)
+        equipped_item = (
+            equipped_instance.item
+            if equipped_instance is not None
+            else None
+        )
+        if not equipment.equipcheck(player, equipped_item):
+            return False
+
+        if equipped_instance is None:
+            self.item_inventory.items.pop(item_index)
+        else:
+            self.item_inventory.items[item_index] = equipped_instance
+        setattr(self, slot_name, item_instance)
+        return True
+
+    def unequip_item(self, slot_name: str, player: Player) -> bool:
+        if slot_name not in self.EQUIPMENT_SLOTS:
+            return False
+
+        equipped_instance = getattr(self, slot_name)
+        equipment = (
+            equipped_instance.item
+            if equipped_instance is not None
+            else None
+        )
+        if equipment is None or not equipment.unequipcheck(player):
+            return False
+        if not self.item_inventory.add_item(equipped_instance):
+            return False
+
+        setattr(self, slot_name, None)
+        return True
+
+    def assign_hotbar_item(self, label: str, item_instance: ItemInstance) -> bool:
+        if not self.item_inventory.contains(item_instance):
+            return False
+
+        self.hotbar_items[label] = item_instance
+        return True
 
     def get_hotbar_item(self, label: str) -> ItemInstance | None:
         item_instance = self.hotbar_items.get(label)

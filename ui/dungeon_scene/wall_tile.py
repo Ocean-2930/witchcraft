@@ -8,8 +8,9 @@ class WallTileRenderer(Renderer):
     draw_layer = -50
     texture_images = {}
 
-    def __init__(self, scene, pos_x, pos_y, width, height, connections=None):
+    def __init__(self, scene, pos_x, pos_y, width, height, floor_height, connections=None):
         super().__init__(scene, pos_x, pos_y, width, height)
+        self.floor_height = floor_height
         self.connections = connections or {}
         self.configure_draw_variant()
 
@@ -17,13 +18,13 @@ class WallTileRenderer(Renderer):
         previous_clip = screen.get_clip()
         screen.set_clip(screen.get_rect())
 
-        cap_height = self.rect.height - self.scene.FLOOR_TILE_HEIGHT
+        cap_height = self.rect.height - self.floor_height
         cap_rect = pygame.Rect(self.rect.left, self.rect.top, self.rect.width, cap_height)
         body_rect = pygame.Rect(
             self.rect.left,
             self.rect.top + cap_height,
             self.rect.width,
-            self.scene.FLOOR_TILE_HEIGHT,
+            self.floor_height,
         )
 
         self.draw_variant(screen, cap_rect, body_rect)
@@ -105,7 +106,7 @@ class WallTileRenderer(Renderer):
     def draw_connected_body(self, screen, body_rect):
         self.draw_ceiling_box(screen, body_rect, self.body_borders)
 
-        cap_height = self.rect.height - self.scene.FLOOR_TILE_HEIGHT
+        cap_height = self.rect.height - self.floor_height
         black_color = (12, 10, 9)
 
         if self.erase_left_body_foot:
