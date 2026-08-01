@@ -72,4 +72,7 @@ class Hud(Scene):
         else:
             direction_text = str(direction)
 
+        if skill_call.get("invalid_direction"):
+            return f"스킬 {label}: {direction_text} 방향 사용 불가"
+
         return f"스킬 {label}: {direction_text}"

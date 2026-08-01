@@ -21,6 +21,7 @@ class ActiveSkill(SkillBase):
         mp_cost: int = 0,
         skill_coefficient: float = 1.0,
         range_vectors: list[tuple[int, int]] | None = None,
+        requires_direction: bool = True,
         allow_diagonal: bool = False,
         max_level: int = 1,
         skill_code: str | None = None,
@@ -30,7 +31,8 @@ class ActiveSkill(SkillBase):
             skill_code=skill_code or name,
             max_level=max_level,
             mp_cost=mp_cost,
-            range_vectors=range_vectors or [(0, -1)],
+            range_vectors=[(0, -1)] if range_vectors is None else range_vectors,
+            requires_direction=requires_direction,
             allow_diagonal=allow_diagonal,
             effects=[AttackEffect(skill_coefficient=skill_coefficient)],
         )

@@ -31,9 +31,10 @@ from ui import (
     PauseButton,
     PlayerMarkerRenderer,
     PlayerStatusRenderer,
+    SkillDirectionCompassRenderer,
     WallTileRenderer,
 )
-from skills import Skill
+from skills import Skill, SkillDirectionStatus, SkillTargetingInput
 from units import Enemy, Player
 from utilities import DungeonInventory
 
@@ -58,6 +59,7 @@ class DungeonScene(Scene):
         (1, -1): "오른쪽 위",
         (-1, 1): "왼쪽 아래",
         (1, 1): "오른쪽 아래",
+        (0, 0): "상쇄 입력",
     }
     HOTBAR_KEYS = (
         (KEY_1, "1"),
@@ -107,7 +109,6 @@ class DungeonScene(Scene):
         self.active_hotbar_label = None
         self.active_hotbar_key = None
         self.active_hotbar_direction = None
-        self.active_hotbar_cancelled = False
         self.active_hotbar_direction_touched = False
         self.saved_skill_direction = None
         self.movement_input_guard = False
@@ -133,6 +134,13 @@ class DungeonScene(Scene):
             VIRTUAL_HEIGHT - 28 - (72 * 2 + 8) // 2,
             72,
             8,
+        )
+        self.skill_direction_compass = SkillDirectionCompassRenderer(
+            self,
+            self.hotbar.rect.right + 28,
+            self.hotbar.rect.centery,
+            46,
+            46,
         )
         self.pause_button = PauseButton(
             self,
@@ -367,12 +375,6 @@ class DungeonScene(Scene):
         return dx * dx + dy * dy <= radius * radius
 
     def update_hotbar_input(self, game_events):
-        if self.try_use_hotbar_item(game_events):
-            self.hotbar.set_active_label(None)
-            self.movement_input_guard = True
-            self.update_movement_input_guard(game_events)
-            return
-
         if self.active_hotbar_key is None:
             self.start_hotbar_input(game_events)
 
@@ -390,7 +392,6 @@ class DungeonScene(Scene):
             self.active_hotbar_key = None
             self.active_hotbar_label = None
             self.active_hotbar_direction = None
-            self.active_hotbar_cancelled = False
             self.active_hotbar_direction_touched = False
             self.movement_input_guard = True
             self.hotbar.set_active_label(None)
@@ -399,28 +400,17 @@ class DungeonScene(Scene):
 
     def start_hotbar_input(self, game_events):
         for key, label in self.HOTBAR_KEYS:
-            if self.dungeon_inventory.get_hotbar_item(label) is not None:
-                continue
-
             if game_events[key]["keydown"] or game_events[key]["status"]:
                 self.active_hotbar_key = key
                 self.active_hotbar_label = label
-                self.active_hotbar_direction = self.saved_skill_direction
-                self.active_hotbar_cancelled = False
+                skill = self.get_hotbar_action_skill(label)
+                self.active_hotbar_direction = (
+                    self.saved_skill_direction
+                    if skill is not None and skill.requires_direction
+                    else self.get_combined_direction(game_events)
+                )
                 self.active_hotbar_direction_touched = False
                 return
-
-    def try_use_hotbar_item(self, game_events):
-        for key, label in self.HOTBAR_KEYS:
-            if self.dungeon_inventory.get_hotbar_item(label) is None:
-                continue
-            if not game_events[key]["keydown"]:
-                continue
-
-            self.use_hotbar_item(label)
-            return True
-
-        return False
 
     def use_hotbar_item(self, label):
         item_instance = self.dungeon_inventory.get_hotbar_item(label)
@@ -444,62 +434,94 @@ class DungeonScene(Scene):
         return bool(used_amount)
 
     def update_active_hotbar_direction(self, game_events):
-        if self.has_direction_pressed(game_events):
-            self.active_hotbar_direction = self.get_combined_direction(game_events)
-            self.active_hotbar_cancelled = False
-            self.active_hotbar_direction_touched = True
+        skill = self.get_hotbar_action_skill(self.active_hotbar_label)
+        current_direction = self.get_combined_direction(game_events)
+        has_direction_input = self.is_direction_pressed(game_events)
 
-        if (
-            self.active_hotbar_direction_touched
-            and self.has_direction_keyup(game_events)
-            and self.get_combined_direction(game_events) is None
-        ):
+        if skill is None or not skill.requires_direction:
+            self.active_hotbar_direction = (
+                current_direction
+                if current_direction is not None
+                else (0, 0) if has_direction_input else None
+            )
+            return
+
+        if has_direction_input:
+            self.active_hotbar_direction = current_direction or (0, 0)
+            self.active_hotbar_direction_touched = True
+        elif self.active_hotbar_direction_touched and self.has_direction_keyup(game_events):
             self.active_hotbar_direction = None
-            self.active_hotbar_cancelled = True
 
     def finish_hotbar_input(self):
-        if self.active_hotbar_cancelled:
+        item_instance = self.dungeon_inventory.get_hotbar_item(self.active_hotbar_label)
+        skill = self.get_hotbar_action_skill(self.active_hotbar_label)
+
+        if item_instance is not None and skill is None:
+            if self.active_hotbar_direction is None:
+                self.use_hotbar_item(self.active_hotbar_label)
+            else:
+                self.cancel_hotbar_skill(self.active_hotbar_label)
+            return
+
+        if skill is None:
             self.cancel_hotbar_skill(self.active_hotbar_label)
             return
 
-        if self.active_hotbar_direction is None:
+        direction_status = skill.check_direction(self.active_hotbar_direction)
+        if direction_status is SkillDirectionStatus.INVALID:
+            self.skip_hotbar_skill(self.active_hotbar_label, self.active_hotbar_direction)
+            return
+
+        if direction_status is not SkillDirectionStatus.READY:
             self.cancel_hotbar_skill(self.active_hotbar_label)
             return
 
-        self.saved_skill_direction = self.active_hotbar_direction
+        if skill.requires_direction:
+            self.saved_skill_direction = self.active_hotbar_direction
+
         self.use_hotbar_skill(self.active_hotbar_label, self.active_hotbar_direction)
 
     def use_hotbar_skill(self, label, direction):
         self.set_player_facing_by_direction(direction)
-        skill = self.get_hotbar_skill(label)
-        target_vectors = self.get_skill_target_vectors(skill, direction)
-        target_tiles = self.get_relative_target_tiles(target_vectors)
+        skill = self.get_hotbar_action_skill(label)
+        target_vectors = skill.get_range_vectors(direction)
+        target_tiles = skill.get_target_tiles(
+            SkillTargetingInput(
+                origin=(self.player.tile_x, self.player.tile_y),
+                direction=direction,
+            )
+        )
+        item_instance = self.dungeon_inventory.get_hotbar_item(label)
         self.last_skill_call = {
             "label": label,
             "skill": skill,
+            "item": item_instance,
             "direction": direction,
             "target_vectors": target_vectors,
             "target_tiles": target_tiles,
         }
 
-    def get_hotbar_skill(self, label):
-        return self.hotbar_skills[label]
+    def get_hotbar_action_skill(self, label):
+        item_instance = self.dungeon_inventory.get_hotbar_item(label)
+        if item_instance is not None:
+            return getattr(item_instance.item, "skillbase", None)
 
-    @staticmethod
-    def get_skill_target_vectors(skill, direction):
-        return skill.get_range_vectors(direction)
-
-    def get_relative_target_tiles(self, target_vectors):
-        return [
-            (self.player.tile_x + target_x, self.player.tile_y + target_y)
-            for target_x, target_y in target_vectors
-        ]
+        return self.hotbar_skills.get(label)
 
     def cancel_hotbar_skill(self, label):
         self.last_skill_call = {
             "label": label,
             "direction": None,
             "cancelled": True,
+        }
+
+    def skip_hotbar_skill(self, label, direction):
+        self.last_skill_call = {
+            "label": label,
+            "skill": self.get_hotbar_action_skill(label),
+            "direction": direction,
+            "used": False,
+            "invalid_direction": True,
         }
 
     def format_direction(self, direction):
@@ -511,9 +533,6 @@ class DungeonScene(Scene):
             return "[]"
 
         return "[" + ", ".join(f"({x},{y})" for x, y in vectors) + "]"
-
-    def has_direction_pressed(self, game_events):
-        return any(game_events[key]["status"] for key, _ in self.DIRECTION_KEYS)
 
     def has_direction_keydown(self, game_events):
         return any(game_events[key]["keydown"] for key, _ in self.DIRECTION_KEYS)

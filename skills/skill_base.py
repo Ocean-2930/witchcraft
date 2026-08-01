@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from enum import Enum, auto
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -13,6 +14,19 @@ if TYPE_CHECKING:
 RangeVector = tuple[int, int]
 
 
+class SkillDirectionStatus(Enum):
+    READY = auto()
+    MISSING = auto()
+    UNEXPECTED = auto()
+    INVALID = auto()
+
+
+@dataclass(frozen=True)
+class SkillTargetingInput:
+    origin: RangeVector
+    direction: RangeVector | None
+
+
 @dataclass
 class SkillBase:
     name: str
@@ -20,6 +34,7 @@ class SkillBase:
     max_level: int = 1
     mp_cost: int = 0
     range_vectors: list[RangeVector] = field(default_factory=list)
+    requires_direction: bool = True
     allow_diagonal: bool = False
     effects: list[SkillEffect] = field(default_factory=list)
 
@@ -44,13 +59,35 @@ class SkillBase:
 
     def can_use_direction(self, direction: RangeVector) -> bool:
         direction_x, direction_y = direction
+        if direction == (0, 0):
+            return False
+        if direction_x not in (-1, 0, 1) or direction_y not in (-1, 0, 1):
+            return False
+
         return self.allow_diagonal or direction_x == 0 or direction_y == 0
 
+    def check_direction(self, direction: RangeVector | None) -> SkillDirectionStatus:
+        if direction is None:
+            return (
+                SkillDirectionStatus.MISSING
+                if self.requires_direction
+                else SkillDirectionStatus.READY
+            )
+        if not self.requires_direction:
+            return SkillDirectionStatus.UNEXPECTED
+        if not self.can_use_direction(direction):
+            return SkillDirectionStatus.INVALID
+
+        return SkillDirectionStatus.READY
+
+    def accepts_direction(self, direction: RangeVector | None) -> bool:
+        return self.check_direction(direction) is SkillDirectionStatus.READY
+
     def get_range_vectors(self, direction: RangeVector | None = None) -> list[RangeVector]:
+        if not self.accepts_direction(direction):
+            return []
         if direction is None or direction == (0, -1):
             return self.range_vectors[:]
-        if not self.can_use_direction(direction):
-            return []
 
         direction_x, direction_y = direction
         right_x, right_y = -direction_y, direction_x
@@ -66,6 +103,13 @@ class SkillBase:
             )
 
         return oriented_vectors
+
+    def get_target_tiles(self, targeting: SkillTargetingInput) -> list[RangeVector]:
+        origin_x, origin_y = targeting.origin
+        return [
+            (origin_x + offset_x, origin_y + offset_y)
+            for offset_x, offset_y in self.get_range_vectors(targeting.direction)
+        ]
 
     def peek(self, caster: Unit, target: Unit | None = None):
         previews = []

@@ -10,6 +10,7 @@ from .dungeon_scene import (
     MonsterTooltipRenderer,
     PlayerMarkerRenderer,
     PlayerStatusRenderer,
+    SkillDirectionCompassRenderer,
     WallTileRenderer,
 )
 
@@ -49,6 +50,7 @@ __all__ = [
     "MonsterTooltipRenderer",
     "PlayerMarkerRenderer",
     "PlayerStatusRenderer",
+    "SkillDirectionCompassRenderer",
     "WallTileRenderer",
     # game_entry_scene
     "GameEntryStartButton",
