@@ -14,15 +14,22 @@ if TYPE_CHECKING:
 
 
 @dataclass
-class SkillNode:
-    """던전의 티어별 스킬 목록에 배치되는 노드."""
+class LearnableSkill:
+    """영웅이 던전에서 배울 수 있는 티어별 스킬."""
 
     tier: int
     skill: SkillInstance
+    max_level: int | None = None
 
     def __post_init__(self):
         if self.tier < 1:
             raise ValueError("tier는 1 이상이어야 합니다.")
+        if self.max_level is None:
+            self.max_level = self.skill.max_level
+        if not self.skill.level <= self.max_level <= self.skill.max_level:
+            raise ValueError(
+                "max_level은 현재 레벨 이상, 스킬 정의의 최대 레벨 이하여야 합니다."
+            )
 
 
 @dataclass
@@ -37,7 +44,7 @@ class DungeonInventory:
     armor: ItemInstance | None = None
     accessory_1: ItemInstance | None = None
     accessory_2: ItemInstance | None = None
-    skill_nodes: list[SkillNode] = field(default_factory=list)
+    learnable_skills: list[LearnableSkill] = field(default_factory=list)
     tier_skill_points: dict[int, int] = field(default_factory=dict)
 
     EQUIPMENT_SLOTS_BY_TYPE: ClassVar[dict[str, tuple[str, ...]]] = {
@@ -162,11 +169,14 @@ class DungeonInventory:
 
         return calculated_stat
 
-    def add_skill_node(self, node: SkillNode) -> bool:
-        if any(owned_node is node for owned_node in self.skill_nodes):
+    def add_learnable_skill(self, learnable_skill: LearnableSkill) -> bool:
+        if any(
+            owned_skill is learnable_skill
+            for owned_skill in self.learnable_skills
+        ):
             return False
-        self.skill_nodes.append(node)
-        self.tier_skill_points.setdefault(node.tier, 0)
+        self.learnable_skills.append(learnable_skill)
+        self.tier_skill_points.setdefault(learnable_skill.tier, 0)
         return True
 
     def set_tier_skill_points(self, tier: int, points: int):
@@ -174,16 +184,19 @@ class DungeonInventory:
             raise ValueError("tier는 1 이상, points는 0 이상이어야 합니다.")
         self.tier_skill_points[tier] = points
 
-    def invest_skill(self, node: SkillNode) -> bool:
-        if not any(owned_node is node for owned_node in self.skill_nodes):
+    def invest_skill(self, learnable_skill: LearnableSkill) -> bool:
+        if not any(
+            owned_skill is learnable_skill
+            for owned_skill in self.learnable_skills
+        ):
             return False
-        if node.skill.level >= node.skill.max_level:
+        if learnable_skill.skill.level >= learnable_skill.max_level:
             return False
-        points = self.tier_skill_points.get(node.tier, 0)
+        points = self.tier_skill_points.get(learnable_skill.tier, 0)
         if points < 1:
             return False
-        node.skill.level += 1
-        self.tier_skill_points[node.tier] = points - 1
+        learnable_skill.skill.level += 1
+        self.tier_skill_points[learnable_skill.tier] = points - 1
         return True
 
     def active_skills(self):
@@ -208,7 +221,9 @@ class DungeonInventory:
 
     def _all_skill_instances(self):
         yield from (
-            node.skill for node in self.skill_nodes if node.skill.level > 0
+            learnable_skill.skill
+            for learnable_skill in self.learnable_skills
+            if learnable_skill.skill.level > 0
         )
 
         for equipment in (

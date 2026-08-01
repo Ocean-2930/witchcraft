@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from .attack_effect import AttackEffect
+from .effect_classes import AttackEffect
 from .skill_base import SkillBase
 
 if TYPE_CHECKING:

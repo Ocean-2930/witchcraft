@@ -36,7 +36,9 @@ class SkillCardRenderer(Renderer):
             (self.rect.right - 10, self.rect.top + 34),
         )
         level = self.card.level_font.render(
-            f"Lv.{self.card.skill_instance.level}", True, (193, 204, 213)
+            f"Lv.{self.card.skill_instance.level}/{self.card.max_level}",
+            True,
+            (193, 204, 213),
         )
         screen.blit(level, (icon.right + 10, self.rect.top + 42))
         screen.set_clip(previous_clip)
@@ -55,14 +57,24 @@ class SkillCard(UIElement):
         height=76,
         clip_rect_getter=None,
         on_icon_hover=None,
+        max_level=None,
     ):
         self.skill_instance = skill_instance
+        self.max_level = (
+            skill_instance.max_level if max_level is None else max_level
+        )
+        if self.max_level < self.skill_instance.level:
+            raise ValueError("max_level은 현재 스킬 레벨 이상이어야 합니다.")
         self.visible = True
         self.clip_rect_getter = clip_rect_getter
         self.on_icon_hover_callback = on_icon_hover
         self.name_font = pygame.font.SysFont("malgungothic", 16, bold=True)
         self.level_font = pygame.font.SysFont("malgungothic", 14)
-        self.info_window = SkillInfoWindow(scene, skill_instance)
+        self.info_window = SkillInfoWindow(
+            scene,
+            skill_instance,
+            max_level=self.max_level,
+        )
         renderer = SkillCardRenderer(scene, pos_x, pos_y, width, height, self)
         super().__init__(scene, renderer=renderer, background=False)
 

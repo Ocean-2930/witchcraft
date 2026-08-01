@@ -1,7 +1,10 @@
-from .attack_effect import AttackEffect
 from .active_skill import Skill
-from .buff_effect import BuffEffect
-from .passive_effect import PassiveEffect, StatIncreaseEffect
+from .effect_classes import (
+    AttackEffect,
+    BuffEffect,
+    PassiveEffect,
+    StatIncreaseEffect,
+)
 from .skill_base import (
     RangeVector,
     SkillBase,

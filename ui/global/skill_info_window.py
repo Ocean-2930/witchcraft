@@ -18,7 +18,8 @@ class SkillInfoWindowRenderer(Renderer):
         pygame.draw.rect(screen, (12, 15, 19), self.rect, border_radius=6)
         pygame.draw.rect(screen, (115, 129, 142), self.rect, 2, border_radius=6)
         title = self.window.title_font.render(
-            f"{self.window.skill_instance.skill.name}  Lv.{self.window.skill_instance.level}",
+            f"{self.window.skill_instance.skill.name}  "
+            f"Lv.{self.window.skill_instance.level}/{self.window.max_level}",
             True,
             (240, 244, 247),
         )
@@ -36,8 +37,20 @@ class SkillInfoWindowRenderer(Renderer):
 class SkillInfoWindow(UIElement):
     """스킬 인스턴스의 이름, 레벨과 설명을 표시하는 공용 정보창."""
 
-    def __init__(self, scene, skill_instance, width=280, height=142):
+    def __init__(
+        self,
+        scene,
+        skill_instance,
+        max_level=None,
+        width=280,
+        height=142,
+    ):
         self.skill_instance = skill_instance
+        self.max_level = (
+            skill_instance.max_level if max_level is None else max_level
+        )
+        if self.max_level < self.skill_instance.level:
+            raise ValueError("max_level은 현재 스킬 레벨 이상이어야 합니다.")
         self.visible = False
         self.title_font = pygame.font.SysFont("malgungothic", 16, bold=True)
         self.description_font = pygame.font.SysFont("malgungothic", 14)

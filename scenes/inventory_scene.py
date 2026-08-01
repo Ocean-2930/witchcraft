@@ -12,7 +12,7 @@ from ui import (
     InventoryTabButton,
     ItemSlot,
     SkillEquipSlot,
-    SkillNodeListView,
+    LearnableSkillListView,
 )
 
 
@@ -108,7 +108,7 @@ class InventoryScene(Scene):
         self.create_equipment_slots()
         self.create_item_slots()
         self.create_skill_equip_slots()
-        self.create_skill_node_list_view()
+        self.create_learnable_skill_list_view()
         self.create_popup_buttons()
         self.update_slot_visibility()
 
@@ -270,7 +270,7 @@ class InventoryScene(Scene):
                 )
             )
 
-    def create_skill_node_list_view(self):
+    def create_learnable_skill_list_view(self):
         panel_left = (VIRTUAL_WIDTH - self.PANEL_WIDTH) // 2
         panel_top = (VIRTUAL_HEIGHT - self.PANEL_HEIGHT) // 2
         content_rect = pygame.Rect(
@@ -279,7 +279,7 @@ class InventoryScene(Scene):
             self.PANEL_WIDTH - 76,
             self.PANEL_HEIGHT - 146,
         )
-        self.skill_node_list_view = SkillNodeListView(
+        self.learnable_skill_list_view = LearnableSkillListView(
             self,
             content_rect.centerx,
             content_rect.centery,
@@ -709,7 +709,7 @@ class InventoryScene(Scene):
         for button in self.stat_tab_buttons:
             button.set_visible(self.selected_tab == "스탯")
 
-        self.skill_node_list_view.set_visible(self.selected_tab == "영웅")
+        self.learnable_skill_list_view.set_visible(self.selected_tab == "영웅")
 
     def refresh_inventory_texts(self):
         dungeon_inventory = getattr(self.parent_scene, "dungeon_inventory", None)

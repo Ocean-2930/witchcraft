@@ -7,10 +7,10 @@
 - `SkillBase`는 방향 요구 여부, 대각선 허용 여부, 방향 판정 결과, 방향에 따른 범위 회전과 명시적으로 전달된 원점 기준 대상 타일 계산을 관리한다.
 - `SkillEffect`는 방향키를 직접 알지 않는다. scene이 범위로 대상을 결정한 뒤 효과 판정과 적용에 대상만 전달한다.
 - `UsableItem`은 아이템이 가진 `skillbase`의 효과 실행을 위임한다. hotbar에 등록된 `skillbase` 아이템의 방향 선택은 일반 스킬과 같은 scene 입력 흐름을 사용한다.
-- `SkillInstance.level`은 `SkillNode`의 미투자 상태를 위해 0부터 시작할 수 있다. `DungeonInventory`의 전투 스킬 집계와 패시브 계산에는 레벨 1 이상인 인스턴스만 들어간다.
+- `SkillInstance.level`은 `LearnableSkill`의 미투자 상태를 위해 0부터 시작할 수 있다. `DungeonInventory`의 전투 스킬 집계와 패시브 계산에는 레벨 1 이상인 인스턴스만 들어간다.
 - 모든 스킬 정의는 `SkillBase.description`에 UI용 설명을 보관하며, `ActiveSkill` 생성 시에도 설명을 전달할 수 있다.
-- `DungeonInventory.skill_nodes`는 티어마다 독립된 포인트를 사용한다. `invest_skill(...)`은 노드의 티어 포인트가 남고 최대 레벨에 도달하지 않았을 때만 레벨을 1 올린다.
-- 별도의 `SkillTree` 모델은 사용하지 않으며 `SkillNode` 목록이 던전의 스킬 보유 구조를 대체한다. 실제 액티브·패시브 스킬 콘텐츠는 `skills/implementations/` 아래의 종류별 폴더에 두고 `skills/` 루트의 기반 정의와 공통 효과를 조합한다.
+- `DungeonInventory.learnable_skills`는 티어마다 독립된 포인트를 사용한다. `invest_skill(...)`은 항목의 티어 포인트가 남고 `LearnableSkill.max_level`에 도달하지 않았을 때만 레벨을 1 올린다.
+- `LearnableSkill.max_level`은 생략하면 스킬 정의의 최대 레벨을 사용하고, 명시하면 정의의 최대 레벨 이하에서 영웅별 투자 상한을 제한한다. 실제 액티브·패시브 스킬 콘텐츠는 `skills/implementations/` 아래의 종류별 폴더에 둔다.
 - 능력치 패시브는 `StatIncreaseEffect`로 대상 속성, 레벨당 증가량, 레벨과 중첩을 곱해 계산한다.
 
 ## 방향 판정

@@ -6,10 +6,12 @@
 
 - 스킬의 비용, 범위, 방향 변환, 효과 실행 흐름은 `SkillBase`를 기준으로 구현한다.
 - 개별 효과는 `SkillEffect`를 상속하고, 스킬은 효과 객체를 조합하여 동작을 구성한다.
+- 여러 스킬이 공유하는 `SkillEffect` 구현체는 `skills/effect_classes.py` 한 파일에 모은다. 효과 종류마다 루트 파일을 새로 만들지 않는다.
+- 특정 개별 스킬에서만 사용하는 전용 효과 구현체는 `effect_classes.py`에 올리지 않고 해당 `skills/implementations/.../{skill_name}.py` 파일 안에서 스킬 구현과 함께 관리한다.
 - 능동 효과는 `can_apply(...)`, `peek(...)`, `apply(...)`의 판정과 결과가 서로 일관되게 유지되어야 한다.
 - 수동 효과는 능동 효과 실행 목록에 포함하지 않고 소유자 능력치에 적용하는 별도 흐름을 유지한다.
 - 레벨처럼 획득한 스킬마다 달라지는 상태는 스킬 정의와 분리하여 `SkillInstance`에서 관리한다.
-- 던전에서 획득한 스킬 인스턴스는 `DungeonInventory.skill_nodes`가 관리한다.
+- 영웅이 던전에서 배울 수 있는 스킬 인스턴스는 `DungeonInventory.learnable_skills`가 관리한다.
 - 루트에는 스킬 기반 정의와 공통 효과만 둔다. 실제 개별 스킬 콘텐츠는 구현 모음임을 명확히 나타내는 `skills/implementations/` 아래의 `item_skills/`, `active_skills/`, `passive_skills/`에 구현한다.
 
 ## Dependencies

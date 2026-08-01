@@ -25,8 +25,6 @@ class InventoryContentRenderer(Renderer):
             self.draw_equipment_titles(screen, panel_rect)
         elif self.scene.selected_tab == "스킬":
             self.draw_section_title(screen, panel_rect, "장착 스킬")
-        elif self.scene.selected_tab == "영웅":
-            self.draw_section_title(screen, panel_rect, "스킬 목록")
         elif self.scene.selected_tab == "스탯":
             self.draw_stat_tab(screen, panel_rect)
 

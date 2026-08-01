@@ -10,7 +10,7 @@
 | `units` | 기초 능력치, 런타임 전투 상태, 피해 계산 | scene, UI, 아이템 보관 상태 |
 | `skills` | 스킬 기반 정의, 방향·범위 정책, 공통 효과와 스킬 인스턴스 및 실제 스킬 구현 | scene, UI, 입력 장치 상태 |
 | `items` | 아이템 기반 계층과 실제 아이템·장비 콘텐츠 구현 | scene, UI, 인벤토리 컬렉션 |
-| `inventory` | 아이템 보관, 장비 슬롯, hotbar 연결, 던전 스킬 노드 목록과 티어 포인트의 원자적 상태 변경 | scene, UI, 입력 장치 상태 |
+| `inventory` | 아이템 보관, 장비 슬롯, hotbar 연결, 영웅이 배울 수 있는 스킬 목록과 티어 포인트의 원자적 상태 변경 | scene, UI, 입력 장치 상태 |
 | `utilities` | 두 영역 이상에서 재사용하는 순수 helper | 도메인 상태의 소유 |
 
 ## 의존성 원칙
@@ -36,10 +36,11 @@ flowchart LR
 - scene 전용 UI라도 필요한 데이터와 callback을 생성자에서 명시적으로 받는다. renderer가 `scene.player` 같은 속성을 임의로 탐색하지 않는다.
 - 공용 `SkillCard`와 `SkillInfoWindow`는 `SkillInstance`만 받아 표시하며 스킬 투자 정책을 포함하지 않는다. 티어 포인트 투자는 인벤토리 scene 전용 `SkillInvestButton`이 `DungeonInventory`에 요청한다.
 - 여러 컬렉션을 함께 변경하는 장착·해제·단축키 연결은 `DungeonInventory`가 한 번의 연산으로 처리한다.
-- `SkillNode(tier, skill)` 목록이 던전의 스킬 보유 구조 자체이며 별도의 스킬 트리 모델은 두지 않는다. 티어별 전용 포인트는 `DungeonInventory`가 소유하고 투자는 해당 티어 포인트만 소비한다.
+- `LearnableSkill(tier, skill, max_level)` 목록이 영웅이 던전에서 배울 수 있는 스킬 구조다. 항목별 `max_level`은 스킬 정의 자체의 최대 레벨 이하에서 별도의 투자 상한을 제공한다. 티어별 전용 포인트는 `DungeonInventory`가 소유하고 투자는 해당 티어 포인트만 소비한다.
 - 타입 힌트만 필요한 반대 방향 의존성은 `TYPE_CHECKING` 아래에서 직접 소유 모듈을 참조한다.
 - package `__init__.py`는 다른 패키지가 소유한 타입을 편의상 재공개하지 않는다.
 - 실제 아이템 콘텐츠는 `items/items`, 장비 콘텐츠는 종류별 `items/equips` 하위 폴더에 둔다. 실제 스킬 콘텐츠는 `skills/implementations/{item_skills,active_skills,passive_skills}`에 두어 기반 모델과 구현체를 경로상으로 구분한다.
+- 여러 스킬이 공유하는 효과 구현은 `skills/effect_classes.py`에 모으고, 한 스킬에서만 필요한 전용 효과는 해당 스킬 구현 파일 안에 둔다.
 
 ## 현재 남은 경계
 

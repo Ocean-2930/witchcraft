@@ -20,21 +20,34 @@ class SkillInvestButtonRenderer(Renderer):
             self.rect,
             border_radius=4,
         )
-        plus = self.button.font.render("+", True, (242, 247, 250))
-        screen.blit(plus, plus.get_rect(center=self.rect.center))
+        center_x, center_y = self.rect.center
+        plus_color = (242, 247, 250)
+        pygame.draw.line(
+            screen,
+            plus_color,
+            (center_x - 5, center_y),
+            (center_x + 5, center_y),
+            width=2,
+        )
+        pygame.draw.line(
+            screen,
+            plus_color,
+            (center_x, center_y - 5),
+            (center_x, center_y + 5),
+            width=2,
+        )
         if self.button.is_hovered and self.button.can_invest():
             pygame.draw.rect(screen, (205, 230, 245), self.rect, 2, border_radius=4)
         screen.set_clip(previous_clip)
 
 
 class SkillInvestButton(UIElement):
-    def __init__(self, scene, node, pos_x, pos_y, inventory_getter, clip_rect_getter):
-        self.node = node
+    def __init__(self, scene, learnable_skill, pos_x, pos_y, inventory_getter, clip_rect_getter):
+        self.learnable_skill = learnable_skill
         self.inventory_getter = inventory_getter
         self.clip_rect_getter = clip_rect_getter
         self.visible = True
         self.is_hovered = False
-        self.font = pygame.font.SysFont("malgungothic", 16, bold=True)
         renderer = SkillInvestButtonRenderer(scene, pos_x, pos_y, 22, self)
         super().__init__(scene, renderer=renderer, background=False)
 
@@ -48,8 +61,8 @@ class SkillInvestButton(UIElement):
         inventory = self.inventory_getter()
         return (
             inventory is not None
-            and self.node.skill.level < self.node.skill.max_level
-            and inventory.tier_skill_points.get(self.node.tier, 0) > 0
+            and self.learnable_skill.skill.level < self.learnable_skill.max_level
+            and inventory.tier_skill_points.get(self.learnable_skill.tier, 0) > 0
         )
 
     def set_visible(self, visible):
@@ -66,7 +79,7 @@ class SkillInvestButton(UIElement):
     def on_left_click(self):
         inventory = self.inventory_getter()
         if inventory is not None:
-            inventory.invest_skill(self.node)
+            inventory.invest_skill(self.learnable_skill)
 
     def on_enter(self):
         self.is_hovered = True

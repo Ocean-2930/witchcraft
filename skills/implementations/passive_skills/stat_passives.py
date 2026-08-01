@@ -1,4 +1,4 @@
-from skills.passive_effect import StatIncreaseEffect
+from skills.effect_classes import StatIncreaseEffect
 from skills.skill_base import SkillBase
 
 

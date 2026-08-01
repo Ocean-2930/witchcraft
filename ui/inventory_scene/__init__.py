@@ -6,7 +6,7 @@ from .inventory_popup import InventoryPopupRenderer
 from .item_slot import ItemSlot
 from .popup_button import InventoryPopupButton
 from .skill_equip_slot import SkillEquipSlot
-from .skill_node_list_view import SkillNodeListView
+from .learnable_skill_list_view import LearnableSkillListView
 from .skill_invest_button import SkillInvestButton
 
 __all__ = [
@@ -18,6 +18,6 @@ __all__ = [
     "ItemSlot",
     "InventoryPopupButton",
     "SkillEquipSlot",
-    "SkillNodeListView",
+    "LearnableSkillListView",
     "SkillInvestButton",
 ]

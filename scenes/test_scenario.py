@@ -1,8 +1,8 @@
 from typing import TYPE_CHECKING
 
 from items import BluePotion, Equip, ItemInstance, SkilledEquip
-from inventory import SkillNode
-from skills import AttackSkill, SkillBase, SkillInstance
+from inventory import LearnableSkill
+from skills import AttackSkill, SkillInstance, STAT_PASSIVE_SKILLS
 
 if TYPE_CHECKING:
     from .dungeon_scene import DungeonScene
@@ -19,43 +19,36 @@ def senario(scene: "DungeonScene"):
             )
         )
     )
-    scene.dungeon_inventory.add_skill_node(
-        SkillNode(
+    scene.dungeon_inventory.add_learnable_skill(
+        LearnableSkill(
             tier=1,
             skill=SkillInstance(
                 AttackSkill(),
                 level=0,
             ),
+            max_level=3,
         )
     )
-    for index in range(1, 5):
-        scene.dungeon_inventory.add_skill_node(
-            SkillNode(
+    for passive_skill in STAT_PASSIVE_SKILLS[:4]:
+        scene.dungeon_inventory.add_learnable_skill(
+            LearnableSkill(
                 tier=1,
                 skill=SkillInstance(
-                    AttackSkill(
-                        name=f"공격 {index + 1}",
-                        skill_code=f"attack_{index + 1}",
-                        max_level=5,
-                    ),
+                    passive_skill,
                     level=0,
                 ),
+                max_level=3,
             )
         )
-    scene.dungeon_inventory.set_tier_skill_points(1, 3)
-    scene.dungeon_inventory.add_skill_node(
-        SkillNode(
+    scene.dungeon_inventory.set_tier_skill_points(1, 50)
+    scene.dungeon_inventory.add_learnable_skill(
+        LearnableSkill(
             tier=8,
             skill=SkillInstance(
-                SkillBase(
-                    name="필살기",
-                    skill_code="ultimate_test",
-                    description="기능 테스트용 스킬이다.",
-                    max_level=1,
-                    requires_direction=False,
-                ),
+                STAT_PASSIVE_SKILLS[4],
                 level=0,
             ),
+            max_level=1,
         )
     )
     scene.dungeon_inventory.set_tier_skill_points(8, 1)

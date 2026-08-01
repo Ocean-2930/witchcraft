@@ -8,7 +8,7 @@ from .skill_invest_button import SkillInvestButton
 SkillCard = import_module("ui.global").SkillCard
 
 
-class SkillNodeListViewRenderer(Renderer):
+class LearnableSkillListViewRenderer(Renderer):
     draw_layer = -5
 
     def __init__(self, scene, pos_x, pos_y, width, height, view):
@@ -24,10 +24,10 @@ class SkillNodeListViewRenderer(Renderer):
         screen.set_clip(previous_clip)
 
 
-class SkillNodeListView(UIElement):
+class LearnableSkillListView(UIElement):
     TIER_WIDTH = 210
     TIER_GAP = 18
-    HEADER_HEIGHT = 58
+    HEADER_HEIGHT = 64
     HEADER_BODY_GAP = 8
     CARD_HEIGHT = 76
     CARD_GAP = 12
@@ -39,13 +39,13 @@ class SkillNodeListView(UIElement):
         self.inventory_getter = inventory_getter
         self.horizontal_offset = 0
         self.vertical_offsets = {}
-        self.node_widgets = {}
-        renderer = SkillNodeListViewRenderer(scene, pos_x, pos_y, width, height, self)
+        self.skill_widgets = {}
+        renderer = LearnableSkillListViewRenderer(scene, pos_x, pos_y, width, height, self)
         super().__init__(scene, renderer=renderer, background=False)
 
     def set_visible(self, visible):
         self.visible = visible
-        for card, button in self.node_widgets.values():
+        for card, button in self.skill_widgets.values():
             card.set_visible(visible)
             button.set_visible(visible)
         if not visible and self.scene.ui_focus is self:
@@ -63,7 +63,7 @@ class SkillNodeListView(UIElement):
             return []
         populated = sorted(
             set(inventory.tier_skill_points)
-            | {node.tier for node in inventory.skill_nodes}
+            | {learnable_skill.tier for learnable_skill in inventory.learnable_skills}
         )
         return list(range(1, populated[-1] + 1)) if populated else []
 
@@ -89,45 +89,46 @@ class SkillNodeListView(UIElement):
 
     def sync_widgets(self):
         inventory = self.get_inventory()
-        nodes = [] if inventory is None else inventory.skill_nodes
-        active_ids = {id(node) for node in nodes}
-        for node_id in tuple(self.node_widgets):
-            if node_id not in active_ids:
-                card, button = self.node_widgets.pop(node_id)
+        learnable_skills = [] if inventory is None else inventory.learnable_skills
+        active_ids = {id(learnable_skill) for learnable_skill in learnable_skills}
+        for skill_id in tuple(self.skill_widgets):
+            if skill_id not in active_ids:
+                card, button = self.skill_widgets.pop(skill_id)
                 card.destroy()
                 button.destroy()
 
-        for node in nodes:
-            if id(node) in self.node_widgets:
+        for learnable_skill in learnable_skills:
+            if id(learnable_skill) in self.skill_widgets:
                 continue
             card = SkillCard(
                 self.scene,
-                node.skill,
+                learnable_skill.skill,
                 0,
                 0,
                 self.TIER_WIDTH - 20,
                 self.CARD_HEIGHT,
-                clip_rect_getter=lambda owned_node=node: self.get_node_clip_rect(owned_node),
+                clip_rect_getter=lambda owned_skill=learnable_skill: self.get_skill_clip_rect(owned_skill),
                 on_icon_hover=self.on_child_hover,
+                max_level=learnable_skill.max_level,
             )
             button = SkillInvestButton(
                 self.scene,
-                node,
+                learnable_skill,
                 0,
                 0,
                 self.inventory_getter,
-                lambda owned_node=node: self.get_node_clip_rect(owned_node),
+                lambda owned_skill=learnable_skill: self.get_skill_clip_rect(owned_skill),
             )
             card.set_visible(self.visible)
             button.set_visible(self.visible)
-            self.node_widgets[id(node)] = (card, button)
+            self.skill_widgets[id(learnable_skill)] = (card, button)
         self.position_widgets()
 
-    def get_node_clip_rect(self, node):
+    def get_skill_clip_rect(self, learnable_skill):
         tiers = self.get_tiers()
-        if node.tier not in tiers:
+        if learnable_skill.tier not in tiers:
             return pygame.Rect(0, 0, 0, 0)
-        return self.get_body_rect(tiers.index(node.tier)).clip(self.rect)
+        return self.get_body_rect(tiers.index(learnable_skill.tier)).clip(self.rect)
 
     def position_widgets(self):
         inventory = self.get_inventory()
@@ -137,8 +138,11 @@ class SkillNodeListView(UIElement):
         for tier_index, tier in enumerate(tiers):
             body_rect = self.get_body_rect(tier_index)
             card_y = body_rect.top + 10 - self.vertical_offsets.get(tier, 0)
-            for node in (node for node in inventory.skill_nodes if node.tier == tier):
-                card, button = self.node_widgets[id(node)]
+            for learnable_skill in (
+                skill for skill in inventory.learnable_skills
+                if skill.tier == tier
+            ):
+                card, button = self.skill_widgets[id(learnable_skill)]
                 card.set_transform(body_rect.centerx, card_y + self.CARD_HEIGHT // 2)
                 button.set_transform(
                     card.rect.right - 21,
@@ -169,7 +173,10 @@ class SkillNodeListView(UIElement):
         )
         if hovered_index is not None and inventory is not None:
             tier = tiers[hovered_index]
-            count = sum(node.tier == tier for node in inventory.skill_nodes)
+            count = sum(
+                learnable_skill.tier == tier
+                for learnable_skill in inventory.learnable_skills
+            )
             content_height = 20 + count * self.CARD_HEIGHT + max(0, count - 1) * self.CARD_GAP
             maximum = max(0, content_height - self.get_body_rect(hovered_index).height)
             if maximum > 0:
@@ -208,8 +215,8 @@ class SkillNodeListView(UIElement):
             point_text = self.scene.item_font.render(
                 f"Skill Point  {points}", True, (153, 205, 245)
             )
-            screen.blit(title, (header_rect.left + 14, header_rect.top + 8))
-            screen.blit(point_text, (header_rect.left + 14, header_rect.top + 34))
+            screen.blit(title, (header_rect.left + 14, header_rect.top + 7))
+            screen.blit(point_text, (header_rect.left + 14, header_rect.top + 40))
 
         content_width = len(tiers) * (self.TIER_WIDTH + self.TIER_GAP)
         if content_width > self.rect.width:
@@ -226,9 +233,9 @@ class SkillNodeListView(UIElement):
             )
 
     def destroy(self):
-        for card, button in tuple(self.node_widgets.values()):
+        for card, button in tuple(self.skill_widgets.values()):
             card.destroy()
             button.destroy()
-        self.node_widgets.clear()
+        self.skill_widgets.clear()
         super().destroy()
         self.renderer.destroy()
