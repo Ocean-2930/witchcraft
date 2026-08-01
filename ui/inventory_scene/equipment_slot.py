@@ -4,24 +4,43 @@ from .slot_base import InventorySlot, InventorySlotRenderer
 
 
 class EquipmentSlotRenderer(InventorySlotRenderer):
-    def draw_contents(self, screen):
-        slot = self.slot
+    IMAGE_PADDING = 6
 
+    def draw(self, screen):
+        if not self.slot.visible:
+            return
+
+        self.draw_label(screen)
+        super().draw(screen)
+
+    def draw_label(self, screen):
+        slot = self.slot
         label_surface = slot.label_font.render(
             slot.label_text,
             True,
             (182, 195, 207),
         )
         label_rect = label_surface.get_rect(
-            center=(self.rect.centerx, self.rect.top + 17)
+            midbottom=(self.rect.centerx, self.rect.top - 7)
         )
         screen.blit(label_surface, label_rect)
 
+    def draw_contents(self, screen):
+        slot = self.slot
+
         if slot.item_image is not None:
-            image = pygame.transform.smoothscale(slot.item_image, (62, 62))
-            image_rect = image.get_rect(
-                midbottom=(self.rect.centerx, self.rect.bottom - 5)
+            available_size = self.rect.width - self.IMAGE_PADDING * 2
+            source_width, source_height = slot.item_image.get_size()
+            scale = min(
+                available_size / source_width,
+                available_size / source_height,
             )
+            image_size = (
+                max(1, round(source_width * scale)),
+                max(1, round(source_height * scale)),
+            )
+            image = pygame.transform.smoothscale(slot.item_image, image_size)
+            image_rect = image.get_rect(center=self.rect.center)
             screen.blit(image, image_rect)
             return
 
