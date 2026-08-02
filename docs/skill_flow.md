@@ -4,6 +4,9 @@
 
 - `Game.read_inputs()`는 키의 현재 상태와 `keydown`·`keyup` 전이만 수집한다. 스킬 방향 정책을 판단하지 않는다.
 - `DungeonScene`은 hotbar 키를 누르는 동안의 입력 세션, 방향 요구 스킬끼리 공유하는 기억 방향, 키를 놓았을 때의 사용·취소·실행 생략을 관리한다.
+- hotbar 스킬키를 누르는 동안 가능한 모든 방향의 대상 바닥 타일을 노란색으로 표시한다. 유효한 방향 입력이 있으면 해당 방향의 실제 대상 타일은 빨간색으로 덮어 표시하며, 기억해 둔 이전 시전 방향도 같은 방식으로 미리 보여준다. 스킬키를 놓아 사용하거나 입력을 취소하면 모든 대상 표시를 제거한다.
+- 이동 애니메이션 중에는 새 hotbar 입력을 받지 않는다. 이동 중 눌린 hotbar 키는 이동이 끝나도 이어서 실행하지 않고, 키를 놓은 뒤 다시 눌러야 한다. 방향키와 hotbar 키가 같은 프레임에 눌리면 이동을 먼저 시도하고, 이동이 실제로 시작된 경우 hotbar 입력을 폐기한다. 이동할 수 없는 방향이면 hotbar 입력을 처리한다.
+- 이동 중에도 누르고 있는 방향과 반복 이동 대기 시간은 계속 갱신한다. 이동이 끝났을 때 반복 조건이 충족되어 있으면 같은 업데이트에서 다음 이동을 시작할 수 있다.
 - `SkillBase`는 방향 요구 여부, 대각선 허용 여부, 방향 판정 결과, 방향에 따른 범위 회전과 명시적으로 전달된 원점 기준 대상 타일 계산을 관리한다.
 - `SkillEffect`는 방향키를 직접 알지 않는다. scene이 범위로 대상을 결정한 뒤 효과 판정과 적용에 대상만 전달한다.
 - `UsableItem`은 아이템이 가진 `skillbase`의 효과 실행을 위임한다. hotbar에 등록된 `skillbase` 아이템의 방향 선택은 일반 스킬과 같은 scene 입력 흐름을 사용한다.
@@ -12,7 +15,7 @@
 - `SkillBase.get_icon()`은 `skill_code`를 기준으로 `assets/images/skills/{skill_code}.png`를 조회하고 캐시한다. 파일이 없는 스킬도 공용 코드 스프라이트 로더가 만든 대체 아이콘을 반환한다.
 - 모든 스킬 설명은 `SkillBase.get_description(level)` 호출로 가져오며, 구체적인 문구와 레벨 계산은 각 스킬 클래스가 제어한다. `StatPassiveSkill`은 `레벨당 수치 × 현재 레벨`을 계산해 `최대 마나 +25` 형식으로 반환하고, `AttackSkill`도 자신의 설명 함수를 직접 구현한다. 효과 객체는 설명 문구를 소유하지 않는다.
 - `DungeonInventory.learnable_skills`는 티어마다 독립된 포인트를 사용한다. `invest_skill(...)`은 항목의 티어 포인트가 남고 `LearnableSkill.max_level`에 도달하지 않았을 때만 레벨을 1 올린다.
-- `DungeonInventory.hotbar_skill_codes`는 현재 보유한 합산 액티브 스킬의 코드를 단축키에 연결한다. 같은 스킬 코드는 퀵슬롯 전체에서 하나만 장착할 수 있으며, 다른 슬롯에 장착하면 기존 슬롯에서 해제된 뒤 새 슬롯으로 이동한다. 던전에서 단축키를 실행할 때는 아이템, 인벤토리에 장착한 액티브 스킬, 기본 hotbar 스킬 순으로 실행 대상을 결정한다.
+- `DungeonInventory.hotbar_skill_codes`는 현재 보유한 합산 액티브 스킬의 코드를 단축키에 연결한다. 같은 스킬 코드는 퀵슬롯 전체에서 하나만 장착할 수 있으며, 다른 슬롯에 장착하면 기존 슬롯에서 해제된 뒤 새 슬롯으로 이동한다. 던전에서 단축키를 실행할 때는 장착된 아이템과 액티브 스킬만 실행 대상으로 결정하며, 비어 있는 슬롯은 입력 세션이나 대상 타일 표시를 시작하지 않는다.
 - `SkillBase.max_level`과 `LearnableSkill.max_level`의 `None`은 레벨 상한이 없음을 뜻한다. 학습 항목의 상한을 명시하면 스킬 정의에 상한이 있는 경우 그 이하에서 영웅별 투자 상한을 제한한다. 실제 액티브·패시브 스킬 콘텐츠는 `skills/implementations/` 아래의 종류별 폴더에 둔다.
 - 능력치 패시브는 모두 레벨 상한이 없고 음수 레벨을 허용한다. `StatIncreaseEffect`가 대상 속성에 레벨당 증감량, 레벨과 중첩을 곱해 적용하므로 음수 레벨은 해당 스탯을 감소시킨다.
 - 영웅 학습 스킬과 장비 스킬처럼 출처가 다른 동일 `skill_code`의 스킬은 각 인스턴스의 `level × stack`을 더해 하나의 `SkillInstance`로 정규화한다. 원본 `SkillBase.max_level`이 있으면 합산 레벨은 그 상한을 넘지 않으며, 합산 결과의 `stack`은 1이다.
@@ -35,7 +38,7 @@
 ## 명시적 입력 계약
 
 - 대상 타일 계산은 `SkillTargetingInput(origin, direction)`을 `SkillBase.get_target_tiles(...)`에 전달한다.
-- `origin`은 scene이 알고 있는 시전자의 현재 타일 좌표이며, `SkillBase`는 scene이나 player 객체에서 위치를 직접 조회하지 않는다.
+- `origin`은 `DungeonInventory`에 기록된 플레이어의 현재 타일 좌표이며, `SkillBase`는 scene이나 player 객체에서 위치를 직접 조회하지 않는다.
 - 전투 효과 실행은 기존처럼 `SkillBase.can_use(caster, target)`, `peek(caster, target)`, `use(caster, target, rng)`에 시전자와 대상을 명시적으로 전달한다.
 - 타일 원점만 필요한 대상 계산에 전체 캐릭터 객체를 넘기지 않고, 공격력·MP처럼 전투 상태가 필요한 효과 실행에만 `Unit`을 넘긴다.
 

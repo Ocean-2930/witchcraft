@@ -16,6 +16,7 @@ class AttackSkill(ActiveSkill):
             description="한 칸 앞의 적에게 공격력 1배의 피해를 준다.",
             skill_coefficient=1.0,
             range_vectors=[(0, -1)],
+            allow_diagonal=True,
             max_level=max_level,
         )
 

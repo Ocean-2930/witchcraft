@@ -653,14 +653,19 @@ class InventoryScene(Scene):
     def use_selected_item(self):
         item_instance = self.get_selected_item()
         inventory = self.get_item_inventory()
-        player = getattr(self.parent_scene, "player", None)
+        dungeon_inventory = getattr(self.parent_scene, "dungeon_inventory", None)
         use = getattr(getattr(item_instance, "item", None), "use", None)
 
-        if item_instance is None or inventory is None or player is None or use is None:
+        if (
+            item_instance is None
+            or inventory is None
+            or dungeon_inventory is None
+            or use is None
+        ):
             self.close_item_popup()
             return
 
-        result = use(player)
+        result = dungeon_inventory.use_item(item_instance)
         if result:
             inventory.remove_amount(item_instance, 1)
 
@@ -673,17 +678,14 @@ class InventoryScene(Scene):
             "dungeon_inventory",
             None,
         )
-        player = getattr(self.parent_scene, "player", None)
-
         if (
             item_instance is None
             or dungeon_inventory is None
-            or player is None
         ):
             self.close_item_popup()
             return
 
-        dungeon_inventory.equip_item(item_instance, player)
+        dungeon_inventory.equip_item(item_instance)
         self.close_item_popup()
 
     def equip_item_at_index(self, item_index):
@@ -702,11 +704,10 @@ class InventoryScene(Scene):
             "dungeon_inventory",
             None,
         )
-        player = getattr(self.parent_scene, "player", None)
-        if dungeon_inventory is None or player is None:
+        if dungeon_inventory is None:
             return
 
-        if dungeon_inventory.unequip_item(equipment_attribute, player):
+        if dungeon_inventory.unequip_item(equipment_attribute):
             self.close_item_popup()
 
     def assign_selected_item_shortcut(self):

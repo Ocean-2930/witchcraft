@@ -10,7 +10,7 @@
 | `units` | 기초 능력치, 런타임 전투 상태, 피해 계산 | scene, UI, 아이템 보관 상태 |
 | `skills` | 스킬 기반 정의, 방향·범위 정책, 공통 효과와 스킬 인스턴스 및 실제 스킬 구현 | scene, UI, 입력 장치 상태 |
 | `items` | 아이템 기반 계층과 실제 아이템·장비 콘텐츠 구현 | scene, UI, 인벤토리 컬렉션 |
-| `inventory` | 아이템 보관, 장비 슬롯, hotbar 연결, 영웅이 배울 수 있는 스킬 목록과 티어 포인트의 원자적 상태 변경 | scene, UI, 입력 장치 상태 |
+| `inventory` | 아이템 보관, 장비 슬롯, hotbar 연결, 플레이어의 현재 던전 타일 좌표, 영웅이 배울 수 있는 스킬 목록과 티어 포인트의 원자적 상태 변경 | scene, UI, 입력 장치 상태 |
 | `utilities` | 두 영역 이상에서 재사용하는 순수 helper | 도메인 상태의 소유 |
 
 ## 의존성 원칙
@@ -40,7 +40,9 @@ flowchart LR
 - 아이템과 스킬 이미지는 공용 코드 스프라이트 로더를 사용한다. 각각 `item_code`와 `skill_code`를 파일명으로 삼아 `assets/images/items`, `assets/images/skills`에서 PNG를 찾고 캐시하며, 파일이 없으면 코드 기반 색상의 사각형 대체 이미지를 생성한다.
 - 스탯 패시브 탭의 `PassiveSkillGrid`는 `DungeonInventory.passive_skills()` 결과를 공용 `SkillCard`로 격자 배치하며, 적용 여부나 중첩 계산을 UI에서 다시 구현하지 않는다.
 - `DungeonInventory`는 영웅과 장비에서 모은 동일 코드의 스킬 레벨을 하나로 합산하고, 스킬 정의에 최대 레벨이 있으면 합산 결과를 그 상한으로 제한한다.
-- 던전 HUD와 몬스터 인스펙트의 플레이어 능력치 표시는 원본 `Player`를 직접 계산에 사용하지 않고 `DungeonInventory.get_stat()`의 합산 결과를 읽는다.
+- `DungeonInventory`가 던전의 `Player` 인스턴스와 현재 타일 좌표를 소유한다. scene과 overlay는 별도의 player 참조를 갖지 않고 이동, 아이템 사용, 장착과 능력치 계산을 `DungeonInventory`에 요청한다.
+- 던전 맵 데이터에는 플레이어 위치를 포함하지 않는다. 개발용 시작 좌표는 `test_scenario.senario(...)`가 `DungeonInventory.set_player_position(...)`으로 설정하며, 타일과 유닛 renderer를 만들기 전에 적용한다.
+- 던전 HUD와 몬스터 인스펙트의 플레이어 능력치 표시는 `DungeonInventory.player`를 직접 계산에 사용하지 않고 `DungeonInventory.get_stat()`의 합산 결과를 읽는다.
 - 여러 컬렉션을 함께 변경하는 장착·해제·아이템 및 액티브 스킬 단축키 연결은 `DungeonInventory`가 한 번의 연산으로 처리한다.
 - `SkilledEquip` 원형은 드롭 시 사용할 기본 스킬 행만 제공한다. `EquipmentInstance`는 생성 시 이를 7행의 `stat_rows`로 깊은 복사하며, 이후 장비 설명과 패시브 합산은 원형이 아니라 인스턴스 행만 읽는다.
 - `LearnableSkill(tier, skill, max_level)` 목록이 영웅이 던전에서 배울 수 있는 스킬 구조다. 항목별 `max_level`은 스킬 정의 자체의 최대 레벨 이하에서 별도의 투자 상한을 제공하며, 스킬 정의와 학습 항목에서 `None`은 무제한을 뜻한다. 티어별 전용 포인트는 `DungeonInventory`가 소유하고 투자는 해당 티어 포인트만 소비한다.
@@ -52,5 +54,5 @@ flowchart LR
 ## 현재 남은 경계
 
 - `DungeonScene`의 hotbar 스킬은 아직 대상 타일 계산 단계까지만 구현되어 있다. 실제 다중 대상 효과 실행과 비용 지불 정책은 별도 전투 실행 계층이 필요하다.
-- `InventoryScene`은 dungeon 전용 overlay이므로 현재 부모 scene에서 `player`, `dungeon_inventory`, `hotbar_skills`를 읽는다. 다른 부모 scene에서 재사용할 필요가 생기면 이 세 값을 생성자 입력으로 전환한다.
+- `InventoryScene`은 dungeon 전용 overlay이므로 현재 부모 scene에서 `dungeon_inventory`를 읽는다. 다른 부모 scene에서 재사용할 필요가 생기면 이를 생성자 입력으로 전환한다.
 - 일부 scene별 renderer는 폰트와 표시 상태를 scene에서 직접 읽는다. 재사용 가능성이 생기는 시점에 데이터 또는 getter 입력으로 전환한다.

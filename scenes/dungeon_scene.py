@@ -34,8 +34,8 @@ from ui import (
     ShortcutBar,
     WallTileRenderer,
 )
-from skills import Skill, SkillDirectionStatus, SkillTargetingInput
-from units import Enemy, Player
+from skills import SkillDirectionStatus, SkillTargetingInput
+from units import Enemy
 from inventory import DungeonInventory
 
 
@@ -78,7 +78,7 @@ class DungeonScene(Scene):
         (ARROW_DOWN, (0, 1)),
     )
     DEFAULT_MAP = {
-        "position": [3, 3], "map": [[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], [1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1], [1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1], [1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1], [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1], [1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1], [1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1], [1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]]
+        "map": [[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], [1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1], [1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1], [1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1], [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1], [1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1], [1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1], [1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]]
     }
 
     def __init__(self, game, dungeon_map=None):
@@ -87,16 +87,13 @@ class DungeonScene(Scene):
 
     def scene_initialize(self):
         self.map_tiles = self.dungeon_map["map"]
-        self.player = Player("플레이어")
-        self.dungeon_inventory = DungeonInventory(unit_base=self.player)
-        self.player.tile_x, self.player.tile_y = self.dungeon_map["position"]
+        self.dungeon_inventory = DungeonInventory()
         self.player_status = PlayerStatusRenderer(
             self,
             self.dungeon_inventory.get_stat,
             28 + (92 + 10 + 82 + 10 + 220) // 2,
             28 + 92 // 2,
         )
-        self.hotbar_skills = self.create_hotbar_skills()
         self.monsters = []
         self.hovered_monster = None
         self.peek_font = pygame.font.SysFont("malgungothic", 16, bold=True)
@@ -119,12 +116,20 @@ class DungeonScene(Scene):
         self.active_hotbar_direction_touched = False
         self.saved_skill_direction = None
         self.movement_input_guard = False
+        self.hotbar_input_guard = False
         self.last_skill_call = None
         self.maze_offset_x = 0.0
         self.maze_offset_y = 0.0
         self.maze_renderers = []
         self.floor_tiles = {}
         self.wall_tiles = {}
+        self.filtered_tile_renderers = set()
+
+        if settings.ENABLE_TEST_SCENARIO:
+            from .test_scenario import senario
+
+            senario(self)
+
         self.refresh_visible_tiles()
         self.player_marker = PlayerMarkerRenderer(
             self,
@@ -133,7 +138,8 @@ class DungeonScene(Scene):
             72,
             72,
         )
-        self.set_dungeon_draw_order(self.player_marker, self.player.tile_x, self.player.tile_y, self.DEPTH_UNIT)
+        player_x, player_y = self.dungeon_inventory.get_player_position()
+        self.set_dungeon_draw_order(self.player_marker, player_x, player_y, self.DEPTH_UNIT)
         self.create_monster(6, 3)
         self.hotbar = ShortcutBar(
             self,
@@ -166,23 +172,6 @@ class DungeonScene(Scene):
             self.open_pause,
         )
 
-        if settings.ENABLE_TEST_SCENARIO:
-            from .test_scenario import senario
-
-            senario(self)
-
-    def create_hotbar_skills(self):
-        return {
-            "1": Skill("1", range_vectors=[(0, -1)]),
-            "2": Skill("2", range_vectors=[(0, -1)]),
-            "3": Skill("3", range_vectors=[(0, -1)]),
-            "4": Skill("4", range_vectors=[(0, -1)]),
-            "Q": Skill("Q", range_vectors=[(0, -1)]),
-            "W": Skill("W", range_vectors=[(0, -1)]),
-            "E": Skill("E", range_vectors=[(0, -1)]),
-            "R": Skill("R", range_vectors=[(0, -1), (0, -2)]),
-        }
-
     def refresh_visible_tiles(self):
         visible_tiles = self.get_visible_tile_positions()
         visible_walls = visible_tiles & self.wall_positions
@@ -202,14 +191,15 @@ class DungeonScene(Scene):
         horizontal_radius = ceil((VIRTUAL_WIDTH / 2) / self.FLOOR_TILE_WIDTH) + self.TILE_RENDER_BUFFER
         vertical_radius = ceil((VIRTUAL_HEIGHT / 2) / self.FLOOR_TILE_HEIGHT) + self.TILE_RENDER_BUFFER
         visible_tiles = set()
+        player_x, player_y = self.dungeon_inventory.get_player_position()
 
-        start_y = max(0, self.player.tile_y - vertical_radius)
-        end_y = min(len(self.map_tiles), self.player.tile_y + vertical_radius + 1)
+        start_y = max(0, player_y - vertical_radius)
+        end_y = min(len(self.map_tiles), player_y + vertical_radius + 1)
 
         for tile_y in range(start_y, end_y):
             row = self.map_tiles[tile_y]
-            start_x = max(0, self.player.tile_x - horizontal_radius)
-            end_x = min(len(row), self.player.tile_x + horizontal_radius + 1)
+            start_x = max(0, player_x - horizontal_radius)
+            end_x = min(len(row), player_x + horizontal_radius + 1)
 
             for tile_x in range(start_x, end_x):
                 visible_tiles.add((tile_x, tile_y))
@@ -221,6 +211,7 @@ class DungeonScene(Scene):
             if tile_position in visible_tiles:
                 continue
 
+            self.filtered_tile_renderers.discard(renderer)
             renderer.destroy()
             self.maze_renderers.remove(renderer)
             del tile_renderers[tile_position]
@@ -301,10 +292,12 @@ class DungeonScene(Scene):
         }
 
     def get_tile_screen_x(self, tile_x):
-        return VIRTUAL_WIDTH // 2 + (tile_x - self.player.tile_x) * self.FLOOR_TILE_WIDTH
+        player_x, _ = self.dungeon_inventory.get_player_position()
+        return VIRTUAL_WIDTH // 2 + (tile_x - player_x) * self.FLOOR_TILE_WIDTH
 
     def get_tile_screen_y(self, tile_y):
-        return VIRTUAL_HEIGHT // 2 + (tile_y - self.player.tile_y) * self.FLOOR_TILE_HEIGHT
+        _, player_y = self.dungeon_inventory.get_player_position()
+        return VIRTUAL_HEIGHT // 2 + (tile_y - player_y) * self.FLOOR_TILE_HEIGHT
 
     @staticmethod
     def set_dungeon_draw_order(renderer, tile_x, tile_y, depth_order):
@@ -313,8 +306,7 @@ class DungeonScene(Scene):
         renderer.dungeon_depth_order = depth_order
 
     def set_player_draw_order(self, move=None):
-        tile_x = self.player.tile_x
-        tile_y = self.player.tile_y
+        tile_x, tile_y = self.dungeon_inventory.get_player_position()
 
         if move is not None:
             tile_x += move["move_x"]
@@ -359,8 +351,38 @@ class DungeonScene(Scene):
             return
 
         self.update_hovered_monster(mouse_position)
+
+        if self.active_move is not None:
+            self.block_hotbar_input_during_move(game_events)
+            self.update_player_facing(game_events)
+            self.update_held_direction(delta_time, game_events)
+            self.update_maze_move(delta_time)
+
+            if self.active_move is None:
+                self.try_start_maze_move(game_events)
+
+            super().scene_update(delta_time, game_events, mouse_position, wheel_move)
+            return
+
+        self.update_hotbar_input_guard(game_events)
+
+        if self.active_hotbar_key is not None:
+            self.update_hotbar_input(game_events)
+            self.reset_movement_repeat()
+            super().scene_update(delta_time, game_events, mouse_position, wheel_move)
+            return
+
+        if self.has_direction_keydown(game_events):
+            self.update_player_facing(game_events)
+            self.update_held_direction(delta_time, game_events)
+            self.try_start_maze_move(game_events)
+
+            if self.active_move is not None:
+                self.block_hotbar_input_during_move(game_events)
+                super().scene_update(delta_time, game_events, mouse_position, wheel_move)
+                return
+
         self.update_hotbar_input(game_events)
-        self.update_maze_move(delta_time)
 
         if self.can_use_movement_input(game_events):
             self.update_player_facing(game_events)
@@ -415,8 +437,14 @@ class DungeonScene(Scene):
         self.update_movement_input_guard(game_events)
 
     def start_hotbar_input(self, game_events):
+        if self.hotbar_input_guard:
+            return
+
         for key, label in self.HOTBAR_KEYS:
             if game_events[key]["keydown"] or game_events[key]["status"]:
+                if not self.has_hotbar_action(label):
+                    continue
+
                 self.active_hotbar_key = key
                 self.active_hotbar_label = label
                 skill = self.get_hotbar_action_skill(label)
@@ -426,13 +454,74 @@ class DungeonScene(Scene):
                     else self.get_combined_direction(game_events)
                 )
                 self.active_hotbar_direction_touched = False
+                self.show_skill_target_preview(skill, self.active_hotbar_direction)
                 return
 
+    def show_skill_target_preview(self, skill, direction):
+        self.clean_tile_filters()
+
+        if skill is None:
+            return
+
+        if skill.requires_direction:
+            directions = [
+                direction
+                for _, direction in self.DIRECTION_KEYS
+            ]
+            if skill.allow_diagonal:
+                directions.extend(((-1, -1), (1, -1), (-1, 1), (1, 1)))
+        else:
+            directions = [None]
+
+        candidate_tiles = set()
+        for candidate_direction in directions:
+            candidate_tiles.update(
+                skill.get_target_tiles(
+                    SkillTargetingInput(
+                        origin=self.dungeon_inventory.get_player_position(),
+                        direction=candidate_direction,
+                    )
+                )
+            )
+
+        self.filter_tiles(candidate_tiles, "yellow")
+
+        if skill.check_direction(direction) is not SkillDirectionStatus.READY:
+            return
+        if not skill.requires_direction:
+            return
+
+        effect_tiles = skill.get_target_tiles(
+            SkillTargetingInput(
+                origin=self.dungeon_inventory.get_player_position(),
+                direction=direction,
+            )
+        )
+        self.filter_tiles(effect_tiles, "red")
+
+    def filter_tiles(self, tile_positions, color):
+        filter_method_name = f"filter_{color}"
+
+        for tile_position in tile_positions:
+            renderer = self.floor_tiles.get(tile_position)
+            if renderer is None:
+                continue
+
+            getattr(renderer, filter_method_name)()
+            self.filtered_tile_renderers.add(renderer)
+
+    def clean_tile_filters(self):
+        for renderer in self.filtered_tile_renderers:
+            renderer.filter_clean()
+
+        self.filtered_tile_renderers.clear()
+
     def use_hotbar_item(self, label):
+        self.clean_tile_filters()
         item_instance = self.dungeon_inventory.get_hotbar_item(label)
         item_code = getattr(getattr(item_instance, "item", None), "item_code", None)
         use = getattr(getattr(item_instance, "item", None), "use", None)
-        used_amount = use(self.player) if callable(use) else 0
+        used_amount = self.dungeon_inventory.use_item(item_instance)
 
         if used_amount:
             self.dungeon_inventory.item_inventory.remove_amount(
@@ -467,6 +556,8 @@ class DungeonScene(Scene):
             self.active_hotbar_direction_touched = True
         elif self.active_hotbar_direction_touched and self.has_direction_keyup(game_events):
             self.active_hotbar_direction = None
+
+        self.show_skill_target_preview(skill, self.active_hotbar_direction)
 
     def finish_hotbar_input(self):
         item_instance = self.dungeon_inventory.get_hotbar_item(self.active_hotbar_label)
@@ -503,10 +594,11 @@ class DungeonScene(Scene):
         target_vectors = skill.get_range_vectors(direction)
         target_tiles = skill.get_target_tiles(
             SkillTargetingInput(
-                origin=(self.player.tile_x, self.player.tile_y),
+                origin=self.dungeon_inventory.get_player_position(),
                 direction=direction,
             )
         )
+        self.clean_tile_filters()
         item_instance = self.dungeon_inventory.get_hotbar_item(label)
         self.last_skill_call = {
             "label": label,
@@ -526,7 +618,13 @@ class DungeonScene(Scene):
         if skill_instance is not None:
             return skill_instance.skill
 
-        return self.hotbar_skills.get(label)
+        return None
+
+    def has_hotbar_action(self, label):
+        return (
+            self.dungeon_inventory.get_hotbar_item(label) is not None
+            or self.dungeon_inventory.get_hotbar_skill(label) is not None
+        )
 
     def get_hotbar_display_skill(self, label):
         return self.dungeon_inventory.get_hotbar_skill(label)
@@ -535,6 +633,7 @@ class DungeonScene(Scene):
         return self.dungeon_inventory.get_hotbar_skill(label) is not None
 
     def cancel_hotbar_skill(self, label):
+        self.clean_tile_filters()
         self.last_skill_call = {
             "label": label,
             "direction": None,
@@ -542,6 +641,7 @@ class DungeonScene(Scene):
         }
 
     def skip_hotbar_skill(self, label, direction):
+        self.clean_tile_filters()
         self.last_skill_call = {
             "label": label,
             "skill": self.get_hotbar_action_skill(label),
@@ -617,6 +717,14 @@ class DungeonScene(Scene):
         if self.movement_input_guard and not self.is_direction_pressed(game_events):
             self.movement_input_guard = False
 
+    def block_hotbar_input_during_move(self, game_events):
+        if self.is_hotbar_pressed(game_events):
+            self.hotbar_input_guard = True
+
+    def update_hotbar_input_guard(self, game_events):
+        if self.hotbar_input_guard and not self.is_hotbar_pressed(game_events):
+            self.hotbar_input_guard = False
+
     def reset_movement_repeat(self):
         self.held_direction = None
         self.hold_elapsed = 0.0
@@ -690,7 +798,8 @@ class DungeonScene(Scene):
         shift_x = -move_x * self.FLOOR_TILE_WIDTH
         shift_y = -move_y * self.FLOOR_TILE_HEIGHT
 
-        target_tile = (self.player.tile_x + move_x, self.player.tile_y + move_y)
+        player_x, player_y = self.dungeon_inventory.get_player_position()
+        target_tile = (player_x + move_x, player_y + move_y)
 
         if not self.can_move_to(target_tile):
             return
@@ -738,8 +847,7 @@ class DungeonScene(Scene):
         if move["elapsed"] < self.MOVE_DURATION:
             return
 
-        self.player.tile_x += move["move_x"]
-        self.player.tile_y += move["move_y"]
+        self.dungeon_inventory.move_player(move["move_x"], move["move_y"])
         self.set_player_draw_order()
         self.active_move = None
         self.refresh_visible_tiles()

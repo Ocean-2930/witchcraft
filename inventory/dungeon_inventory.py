@@ -2,15 +2,13 @@ from __future__ import annotations
 
 from copy import deepcopy
 from dataclasses import dataclass, field
-from typing import TYPE_CHECKING, ClassVar
+from typing import ClassVar
 
 from items import EquipmentInstance, Equip, ItemInstance, SkilledEquip
 from skills import SkillInstance
+from units import Player
 
 from .item_inventory import ItemInventory
-if TYPE_CHECKING:
-    from units import Player
-    from units.unit_base import UnitBase
 
 
 @dataclass
@@ -43,7 +41,7 @@ class LearnableSkill:
 class DungeonInventory:
     """던전행 한 번에 사용되는 플레이어 인벤토리."""
 
-    unit_base: UnitBase | None = None
+    player: Player = field(default_factory=lambda: Player("플레이어"))
     item_inventory: ItemInventory = field(default_factory=ItemInventory)
     hotbar_items: dict[str, ItemInstance] = field(default_factory=dict)
     hotbar_skill_codes: dict[str, str] = field(default_factory=dict)
@@ -69,13 +67,28 @@ class DungeonInventory:
         "accessory_2",
     )
 
+    def set_player_position(self, tile_x: int, tile_y: int):
+        self.player.tile_x = tile_x
+        self.player.tile_y = tile_y
+
+    def get_player_position(self) -> tuple[int, int]:
+        return (self.player.tile_x, self.player.tile_y)
+
+    def move_player(self, move_x: int, move_y: int):
+        self.player.tile_x += move_x
+        self.player.tile_y += move_y
+
+    def use_item(self, item_instance: ItemInstance):
+        use = getattr(getattr(item_instance, "item", None), "use", None)
+        return use(self.player) if callable(use) else 0
+
     def add_item(self, item_instance: ItemInstance):
         return self.item_inventory.add_item(item_instance)
 
     def remove_item(self, item_instance: ItemInstance):
         return self.item_inventory.remove_item(item_instance)
 
-    def equip_item(self, item_instance: ItemInstance, player: Player) -> bool:
+    def equip_item(self, item_instance: ItemInstance) -> bool:
         item_index = self.item_inventory.find_item_index(item_instance)
         if item_index is None:
             return False
@@ -106,7 +119,7 @@ class DungeonInventory:
             if equipped_instance is not None
             else None
         )
-        if not equipment.equipcheck(player, equipped_item):
+        if not equipment.equipcheck(self.player, equipped_item):
             return False
 
         if equipped_instance is None:
@@ -116,7 +129,7 @@ class DungeonInventory:
         setattr(self, slot_name, item_instance)
         return True
 
-    def unequip_item(self, slot_name: str, player: Player) -> bool:
+    def unequip_item(self, slot_name: str) -> bool:
         if slot_name not in self.EQUIPMENT_SLOTS:
             return False
 
@@ -126,7 +139,7 @@ class DungeonInventory:
             if equipped_instance is not None
             else None
         )
-        if equipment is None or not equipment.unequipcheck(player):
+        if equipment is None or not equipment.unequipcheck(self.player):
             return False
         if not self.item_inventory.add_item(equipped_instance):
             return False
@@ -190,10 +203,7 @@ class DungeonInventory:
         return skill
 
     def get_stat(self):
-        if self.unit_base is None:
-            raise ValueError("스탯을 계산할 UnitBase가 없습니다.")
-
-        calculated_stat = deepcopy(self.unit_base)
+        calculated_stat = deepcopy(self.player)
 
         for skill_instance in self.passive_skills():
             for effect in skill_instance.skill.effects:
