@@ -36,8 +36,10 @@ flowchart LR
 - scene 전용 UI라도 필요한 데이터와 callback을 생성자에서 명시적으로 받는다. renderer가 `scene.player` 같은 속성을 임의로 탐색하지 않는다.
 - 공용 `SkillCard`와 `SkillInfoWindow`는 `SkillInstance`만 받아 표시하며 스킬 투자 정책을 포함하지 않는다. 티어 포인트 투자는 인벤토리 scene 전용 `SkillInvestButton`이 `DungeonInventory`에 요청한다.
 - 스탯 패시브 탭의 `PassiveSkillGrid`는 `DungeonInventory.passive_skills()` 결과를 공용 `SkillCard`로 격자 배치하며, 적용 여부나 중첩 계산을 UI에서 다시 구현하지 않는다.
-- 여러 컬렉션을 함께 변경하는 장착·해제·단축키 연결은 `DungeonInventory`가 한 번의 연산으로 처리한다.
-- `LearnableSkill(tier, skill, max_level)` 목록이 영웅이 던전에서 배울 수 있는 스킬 구조다. 항목별 `max_level`은 스킬 정의 자체의 최대 레벨 이하에서 별도의 투자 상한을 제공한다. 티어별 전용 포인트는 `DungeonInventory`가 소유하고 투자는 해당 티어 포인트만 소비한다.
+- `DungeonInventory`는 영웅과 장비에서 모은 동일 코드의 스킬 레벨을 하나로 합산하고, 스킬 정의에 최대 레벨이 있으면 합산 결과를 그 상한으로 제한한다.
+- 던전 HUD와 몬스터 인스펙트의 플레이어 능력치 표시는 원본 `Player`를 직접 계산에 사용하지 않고 `DungeonInventory.get_stat()`의 합산 결과를 읽는다.
+- 여러 컬렉션을 함께 변경하는 장착·해제·아이템 및 액티브 스킬 단축키 연결은 `DungeonInventory`가 한 번의 연산으로 처리한다.
+- `LearnableSkill(tier, skill, max_level)` 목록이 영웅이 던전에서 배울 수 있는 스킬 구조다. 항목별 `max_level`은 스킬 정의 자체의 최대 레벨 이하에서 별도의 투자 상한을 제공하며, 스킬 정의와 학습 항목에서 `None`은 무제한을 뜻한다. 티어별 전용 포인트는 `DungeonInventory`가 소유하고 투자는 해당 티어 포인트만 소비한다.
 - 타입 힌트만 필요한 반대 방향 의존성은 `TYPE_CHECKING` 아래에서 직접 소유 모듈을 참조한다.
 - package `__init__.py`는 다른 패키지가 소유한 타입을 편의상 재공개하지 않는다.
 - 실제 아이템 콘텐츠는 `items/items`, 장비 콘텐츠는 종류별 `items/equips` 하위 폴더에 둔다. 실제 스킬 콘텐츠는 `skills/implementations/{item_skills,active_skills,passive_skills}`에 두어 기반 모델과 구현체를 경로상으로 구분한다.

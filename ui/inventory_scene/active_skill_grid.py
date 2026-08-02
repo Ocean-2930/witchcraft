@@ -8,7 +8,7 @@ from ui.ui import UIElement
 SkillCard = import_module("ui.global").SkillCard
 
 
-class PassiveSkillGridRenderer(Renderer):
+class ActiveSkillGridRenderer(Renderer):
     draw_layer = -5
 
     def __init__(self, scene, pos_x, pos_y, width, height, grid):
@@ -22,7 +22,7 @@ class PassiveSkillGridRenderer(Renderer):
         pygame.draw.rect(screen, (87, 102, 116), self.rect, 2, border_radius=7)
         if not self.grid.skill_widgets:
             empty = self.scene.item_font.render(
-                "적용 중인 패시브 스킬이 없습니다.",
+                "장착할 수 있는 액티브 스킬이 없습니다.",
                 True,
                 (127, 140, 151),
             )
@@ -30,7 +30,7 @@ class PassiveSkillGridRenderer(Renderer):
         self.grid.draw_scrollbar(screen)
 
 
-class PassiveSkillGrid(UIElement):
+class ActiveSkillGrid(UIElement):
     COLUMNS = 4
     CARD_WIDTH = 195
     CARD_HEIGHT = 68
@@ -39,18 +39,25 @@ class PassiveSkillGrid(UIElement):
     PADDING = 16
     SCROLL_STEP = 54
 
-    def __init__(self, scene, pos_x, pos_y, width, height, inventory_getter):
+    def __init__(
+        self,
+        scene,
+        pos_x,
+        pos_y,
+        width,
+        height,
+        inventory_getter,
+        on_skill_click,
+        selected_skill_code_getter,
+    ):
         self.visible = False
         self.inventory_getter = inventory_getter
+        self.on_skill_click = on_skill_click
+        self.selected_skill_code_getter = selected_skill_code_getter
         self.scroll_offset = 0
         self.skill_widgets = {}
-        renderer = PassiveSkillGridRenderer(
-            scene,
-            pos_x,
-            pos_y,
-            width,
-            height,
-            self,
+        renderer = ActiveSkillGridRenderer(
+            scene, pos_x, pos_y, width, height, self
         )
         super().__init__(scene, renderer=renderer, background=False)
 
@@ -70,25 +77,21 @@ class PassiveSkillGrid(UIElement):
     def get_clip_rect(self):
         return self.rect.inflate(-self.PADDING, -self.PADDING)
 
-    def get_passive_skills(self):
+    def get_active_skills(self):
         inventory = self.get_inventory()
-        return [] if inventory is None else inventory.passive_skills()
-
-    def get_display_max_level(self, skill_instance):
-        return skill_instance.max_level
+        return [] if inventory is None else inventory.active_skills()
 
     def sync_widgets(self):
-        passive_skills = self.get_passive_skills()
+        active_skills = self.get_active_skills()
         active_codes = {
-            skill_instance.skill.skill_code for skill_instance in passive_skills
+            skill_instance.skill.skill_code for skill_instance in active_skills
         }
         for skill_code in tuple(self.skill_widgets):
             if skill_code not in active_codes:
                 self.skill_widgets.pop(skill_code).destroy()
 
-        for skill_instance in passive_skills:
+        for skill_instance in active_skills:
             skill_code = skill_instance.skill.skill_code
-            max_level = self.get_display_max_level(skill_instance)
             card = self.skill_widgets.get(skill_code)
             if card is None:
                 card = SkillCard(
@@ -100,17 +103,22 @@ class PassiveSkillGrid(UIElement):
                     self.CARD_HEIGHT,
                     clip_rect_getter=self.get_clip_rect,
                     on_icon_hover=self.on_child_hover,
-                    max_level=max_level,
+                    on_click=self.on_skill_click,
+                    is_selected_getter=(
+                        lambda owned_code=skill_code: (
+                            self.selected_skill_code_getter() == owned_code
+                        )
+                    ),
                 )
                 card.set_visible(self.visible)
                 self.skill_widgets[skill_code] = card
             else:
                 card.skill_instance = skill_instance
-                card.max_level = max_level
+                card.max_level = skill_instance.max_level
                 card.info_window.skill_instance = skill_instance
-                card.info_window.max_level = max_level
+                card.info_window.max_level = skill_instance.max_level
         self.clamp_scroll()
-        self.position_widgets(passive_skills)
+        self.position_widgets(active_skills)
 
     def get_content_height(self, skill_count=None):
         if skill_count is None:
@@ -126,27 +134,33 @@ class PassiveSkillGrid(UIElement):
         return max(0, self.get_content_height() - self.rect.height)
 
     def clamp_scroll(self):
-        self.scroll_offset = max(0, min(self.get_max_scroll(), self.scroll_offset))
+        self.scroll_offset = max(
+            0, min(self.get_max_scroll(), self.scroll_offset)
+        )
 
-    def position_widgets(self, passive_skills=None):
-        passive_skills = passive_skills or self.get_passive_skills()
+    def position_widgets(self, active_skills=None):
+        active_skills = active_skills or self.get_active_skills()
         total_width = (
             self.COLUMNS * self.CARD_WIDTH
             + (self.COLUMNS - 1) * self.COLUMN_GAP
         )
         first_left = self.rect.centerx - total_width // 2
         first_top = self.rect.top + self.PADDING - self.scroll_offset
-        for index, skill_instance in enumerate(passive_skills):
+        for index, skill_instance in enumerate(active_skills):
             row, column = divmod(index, self.COLUMNS)
             card = self.skill_widgets[skill_instance.skill.skill_code]
             card.set_transform(
-                first_left + column * (self.CARD_WIDTH + self.COLUMN_GAP)
+                first_left
+                + column * (self.CARD_WIDTH + self.COLUMN_GAP)
                 + self.CARD_WIDTH // 2,
-                first_top + row * (self.CARD_HEIGHT + self.ROW_GAP)
+                first_top
+                + row * (self.CARD_HEIGHT + self.ROW_GAP)
                 + self.CARD_HEIGHT // 2,
             )
 
-    def ui_element_update(self, delta_time, game_events, mouse_position, wheel_move):
+    def ui_element_update(
+        self, delta_time, game_events, mouse_position, wheel_move
+    ):
         self.sync_widgets()
 
     def on_child_hover(self, mouse_position, wheel_move):
@@ -175,7 +189,9 @@ class PassiveSkillGrid(UIElement):
         ratio = self.rect.height / self.get_content_height()
         bar_height = max(36, round(track.height * ratio))
         travel = track.height - bar_height
-        bar_y = track.top + round(travel * self.scroll_offset / maximum)
+        bar_y = track.top + round(
+            travel * self.scroll_offset / maximum
+        )
         pygame.draw.rect(
             screen,
             (126, 151, 173),

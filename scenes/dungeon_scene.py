@@ -92,7 +92,7 @@ class DungeonScene(Scene):
         self.player.tile_x, self.player.tile_y = self.dungeon_map["position"]
         self.player_status = PlayerStatusRenderer(
             self,
-            self.player,
+            self.dungeon_inventory.get_stat,
             28 + (92 + 10 + 82 + 10 + 220) // 2,
             28 + 92 // 2,
         )
@@ -103,7 +103,9 @@ class DungeonScene(Scene):
         self.monster_tooltip = MonsterTooltipRenderer(
             self,
             lambda: self.hovered_monster,
-            lambda unit: self.player.make_damage_block(unit).peek(),
+            lambda unit: self.dungeon_inventory.get_stat()
+            .make_damage_block(unit)
+            .peek(),
             self.peek_font,
         )
         self.wall_positions = self.get_wall_positions()
@@ -513,6 +515,10 @@ class DungeonScene(Scene):
         item_instance = self.dungeon_inventory.get_hotbar_item(label)
         if item_instance is not None:
             return getattr(item_instance.item, "skillbase", None)
+
+        skill_instance = self.dungeon_inventory.get_hotbar_skill(label)
+        if skill_instance is not None:
+            return skill_instance.skill
 
         return self.hotbar_skills.get(label)
 

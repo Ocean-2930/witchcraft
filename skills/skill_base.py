@@ -32,7 +32,8 @@ class SkillBase:
     name: str
     skill_code: str = ""
     description: str = ""
-    max_level: int = 1
+    max_level: int | None = 1
+    allow_negative_level: bool = False
     mp_cost: int = 0
     range_vectors: list[RangeVector] = field(default_factory=list)
     requires_direction: bool = True
@@ -40,6 +41,8 @@ class SkillBase:
     effects: list[SkillEffect] = field(default_factory=list)
 
     def __post_init__(self):
+        if self.max_level is not None and self.max_level < 0:
+            raise ValueError("max_level은 0 이상이거나 None이어야 합니다.")
         if not self.skill_code:
             self.skill_code = self.name
 

@@ -25,7 +25,7 @@ class LearnableSkillListViewRenderer(Renderer):
 
 
 class LearnableSkillListView(UIElement):
-    TIER_WIDTH = 248
+    TIER_WIDTH = 207
     TIER_GAP = 18
     HEADER_HEIGHT = 64
     HEADER_BODY_GAP = 8

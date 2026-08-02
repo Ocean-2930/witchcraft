@@ -61,7 +61,10 @@ class SkillInvestButton(UIElement):
         inventory = self.inventory_getter()
         return (
             inventory is not None
-            and self.learnable_skill.skill.level < self.learnable_skill.max_level
+            and (
+                self.learnable_skill.max_level is None
+                or self.learnable_skill.skill.level < self.learnable_skill.max_level
+            )
             and inventory.tier_skill_points.get(self.learnable_skill.tier, 0) > 0
         )
 

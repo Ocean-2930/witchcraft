@@ -26,7 +26,14 @@ class LearnableSkill:
             raise ValueError("tier는 1 이상이어야 합니다.")
         if self.max_level is None:
             self.max_level = self.skill.max_level
-        if not self.skill.level <= self.max_level <= self.skill.max_level:
+        if self.max_level is None:
+            return
+        if self.max_level < self.skill.level:
+            raise ValueError("max_level은 현재 레벨 이상이어야 합니다.")
+        if (
+            self.skill.max_level is not None
+            and self.max_level > self.skill.max_level
+        ):
             raise ValueError(
                 "max_level은 현재 레벨 이상, 스킬 정의의 최대 레벨 이하여야 합니다."
             )
@@ -39,6 +46,7 @@ class DungeonInventory:
     unit_base: UnitBase | None = None
     item_inventory: ItemInventory = field(default_factory=ItemInventory)
     hotbar_items: dict[str, ItemInstance] = field(default_factory=dict)
+    hotbar_skill_codes: dict[str, str] = field(default_factory=dict)
     weapon: ItemInstance | None = None
     sub_weapon: ItemInstance | None = None
     armor: ItemInstance | None = None
@@ -128,6 +136,7 @@ class DungeonInventory:
             return False
 
         self.hotbar_items[label] = item_instance
+        self.hotbar_skill_codes.pop(label, None)
         return True
 
     def get_hotbar_item(self, label: str) -> ItemInstance | None:
@@ -143,6 +152,39 @@ class DungeonInventory:
             return None
 
         return item_instance
+
+    def assign_hotbar_skill(self, label: str, skill_code: str) -> bool:
+        if not any(
+            skill.skill.skill_code == skill_code
+            for skill in self.active_skills()
+        ):
+            return False
+
+        for assigned_label, assigned_code in tuple(
+            self.hotbar_skill_codes.items()
+        ):
+            if assigned_code == skill_code:
+                self.hotbar_skill_codes.pop(assigned_label)
+        self.hotbar_skill_codes[label] = skill_code
+        self.hotbar_items.pop(label, None)
+        return True
+
+    def get_hotbar_skill(self, label: str) -> SkillInstance | None:
+        skill_code = self.hotbar_skill_codes.get(label)
+        if skill_code is None:
+            return None
+
+        skill = next(
+            (
+                skill
+                for skill in self.active_skills()
+                if skill.skill.skill_code == skill_code
+            ),
+            None,
+        )
+        if skill is None:
+            self.hotbar_skill_codes.pop(label, None)
+        return skill
 
     def get_stat(self):
         if self.unit_base is None:
@@ -190,7 +232,10 @@ class DungeonInventory:
             for owned_skill in self.learnable_skills
         ):
             return False
-        if learnable_skill.skill.level >= learnable_skill.max_level:
+        if (
+            learnable_skill.max_level is not None
+            and learnable_skill.skill.level >= learnable_skill.max_level
+        ):
             return False
         points = self.tier_skill_points.get(learnable_skill.tier, 0)
         if points < 1:
@@ -223,7 +268,7 @@ class DungeonInventory:
         yield from (
             learnable_skill.skill
             for learnable_skill in self.learnable_skills
-            if learnable_skill.skill.level > 0
+            if learnable_skill.skill.level != 0
         )
 
         for equipment in (
@@ -241,23 +286,24 @@ class DungeonInventory:
 
     @staticmethod
     def _stack_skills(skill_instances):
-        stacked_skills: dict[str, SkillInstance] = {}
+        skill_definitions = {}
+        combined_levels: dict[str, int] = {}
 
         for skill_instance in skill_instances:
             skill_code = skill_instance.skill.skill_code
-            stacked_skill = stacked_skills.get(skill_code)
+            skill_definitions.setdefault(skill_code, skill_instance.skill)
+            combined_levels[skill_code] = (
+                combined_levels.get(skill_code, 0)
+                + skill_instance.level * skill_instance.stack
+            )
 
-            if stacked_skill is None:
-                stacked_skills[skill_code] = SkillInstance(
-                    skill=skill_instance.skill,
-                    level=skill_instance.level,
-                    stack=skill_instance.stack,
-                )
-                continue
+        stacked_skills = []
+        for skill_code, combined_level in combined_levels.items():
+            skill = skill_definitions[skill_code]
+            if skill.max_level is not None:
+                combined_level = min(combined_level, skill.max_level)
+            stacked_skills.append(
+                SkillInstance(skill=skill, level=combined_level, stack=1)
+            )
 
-            if skill_instance.level > stacked_skill.level:
-                stacked_skill.skill = skill_instance.skill
-                stacked_skill.level = skill_instance.level
-            stacked_skill.stack += skill_instance.stack
-
-        return list(stacked_skills.values())
+        return stacked_skills

@@ -24,7 +24,7 @@ class InventoryContentRenderer(Renderer):
         if self.scene.selected_tab == "장비":
             self.draw_equipment_titles(screen, panel_rect)
         elif self.scene.selected_tab == "스킬":
-            self.draw_section_title(screen, panel_rect, "장착 스킬")
+            self.draw_skill_titles(screen, panel_rect)
         elif self.scene.selected_tab == "스탯":
             self.draw_stat_tab(screen, panel_rect)
 
@@ -57,6 +57,27 @@ class InventoryContentRenderer(Renderer):
         screen.blit(
             title_surface,
             (panel_rect.left + 46, panel_rect.top + 112),
+        )
+
+    def draw_skill_titles(self, screen, panel_rect):
+        self.draw_section_title(screen, panel_rect, "장착 스킬")
+        title_surface = self.scene.section_font.render(
+            "보유 액티브 스킬",
+            True,
+            (232, 238, 243),
+        )
+        guide_surface = self.scene.item_font.render(
+            "카드를 선택한 뒤 위 단축키 슬롯을 누르세요.",
+            True,
+            (153, 205, 245),
+        )
+        screen.blit(
+            title_surface,
+            (panel_rect.left + 46, panel_rect.top + 286),
+        )
+        screen.blit(
+            guide_surface,
+            (panel_rect.left + 230, panel_rect.top + 293),
         )
 
     def draw_stat_tab(self, screen, panel_rect):

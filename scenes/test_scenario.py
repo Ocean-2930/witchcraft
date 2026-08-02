@@ -19,28 +19,29 @@ def senario(scene: "DungeonScene"):
             )
         )
     )
-    scene.dungeon_inventory.add_learnable_skill(
-        LearnableSkill(
-            tier=1,
-            skill=SkillInstance(
-                AttackSkill(),
-                level=0,
-            ),
-            max_level=3,
-        )
-    )
-    for passive_skill in STAT_PASSIVE_SKILLS[:4]:
+    for tier in (1, 2):
         scene.dungeon_inventory.add_learnable_skill(
             LearnableSkill(
-                tier=1,
+                tier=tier,
                 skill=SkillInstance(
-                    passive_skill,
+                    AttackSkill(),
                     level=0,
                 ),
                 max_level=3,
             )
         )
-    scene.dungeon_inventory.set_tier_skill_points(1, 50)
+        for passive_skill in STAT_PASSIVE_SKILLS[:4]:
+            scene.dungeon_inventory.add_learnable_skill(
+                LearnableSkill(
+                    tier=tier,
+                    skill=SkillInstance(
+                        passive_skill,
+                        level=0,
+                    ),
+                    max_level=3,
+                )
+            )
+        scene.dungeon_inventory.set_tier_skill_points(tier, 50)
     scene.dungeon_inventory.add_learnable_skill(
         LearnableSkill(
             tier=8,

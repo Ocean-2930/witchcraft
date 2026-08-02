@@ -4,6 +4,7 @@ from items import Equip
 from .scene import Scene
 from settings import ESCAPE, MOUSE_LEFT, TAB, VIRTUAL_HEIGHT, VIRTUAL_WIDTH
 from ui import (
+    ActiveSkillGrid,
     EquipmentSlot,
     InventoryContentRenderer,
     InventoryPanelRenderer,
@@ -91,6 +92,7 @@ class InventoryScene(Scene):
         self.popup_rect = None
         self.popup_interacted_this_frame = False
         self.selected_item_index = None
+        self.selected_active_skill_code = None
         self.discard_amount = 1
 
         self.panel_renderer = InventoryPanelRenderer(
@@ -110,6 +112,7 @@ class InventoryScene(Scene):
         self.create_item_slots()
         self.create_skill_equip_slots()
         self.create_learnable_skill_list_view()
+        self.create_active_skill_grid()
         self.create_passive_skill_grid()
         self.create_popup_buttons()
         self.update_slot_visibility()
@@ -239,7 +242,7 @@ class InventoryScene(Scene):
         slot_gap = 8
         total_width = slot_size * columns + slot_gap * (columns - 1)
         first_slot_x = VIRTUAL_WIDTH // 2 - total_width // 2
-        first_slot_y = (VIRTUAL_HEIGHT - self.PANEL_HEIGHT) // 2 + 148
+        first_slot_y = (VIRTUAL_HEIGHT - self.PANEL_HEIGHT) // 2 + 122
 
         for index, key_text in enumerate(self.SKILL_SLOT_LABELS):
             row, column = divmod(index, columns)
@@ -258,7 +261,7 @@ class InventoryScene(Scene):
                     slot_rect.centery,
                     slot_size,
                     slot_size,
-                    lambda selected_key=key_text: self.assign_item_to_hotbar(
+                    lambda selected_key=key_text: self.assign_to_hotbar(
                         selected_key
                     ),
                 )
@@ -306,6 +309,26 @@ class InventoryScene(Scene):
             content_rect.width,
             content_rect.height,
             lambda: getattr(self.parent_scene, "dungeon_inventory", None),
+        )
+
+    def create_active_skill_grid(self):
+        panel_left = (VIRTUAL_WIDTH - self.PANEL_WIDTH) // 2
+        panel_top = (VIRTUAL_HEIGHT - self.PANEL_HEIGHT) // 2
+        content_rect = pygame.Rect(
+            panel_left + 46,
+            panel_top + 322,
+            self.PANEL_WIDTH - 92,
+            264,
+        )
+        self.active_skill_grid = ActiveSkillGrid(
+            self,
+            content_rect.centerx,
+            content_rect.centery,
+            content_rect.width,
+            content_rect.height,
+            lambda: getattr(self.parent_scene, "dungeon_inventory", None),
+            self.select_active_skill,
+            lambda: self.selected_active_skill_code,
         )
 
     def create_popup_buttons(self):
@@ -390,6 +413,8 @@ class InventoryScene(Scene):
     def select_tab(self, label):
         self.close_item_popup()
         self.selected_tab = label
+        if label != "스킬":
+            self.selected_active_skill_code = None
         self.update_slot_visibility()
 
     def select_stat_tab(self, label):
@@ -693,6 +718,31 @@ class InventoryScene(Scene):
 
         self.close_item_popup()
 
+    def select_active_skill(self, skill_instance):
+        self.selected_active_skill_code = skill_instance.skill.skill_code
+
+    def assign_to_hotbar(self, key_label):
+        if self.popup_mode == "shortcut":
+            self.assign_item_to_hotbar(key_label)
+            return
+        if self.selected_tab != "스킬":
+            return
+
+        dungeon_inventory = getattr(
+            self.parent_scene,
+            "dungeon_inventory",
+            None,
+        )
+        if (
+            dungeon_inventory is not None
+            and self.selected_active_skill_code is not None
+            and dungeon_inventory.assign_hotbar_skill(
+                key_label,
+                self.selected_active_skill_code,
+            )
+        ):
+            self.selected_active_skill_code = None
+
     def get_item_inventory(self):
         dungeon_inventory = getattr(self.parent_scene, "dungeon_inventory", None)
         return (
@@ -731,6 +781,7 @@ class InventoryScene(Scene):
             button.set_visible(self.selected_tab == "스탯")
 
         self.learnable_skill_list_view.set_visible(self.selected_tab == "영웅")
+        self.active_skill_grid.set_visible(self.selected_tab == "스킬")
         self.passive_skill_grid.set_visible(
             self.selected_tab == "스탯"
             and self.selected_stat_tab == "패시브"
@@ -793,6 +844,15 @@ class InventoryScene(Scene):
             )
             if item_instance is not None:
                 slot.set_item(item_instance)
+                continue
+
+            equipped_skill = (
+                dungeon_inventory.get_hotbar_skill(key_label)
+                if dungeon_inventory is not None
+                else None
+            )
+            if equipped_skill is not None:
+                slot.set_skill_text(equipped_skill.skill.name)
                 continue
 
             skill = hotbar_skills.get(key_label)

@@ -19,6 +19,7 @@ from .game_entry_scene import GameEntryStartButton
 
 # inventory_scene
 from .inventory_scene import (
+    ActiveSkillGrid,
     EquipmentSlot,
     InventoryContentRenderer,
     InventoryPanelRenderer,
@@ -60,6 +61,7 @@ __all__ = [
     "GameEntryStartButton",
     # inventory_scene
     "EquipmentSlot",
+    "ActiveSkillGrid",
     "InventoryContentRenderer",
     "InventoryPanelRenderer",
     "InventoryPopupRenderer",

@@ -23,7 +23,8 @@ class ActiveSkill(SkillBase):
         range_vectors: list[tuple[int, int]] | None = None,
         requires_direction: bool = True,
         allow_diagonal: bool = False,
-        max_level: int = 1,
+        max_level: int | None = 1,
+        allow_negative_level: bool = False,
         skill_code: str | None = None,
         description: str = "",
     ):
@@ -32,6 +33,7 @@ class ActiveSkill(SkillBase):
             skill_code=skill_code or name,
             description=description,
             max_level=max_level,
+            allow_negative_level=allow_negative_level,
             mp_cost=mp_cost,
             range_vectors=[(0, -1)] if range_vectors is None else range_vectors,
             requires_direction=requires_direction,

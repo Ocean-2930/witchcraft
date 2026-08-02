@@ -9,7 +9,7 @@ class PlayerStatusRenderer(Renderer):
     def __init__(
         self,
         scene,
-        player,
+        player_getter,
         pos_x,
         pos_y,
         profile_size=92,
@@ -17,7 +17,7 @@ class PlayerStatusRenderer(Renderer):
         bar_width=220,
         profile_image=None,
     ):
-        self.player = player
+        self.player_getter = player_getter
         self.profile_size = profile_size
         self.value_width = value_width
         self.bar_width = bar_width
@@ -39,6 +39,7 @@ class PlayerStatusRenderer(Renderer):
         super().__init__(scene, pos_x, pos_y, width, profile_size)
 
     def draw(self, screen):
+        player = self.player_getter()
         profile_rect = pygame.Rect(
             self.rect.left,
             self.rect.top,
@@ -56,8 +57,8 @@ class PlayerStatusRenderer(Renderer):
         self.draw_resource_row(
             screen,
             "HP",
-            self.player.hp,
-            self.player.max_hp,
+            player.hp,
+            player.max_hp,
             value_x,
             bar_x,
             first_bar_y,
@@ -67,8 +68,8 @@ class PlayerStatusRenderer(Renderer):
         self.draw_resource_row(
             screen,
             "MP",
-            self.player.mp,
-            self.player.max_mp,
+            player.mp,
+            player.max_mp,
             value_x,
             bar_x,
             first_bar_y + self.bar_height + self.bar_gap,

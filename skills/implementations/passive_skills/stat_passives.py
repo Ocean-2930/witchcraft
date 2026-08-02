@@ -31,7 +31,8 @@ def create_stat_passive_skills():
             name=name,
             skill_code=skill_code,
             description=f"레벨마다 {name} 수치를 {amount:g} 증가시킨다.",
-            max_level=5,
+            max_level=None,
+            allow_negative_level=True,
             requires_direction=False,
             effects=[
                 StatIncreaseEffect(

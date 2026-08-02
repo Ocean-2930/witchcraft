@@ -7,11 +7,13 @@
 - `SkillBase`는 방향 요구 여부, 대각선 허용 여부, 방향 판정 결과, 방향에 따른 범위 회전과 명시적으로 전달된 원점 기준 대상 타일 계산을 관리한다.
 - `SkillEffect`는 방향키를 직접 알지 않는다. scene이 범위로 대상을 결정한 뒤 효과 판정과 적용에 대상만 전달한다.
 - `UsableItem`은 아이템이 가진 `skillbase`의 효과 실행을 위임한다. hotbar에 등록된 `skillbase` 아이템의 방향 선택은 일반 스킬과 같은 scene 입력 흐름을 사용한다.
-- `SkillInstance.level`은 `LearnableSkill`의 미투자 상태를 위해 0부터 시작할 수 있다. `DungeonInventory`의 전투 스킬 집계와 패시브 계산에는 레벨 1 이상인 인스턴스만 들어간다.
+- `SkillInstance.level`은 `LearnableSkill`의 미투자 상태를 위해 0부터 시작할 수 있다. 기본적으로 음수 레벨은 금지하지만 `SkillBase.allow_negative_level`이 참인 스킬은 음수 레벨도 허용한다. `DungeonInventory`의 전투 스킬 집계와 패시브 계산에는 레벨이 0이 아닌 인스턴스가 들어간다.
 - 모든 스킬 정의는 `SkillBase.description`에 UI용 설명을 보관하며, `ActiveSkill` 생성 시에도 설명을 전달할 수 있다.
 - `DungeonInventory.learnable_skills`는 티어마다 독립된 포인트를 사용한다. `invest_skill(...)`은 항목의 티어 포인트가 남고 `LearnableSkill.max_level`에 도달하지 않았을 때만 레벨을 1 올린다.
-- `LearnableSkill.max_level`은 생략하면 스킬 정의의 최대 레벨을 사용하고, 명시하면 정의의 최대 레벨 이하에서 영웅별 투자 상한을 제한한다. 실제 액티브·패시브 스킬 콘텐츠는 `skills/implementations/` 아래의 종류별 폴더에 둔다.
-- 능력치 패시브는 `StatIncreaseEffect`로 대상 속성, 레벨당 증가량, 레벨과 중첩을 곱해 계산한다.
+- `DungeonInventory.hotbar_skill_codes`는 현재 보유한 합산 액티브 스킬의 코드를 단축키에 연결한다. 같은 스킬 코드는 퀵슬롯 전체에서 하나만 장착할 수 있으며, 다른 슬롯에 장착하면 기존 슬롯에서 해제된 뒤 새 슬롯으로 이동한다. 던전에서 단축키를 실행할 때는 아이템, 인벤토리에 장착한 액티브 스킬, 기본 hotbar 스킬 순으로 실행 대상을 결정한다.
+- `SkillBase.max_level`과 `LearnableSkill.max_level`의 `None`은 레벨 상한이 없음을 뜻한다. 학습 항목의 상한을 명시하면 스킬 정의에 상한이 있는 경우 그 이하에서 영웅별 투자 상한을 제한한다. 실제 액티브·패시브 스킬 콘텐츠는 `skills/implementations/` 아래의 종류별 폴더에 둔다.
+- 능력치 패시브는 모두 레벨 상한이 없고 음수 레벨을 허용한다. `StatIncreaseEffect`가 대상 속성에 레벨당 증감량, 레벨과 중첩을 곱해 적용하므로 음수 레벨은 해당 스탯을 감소시킨다.
+- 영웅 학습 스킬과 장비 스킬처럼 출처가 다른 동일 `skill_code`의 스킬은 각 인스턴스의 `level × stack`을 더해 하나의 `SkillInstance`로 정규화한다. 원본 `SkillBase.max_level`이 있으면 합산 레벨은 그 상한을 넘지 않으며, 합산 결과의 `stack`은 1이다.
 
 ## 방향 판정
 
