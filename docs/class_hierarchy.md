@@ -39,6 +39,10 @@ UnitBase
 
 Item
 └─ Equip
+   └─ SkilledEquip
+
+ItemInstance
+└─ EquipmentInstance
 
 SkillBase
 └─ 능동 스킬 정의
@@ -50,7 +54,8 @@ SkillEffect
 ```
 
 - `UnitBase`는 기초 능력치를, `Unit`은 체력·마나·버프와 전투 계산을 제공한다.
-- `Item`은 공통 아이템 데이터를, `Equip`은 장비 공통 계약을 제공한다.
+- `Item`은 공통 아이템 데이터를, `Equip`은 장비 공통 계약을, `SkilledEquip`은 드롭 기본 스킬 행을 제공한다.
+- `ItemInstance`는 드롭된 아이템 상태를 관리하고 `EquipmentInstance`는 장비별 7개 스탯 행을 추가로 소유한다.
 - `SkillBase`는 비용, 범위 및 효과 조합을 관리한다.
 - `SkillEffect`는 판정, 미리보기 및 적용을 위한 효과 계약을 제공한다.
 - `PassiveEffect`는 능력치 계산 흐름에서 적용되는 수동 효과 기반이고, `StatIncreaseEffect`는 지정한 단일 능력치를 레벨과 중첩에 비례해 증가시킨다.

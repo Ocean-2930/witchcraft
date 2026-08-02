@@ -13,38 +13,32 @@ if TYPE_CHECKING:
 class SkilledEquip(Equip):
     MAX_SKILLS: ClassVar[int] = 7
 
-    skills: list[SkillInstance] = field(default_factory=list)
+    base_skills: list[SkillInstance] = field(default_factory=list)
 
     def __post_init__(self):
-        if len(self.skills) > self.MAX_SKILLS:
+        if len(self.base_skills) > self.MAX_SKILLS:
             raise ValueError(f"스킬은 최대 {self.MAX_SKILLS}개까지 장착할 수 있습니다.")
 
     def add_skill(self, skill: SkillInstance):
-        if len(self.skills) >= self.MAX_SKILLS:
+        if len(self.base_skills) >= self.MAX_SKILLS:
             return False
 
-        self.skills.append(skill)
+        self.base_skills.append(skill)
         return True
 
     def remove_skill(self, skill: SkillInstance):
-        if skill not in self.skills:
+        if skill not in self.base_skills:
             return False
 
-        self.skills.remove(skill)
+        self.base_skills.remove(skill)
         return True
 
     def getstar(self) -> int:
-        return len(self.skills)
+        return len(self.base_skills)
 
-    def get_detail_rows(self) -> list[tuple[str, str]]:
-        rows = [
-            (skill.skill.name, f"Lv.{skill.level}")
-            for skill in self.skills
-        ]
-        rows.extend(
-            ("-", "Lv.-")
-            for _ in range(self.MAX_SKILLS - len(rows))
-        )
+    def get_drop_stat_rows(self) -> list[SkillInstance | None]:
+        rows: list[SkillInstance | None] = list(self.base_skills)
+        rows.extend(None for _ in range(self.MAX_SKILLS - len(rows)))
         return rows
 
     def mergecheck(self, equip: Equip) -> bool:

@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from items import BluePotion, ItemInstance, SimpleSword
+from items import BluePotion, EquipmentInstance, ItemInstance, SimpleSword
 from inventory import LearnableSkill
 from skills import AttackSkill, SkillInstance, STAT_PASSIVE_SKILLS
 
@@ -12,7 +12,20 @@ def senario(scene: "DungeonScene"):
     """개발 중 던전의 초기 상태를 변경하는 테스트 시나리오."""
     scene.dungeon_inventory.add_item(ItemInstance(BluePotion(), stack=3))
     scene.dungeon_inventory.add_item(
-        ItemInstance(SimpleSword())
+        EquipmentInstance(
+            SimpleSword(),
+            stat_rows=[
+                *(
+                    SkillInstance(skill, level=level)
+                    for skill, level in zip(
+                        STAT_PASSIVE_SKILLS[:5],
+                        (3, 2, 5, 4, 2),
+                    )
+                ),
+                None,
+                None,
+            ],
+        )
     )
     for tier in (1, 2):
         scene.dungeon_inventory.add_learnable_skill(

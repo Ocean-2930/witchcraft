@@ -6,7 +6,7 @@
 
 - 공통 아이템 데이터와 스프라이트 조회는 `Item`에 둔다.
 - 장비 공통 동작은 `Equip`, 소비·사용 동작은 `UsableItem`을 기준으로 확장한다.
-- 보유 수량, 강화처럼 개별 보유 상태는 아이템 원형과 분리하여 `ItemInstance`에서 관리한다.
+- 보유 수량처럼 개별 보유 상태는 아이템 원형과 분리하여 `ItemInstance`에서 관리한다. 드롭 이후 변경되는 장비 스탯 행은 `EquipmentInstance.stat_rows`가 관리하며 장비 원형은 드롭 기본 행만 제공한다.
 - 스킬이 포함된 장비는 허용 개수와 병합 조건을 `SkilledEquip` 계층에서 일관되게 처리한다.
 
 ## Content Layout

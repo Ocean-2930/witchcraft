@@ -38,7 +38,7 @@ class ItemWindowRenderer(Renderer):
             (self.rect.left + 10, line_y),
             (self.rect.right - 10, line_y),
         )
-        detail_rows = item.get_detail_rows()
+        detail_rows = item_instance.get_detail_rows()
         content_y = line_y + 9
         if item.get_description():
             content_y = self.window.draw_description(
@@ -78,7 +78,7 @@ class ItemWindow(UIElement):
             self.hide()
             return
         item_instance = self.get_item_instance()
-        detail_rows = item_instance.item.get_detail_rows()
+        detail_rows = item_instance.get_detail_rows()
         height = (
             150
             if not detail_rows

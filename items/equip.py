@@ -20,6 +20,9 @@ class Equip(Item):
     type: str
     baseskill: SkillBase | None = None
 
+    def get_drop_stat_rows(self) -> list:
+        return []
+
     def equipcheck(self, player: Player, target: Equip | None) -> bool:
         return target is None or target.unequipcheck(player)
 

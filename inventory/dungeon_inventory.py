@@ -4,7 +4,7 @@ from copy import deepcopy
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, ClassVar
 
-from items import Equip, ItemInstance, SkilledEquip
+from items import EquipmentInstance, Equip, ItemInstance, SkilledEquip
 from skills import SkillInstance
 
 from .item_inventory import ItemInventory
@@ -47,11 +47,11 @@ class DungeonInventory:
     item_inventory: ItemInventory = field(default_factory=ItemInventory)
     hotbar_items: dict[str, ItemInstance] = field(default_factory=dict)
     hotbar_skill_codes: dict[str, str] = field(default_factory=dict)
-    weapon: ItemInstance | None = None
-    sub_weapon: ItemInstance | None = None
-    armor: ItemInstance | None = None
-    accessory_1: ItemInstance | None = None
-    accessory_2: ItemInstance | None = None
+    weapon: EquipmentInstance | None = None
+    sub_weapon: EquipmentInstance | None = None
+    armor: EquipmentInstance | None = None
+    accessory_1: EquipmentInstance | None = None
+    accessory_2: EquipmentInstance | None = None
     learnable_skills: list[LearnableSkill] = field(default_factory=list)
     tier_skill_points: dict[int, int] = field(default_factory=dict)
 
@@ -81,7 +81,10 @@ class DungeonInventory:
             return False
 
         equipment = item_instance.item
-        if not isinstance(equipment, Equip):
+        if (
+            not isinstance(item_instance, EquipmentInstance)
+            or not isinstance(equipment, Equip)
+        ):
             return False
 
         slot_names = self.EQUIPMENT_SLOTS_BY_TYPE.get(equipment.type)
@@ -280,9 +283,10 @@ class DungeonInventory:
         ):
             if (
                 equipment is not None
+                and isinstance(equipment, EquipmentInstance)
                 and isinstance(equipment.item, SkilledEquip)
             ):
-                yield from equipment.item.skills
+                yield from equipment.skill_instances()
 
     @staticmethod
     def _stack_skills(skill_instances):
