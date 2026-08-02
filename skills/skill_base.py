@@ -2,7 +2,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from enum import Enum, auto
-from typing import TYPE_CHECKING
+from pathlib import Path
+from typing import TYPE_CHECKING, ClassVar
+
+import pygame
+
+from utilities import load_code_sprite
 
 if TYPE_CHECKING:
     from random import Random
@@ -29,6 +34,11 @@ class SkillTargetingInput:
 
 @dataclass
 class SkillBase:
+    ICON_DIRECTORY: ClassVar[Path] = (
+        Path(__file__).resolve().parents[1] / "assets" / "images" / "skills"
+    )
+    _icon_cache: ClassVar[dict[str, pygame.Surface]] = {}
+
     name: str
     skill_code: str = ""
     description: str = ""
@@ -60,6 +70,19 @@ class SkillBase:
 
     def spend_cost(self, caster: Unit):
         return caster.spend_mp(self.mp_cost)
+
+    def get_icon(self) -> pygame.Surface | None:
+        return load_code_sprite(
+            self.ICON_DIRECTORY,
+            self.skill_code,
+            self._icon_cache,
+        )
+
+    def has_icon(self) -> bool:
+        return bool(
+            self.skill_code
+            and (self.ICON_DIRECTORY / f"{self.skill_code}.png").is_file()
+        )
 
     def can_use_direction(self, direction: RangeVector) -> bool:
         direction_x, direction_y = direction

@@ -36,6 +36,7 @@ flowchart LR
 - scene 전용 UI라도 필요한 데이터와 callback을 생성자에서 명시적으로 받는다. renderer가 `scene.player` 같은 속성을 임의로 탐색하지 않는다.
 - 공용 `SkillCard`와 `SkillInfoWindow`는 `SkillInstance`만 받아 표시하며 스킬 투자 정책을 포함하지 않는다. 티어 포인트 투자는 인벤토리 scene 전용 `SkillInvestButton`이 `DungeonInventory`에 요청한다.
 - 공용 `ShortcutBar`와 `ShortcutSlot`은 던전과 인벤토리에서 동일한 단축키 표현을 제공한다. scene은 getter와 클릭 callback으로 내용과 동작을 전달하고 위치·열·슬롯 크기·간격만 화면별로 구성한다.
+- 아이템과 스킬 이미지는 공용 코드 스프라이트 로더를 사용한다. 각각 `item_code`와 `skill_code`를 파일명으로 삼아 `assets/images/items`, `assets/images/skills`에서 PNG를 찾고 캐시하며, 파일이 없으면 코드 기반 색상의 사각형 대체 이미지를 생성한다.
 - 스탯 패시브 탭의 `PassiveSkillGrid`는 `DungeonInventory.passive_skills()` 결과를 공용 `SkillCard`로 격자 배치하며, 적용 여부나 중첩 계산을 UI에서 다시 구현하지 않는다.
 - `DungeonInventory`는 영웅과 장비에서 모은 동일 코드의 스킬 레벨을 하나로 합산하고, 스킬 정의에 최대 레벨이 있으면 합산 결과를 그 상한으로 제한한다.
 - 던전 HUD와 몬스터 인스펙트의 플레이어 능력치 표시는 원본 `Player`를 직접 계산에 사용하지 않고 `DungeonInventory.get_stat()`의 합산 결과를 읽는다.

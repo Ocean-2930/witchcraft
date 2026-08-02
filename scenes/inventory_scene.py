@@ -256,6 +256,7 @@ class InventoryScene(Scene):
             vertical_gap=slot_gap,
             item_getter=self.get_hotbar_item,
             skill_getter=self.get_hotbar_display_skill,
+            skill_fallback_getter=self.has_equipped_hotbar_skill,
             on_slot_click=self.assign_to_hotbar,
         )
         self.skill_equip_slots = self.skill_equip_bar.slots
@@ -790,7 +791,18 @@ class InventoryScene(Scene):
         )
         if equipped_skill is not None:
             return equipped_skill
-        return getattr(self.parent_scene, "hotbar_skills", {}).get(key_label)
+        return None
+
+    def has_equipped_hotbar_skill(self, key_label):
+        dungeon_inventory = getattr(
+            self.parent_scene,
+            "dungeon_inventory",
+            None,
+        )
+        return (
+            dungeon_inventory is not None
+            and dungeon_inventory.get_hotbar_skill(key_label) is not None
+        )
 
     def get_selected_item(self):
         if self.selected_item_index is None:

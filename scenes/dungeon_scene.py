@@ -147,6 +147,7 @@ class DungeonScene(Scene):
             vertical_gap=8,
             item_getter=self.dungeon_inventory.get_hotbar_item,
             skill_getter=self.get_hotbar_display_skill,
+            skill_fallback_getter=self.has_equipped_hotbar_skill,
         )
         self.skill_direction_compass = SkillDirectionCompassRenderer(
             self,
@@ -528,12 +529,10 @@ class DungeonScene(Scene):
         return self.hotbar_skills.get(label)
 
     def get_hotbar_display_skill(self, label):
-        skill_instance = self.dungeon_inventory.get_hotbar_skill(label)
-        return (
-            skill_instance
-            if skill_instance is not None
-            else self.hotbar_skills.get(label)
-        )
+        return self.dungeon_inventory.get_hotbar_skill(label)
+
+    def has_equipped_hotbar_skill(self, label):
+        return self.dungeon_inventory.get_hotbar_skill(label) is not None
 
     def cancel_hotbar_skill(self, label):
         self.last_skill_call = {

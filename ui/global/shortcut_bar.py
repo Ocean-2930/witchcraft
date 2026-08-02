@@ -45,19 +45,41 @@ class ShortcutSlotRenderer(Renderer):
             screen.blit(image, image.get_rect(center=self.rect.center))
         else:
             skill = self.slot.get_skill()
-            skill_name = getattr(
-                getattr(skill, "skill", skill),
-                "name",
-                "",
+            skill_base = getattr(skill, "skill", skill)
+            get_icon = getattr(skill_base, "get_icon", None)
+            has_icon = getattr(skill_base, "has_icon", lambda: False)()
+            skill_icon = (
+                get_icon()
+                if get_icon is not None
+                and (has_icon or self.slot.use_skill_fallback())
+                else None
             )
-            if skill_name:
-                skill_surface = self.slot.content_font.render(
-                    skill_name,
-                    True,
-                    (255, 238, 190) if is_active else (238, 241, 244),
+            if skill_icon is not None:
+                padding = max(7, round(min(self.rect.size) * 0.125))
+                image = pygame.transform.smoothscale(
+                    skill_icon,
+                    (
+                        self.rect.width - padding * 2,
+                        self.rect.height - padding * 2,
+                    ),
                 )
-                skill_rect = skill_surface.get_rect(center=self.rect.center)
-                screen.blit(skill_surface, skill_rect)
+                screen.blit(image, image.get_rect(center=self.rect.center))
+            else:
+                skill_name = getattr(skill_base, "name", "")
+                if skill_name:
+                    skill_surface = self.slot.content_font.render(
+                        skill_name,
+                        True,
+                        (
+                            (255, 238, 190)
+                            if is_active
+                            else (238, 241, 244)
+                        ),
+                    )
+                    screen.blit(
+                        skill_surface,
+                        skill_surface.get_rect(center=self.rect.center),
+                    )
 
         if item_instance is not None:
             stack_surface = self.slot.content_font.render(
@@ -95,12 +117,14 @@ class ShortcutSlot(UIElement):
         item_getter,
         skill_getter,
         active_label_getter,
+        skill_fallback_getter,
         on_click=None,
     ):
         self.label = label
         self.item_getter = item_getter
         self.skill_getter = skill_getter
         self.active_label_getter = active_label_getter
+        self.skill_fallback_getter = skill_fallback_getter
         self.on_click = on_click
         self.visible = True
         self.key_font = pygame.font.SysFont("malgungothic", 16, bold=True)
@@ -120,6 +144,12 @@ class ShortcutSlot(UIElement):
         return (
             self.active_label_getter is not None
             and self.active_label_getter() == self.label
+        )
+
+    def use_skill_fallback(self):
+        return (
+            self.skill_fallback_getter is not None
+            and self.skill_fallback_getter(self.label)
         )
 
     def set_visible(self, visible):
@@ -158,6 +188,7 @@ class ShortcutBar(UIElement):
         vertical_gap,
         item_getter=None,
         skill_getter=None,
+        skill_fallback_getter=None,
         on_slot_click=None,
     ):
         self.labels = tuple(labels)
@@ -168,6 +199,7 @@ class ShortcutBar(UIElement):
         self.vertical_gap = vertical_gap
         self.item_getter = item_getter
         self.skill_getter = skill_getter
+        self.skill_fallback_getter = skill_fallback_getter
         self.on_slot_click = on_slot_click
         self.active_label = None
         self.visible = True
@@ -187,6 +219,7 @@ class ShortcutBar(UIElement):
                 item_getter,
                 skill_getter,
                 lambda: self.active_label,
+                skill_fallback_getter,
                 on_slot_click,
             )
             for label in self.labels
