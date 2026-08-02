@@ -36,6 +36,17 @@ class SkilledEquip(Equip):
     def getstar(self) -> int:
         return len(self.skills)
 
+    def get_detail_rows(self) -> list[tuple[str, str]]:
+        rows = [
+            (skill.skill.name, f"Lv.{skill.level}")
+            for skill in self.skills
+        ]
+        rows.extend(
+            ("-", "Lv.-")
+            for _ in range(self.MAX_SKILLS - len(rows))
+        )
+        return rows
+
     def mergecheck(self, equip: Equip) -> bool:
         return (
             isinstance(equip, SkilledEquip)

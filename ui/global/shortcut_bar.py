@@ -2,6 +2,7 @@ import pygame
 
 from ui.renderer import Renderer
 from ui.ui import UIElement
+from .item_window import ItemWindow
 
 
 class ShortcutSlotRenderer(Renderer):
@@ -118,6 +119,7 @@ class ShortcutSlot(UIElement):
         skill_getter,
         active_label_getter,
         skill_fallback_getter,
+        item_window_enabled_getter,
         on_click=None,
     ):
         self.label = label
@@ -125,6 +127,7 @@ class ShortcutSlot(UIElement):
         self.skill_getter = skill_getter
         self.active_label_getter = active_label_getter
         self.skill_fallback_getter = skill_fallback_getter
+        self.item_window_enabled_getter = item_window_enabled_getter
         self.on_click = on_click
         self.visible = True
         self.key_font = pygame.font.SysFont("malgungothic", 16, bold=True)
@@ -133,6 +136,7 @@ class ShortcutSlot(UIElement):
             scene, pos_x, pos_y, width, height, self
         )
         super().__init__(scene, renderer=renderer, background=False)
+        self.item_window = ItemWindow(scene, self.get_item)
 
     def get_item(self):
         return self.item_getter(self.label) if self.item_getter else None
@@ -156,6 +160,8 @@ class ShortcutSlot(UIElement):
         self.visible = visible
         if not visible and self.scene.ui_focus is self:
             self.scene.ui_focus = None
+        if not visible:
+            self.item_window.hide()
 
     def pos_check(self, mouse_pos):
         return self.visible and super().pos_check(mouse_pos)
@@ -164,7 +170,26 @@ class ShortcutSlot(UIElement):
         if self.on_click is not None:
             self.on_click(self.label)
 
+    def on_enter(self):
+        self.show_item_window(self.rect.bottomright)
+
+    def on_hover(self, delta_time, game_events, mouse_position, wheel_move):
+        self.show_item_window(mouse_position)
+
+    def on_exit(self):
+        self.item_window.hide()
+
+    def show_item_window(self, mouse_position):
+        if (
+            self.item_window_enabled_getter is not None
+            and not self.item_window_enabled_getter()
+        ):
+            self.item_window.hide()
+            return
+        self.item_window.show_at(mouse_position)
+
     def destroy(self):
+        self.item_window.destroy()
         super().destroy()
         self.renderer.destroy()
 
@@ -189,6 +214,7 @@ class ShortcutBar(UIElement):
         item_getter=None,
         skill_getter=None,
         skill_fallback_getter=None,
+        item_window_enabled_getter=None,
         on_slot_click=None,
     ):
         self.labels = tuple(labels)
@@ -200,6 +226,7 @@ class ShortcutBar(UIElement):
         self.item_getter = item_getter
         self.skill_getter = skill_getter
         self.skill_fallback_getter = skill_fallback_getter
+        self.item_window_enabled_getter = item_window_enabled_getter
         self.on_slot_click = on_slot_click
         self.active_label = None
         self.visible = True
@@ -220,6 +247,7 @@ class ShortcutBar(UIElement):
                 skill_getter,
                 lambda: self.active_label,
                 skill_fallback_getter,
+                item_window_enabled_getter,
                 on_slot_click,
             )
             for label in self.labels

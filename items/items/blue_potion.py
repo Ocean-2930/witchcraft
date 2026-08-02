@@ -13,3 +13,12 @@ class BluePotion(UsableItem):
 
     def use(self, user, target=None, rng=None):
         return user.recover_mp(self.MP_RECOVERY)
+
+    def get_name(self) -> str:
+        return "푸른 물약"
+
+    def get_description(self) -> str:
+        return f"마나를 {self.MP_RECOVERY} 회복한다."
+
+    def get_flavor_text(self) -> str:
+        return "푸른 마력이 담긴 작은 물약이다."

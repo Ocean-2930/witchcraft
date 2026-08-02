@@ -36,6 +36,7 @@ SkillCard = import_module(f"{__name__}.global").SkillCard
 SkillInfoWindow = import_module(f"{__name__}.global").SkillInfoWindow
 ShortcutBar = import_module(f"{__name__}.global").ShortcutBar
 ShortcutSlot = import_module(f"{__name__}.global").ShortcutSlot
+ItemWindow = import_module(f"{__name__}.global").ItemWindow
 
 # pause_scene
 from .pause_scene import PausePanelRenderer
@@ -75,6 +76,7 @@ __all__ = [
     "SkillInfoWindow",
     "ShortcutBar",
     "ShortcutSlot",
+    "ItemWindow",
     # pause_scene
     "PausePanelRenderer",
     # title_scene

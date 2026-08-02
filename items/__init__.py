@@ -5,6 +5,7 @@ from .item_instance import ItemInstance
 from .skilled_equip import SkilledEquip
 from .sub_weapon import SubWeapon
 from .usable_item import UsableItem
+from .equips import SimpleSword
 
 __all__ = [
     "BluePotion",
@@ -14,4 +15,5 @@ __all__ = [
     "SkilledEquip",
     "SubWeapon",
     "UsableItem",
+    "SimpleSword",
 ]

@@ -25,3 +25,15 @@ class Item:
             item_code,
             cls._sprite_cache,
         )
+
+    def get_name(self) -> str:
+        return self.item_code
+
+    def get_description(self) -> str:
+        return ""
+
+    def get_detail_rows(self) -> list[tuple[str, str]]:
+        return []
+
+    def get_flavor_text(self) -> str:
+        return ""

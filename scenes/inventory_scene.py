@@ -174,6 +174,7 @@ class InventoryScene(Scene):
                     lambda equipment_attribute=attribute_name: (
                         self.unequip_item(equipment_attribute)
                     ),
+                    item_window_enabled_getter=self.can_show_item_window,
                 )
             )
 
@@ -234,6 +235,7 @@ class InventoryScene(Scene):
                     lambda selected_index=index: self.equip_item_at_index(
                         selected_index
                     ),
+                    item_window_enabled_getter=self.can_show_item_window,
                 )
             )
 
@@ -257,6 +259,7 @@ class InventoryScene(Scene):
             item_getter=self.get_hotbar_item,
             skill_getter=self.get_hotbar_display_skill,
             skill_fallback_getter=self.has_equipped_hotbar_skill,
+            item_window_enabled_getter=self.can_show_item_window,
             on_slot_click=self.assign_to_hotbar,
         )
         self.skill_equip_slots = self.skill_equip_bar.slots
@@ -429,6 +432,7 @@ class InventoryScene(Scene):
 
         self.selected_item_index = item_index
         self.popup_mode = "actions"
+        self.hide_item_windows()
         self.popup_interacted_this_frame = True
         self.position_action_buttons()
         self.update_popup_visibility()
@@ -441,6 +445,7 @@ class InventoryScene(Scene):
 
         self.discard_amount = 1
         self.popup_mode = "discard"
+        self.hide_item_windows()
         self.popup_interacted_this_frame = True
         self.position_discard_popup()
         self.update_popup_visibility()
@@ -710,6 +715,7 @@ class InventoryScene(Scene):
             return
 
         self.popup_mode = "shortcut"
+        self.hide_item_windows()
         self.popup_interacted_this_frame = True
         self.position_shortcut_popup()
         self.update_popup_visibility()
@@ -814,6 +820,17 @@ class InventoryScene(Scene):
 
         return inventory_items[self.selected_item_index]
 
+    def can_show_item_window(self):
+        return self.popup_mode is None
+
+    def hide_item_windows(self):
+        for slot in (
+            *self.equipment_slots,
+            *self.item_slots,
+            *self.skill_equip_slots,
+        ):
+            slot.item_window.hide()
+
     def update_slot_visibility(self):
         equipment_visible = self.selected_tab == "장비"
         skill_visible = (
@@ -851,7 +868,7 @@ class InventoryScene(Scene):
             item = getattr(item_instance, "item", None)
             slot.set_item(
                 self.get_item_instance_text(item_instance),
-                item,
+                item_instance,
             )
 
         inventory = (
@@ -874,7 +891,7 @@ class InventoryScene(Scene):
                 else ""
             )
             item = getattr(item_instance, "item", None)
-            slot.set_text(item_text, stack_text, item)
+            slot.set_text(item_text, stack_text, item_instance)
 
 
     def scene_update(self, delta_time, game_events, mouse_position, wheel_move):
