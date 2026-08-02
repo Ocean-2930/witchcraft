@@ -44,6 +44,7 @@ flowchart LR
 - UI focus는 `ui_listener`를 역순으로 검사하므로 나중에 생성한 UI가 우선한다. focus 변경 시 `on_exit()`와 `on_enter()`를 호출하고, focus 대상에는 hover 후 왼쪽·오른쪽·휠 클릭 순으로 하나의 click hook을 호출한다.
 - 부모·자식 UI는 부모를 먼저 생성하고 자식을 나중에 생성한 뒤 `add_sub_ui(...)`로 연결한다.
 - 던전 HUD의 HP·MP 바는 `DungeonInventory.get_stat()`으로 계산된 최대 HP·MP를 표시하고, 몬스터 인스펙트의 피해·명중·치명 미리보기도 같은 합산 능력치를 공격자 능력치로 사용한다.
+- 던전 화면, 인벤토리 스킬 탭과 소모품 단축키 popup은 모두 공용 `ShortcutBar`와 `ShortcutSlot`을 사용한다. 키 라벨, 아이템 이미지와 수량, 스킬명, 활성 강조의 표현은 공통이며, 바의 중심 위치, 열 수, 슬롯 너비·높이와 가로·세로 간격은 생성 또는 `set_layout(...)` 입력으로 제어한다.
 - UI나 renderer 제거 시 listener 목록을 직접 수정하지 않고 `destroy()`를 호출한다.
 
 ## 화면 전환
@@ -166,7 +167,7 @@ flowchart TD
 └───────────────────────────────────────────┘
 ```
 
-- 평소 스킬 탭에서 사용하던 8개의 hotbar 슬롯을 popup 안의 4열 × 2행 위치로 임시 이동하고 draw layer를 높여 popup 위에 표시한다.
+- 평소 스킬 탭에서 사용하던 공용 `ShortcutBar`를 `set_layout(...)`으로 popup 안의 4열 × 2행 위치로 임시 이동하고 draw layer를 높여 popup 위에 표시한다.
 - 슬롯 하나를 누르면 선택한 아이템 인스턴스를 해당 키의 `hotbar_items`에 지정하고 popup을 닫는다.
 - popup이 닫히면 슬롯을 스킬 탭의 원래 위치와 draw layer로 복원한다.
 - 이미 다른 스킬이나 아이템이 연결된 키를 선택하면 해당 키의 아이템 연결값을 새 아이템으로 교체한다.

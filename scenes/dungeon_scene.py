@@ -25,13 +25,13 @@ from settings import (
 )
 from ui import (
     FloorTileRenderer,
-    HotbarRenderer,
     MonsterMarkerRenderer,
     MonsterTooltipRenderer,
     PauseButton,
     PlayerMarkerRenderer,
     PlayerStatusRenderer,
     SkillDirectionCompassRenderer,
+    ShortcutBar,
     WallTileRenderer,
 )
 from skills import Skill, SkillDirectionStatus, SkillTargetingInput
@@ -135,13 +135,18 @@ class DungeonScene(Scene):
         )
         self.set_dungeon_draw_order(self.player_marker, self.player.tile_x, self.player.tile_y, self.DEPTH_UNIT)
         self.create_monster(6, 3)
-        self.hotbar = HotbarRenderer(
+        self.hotbar = ShortcutBar(
             self,
-            28 + (72 * 4 + 8 * 3) // 2,
-            VIRTUAL_HEIGHT - 28 - (72 * 2 + 8) // 2,
-            72,
-            8,
-            self.dungeon_inventory.get_hotbar_item,
+            labels=("1", "2", "3", "4", "Q", "W", "E", "R"),
+            pos_x=28 + (72 * 4 + 8 * 3) // 2,
+            pos_y=VIRTUAL_HEIGHT - 28 - (72 * 2 + 8) // 2,
+            columns=4,
+            slot_width=72,
+            slot_height=72,
+            horizontal_gap=8,
+            vertical_gap=8,
+            item_getter=self.dungeon_inventory.get_hotbar_item,
+            skill_getter=self.get_hotbar_display_skill,
         )
         self.skill_direction_compass = SkillDirectionCompassRenderer(
             self,
@@ -521,6 +526,14 @@ class DungeonScene(Scene):
             return skill_instance.skill
 
         return self.hotbar_skills.get(label)
+
+    def get_hotbar_display_skill(self, label):
+        skill_instance = self.dungeon_inventory.get_hotbar_skill(label)
+        return (
+            skill_instance
+            if skill_instance is not None
+            else self.hotbar_skills.get(label)
+        )
 
     def cancel_hotbar_skill(self, label):
         self.last_skill_call = {

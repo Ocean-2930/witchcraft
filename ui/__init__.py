@@ -5,7 +5,6 @@ from .renderer import Renderer
 # dungeon_scene
 from .dungeon_scene import (
     FloorTileRenderer,
-    HotbarRenderer,
     MonsterMarkerRenderer,
     MonsterTooltipRenderer,
     PlayerMarkerRenderer,
@@ -27,7 +26,6 @@ from .inventory_scene import (
     InventoryTabButton,
     ItemSlot,
     InventoryPopupButton,
-    SkillEquipSlot,
     LearnableSkillListView,
     PassiveSkillGrid,
 )
@@ -36,6 +34,8 @@ from .inventory_scene import (
 PauseButton = import_module(f"{__name__}.global").PauseButton
 SkillCard = import_module(f"{__name__}.global").SkillCard
 SkillInfoWindow = import_module(f"{__name__}.global").SkillInfoWindow
+ShortcutBar = import_module(f"{__name__}.global").ShortcutBar
+ShortcutSlot = import_module(f"{__name__}.global").ShortcutSlot
 
 # pause_scene
 from .pause_scene import PausePanelRenderer
@@ -50,7 +50,6 @@ __all__ = [
     "Renderer",
     # dungeon_scene
     "FloorTileRenderer",
-    "HotbarRenderer",
     "MonsterMarkerRenderer",
     "MonsterTooltipRenderer",
     "PlayerMarkerRenderer",
@@ -68,13 +67,14 @@ __all__ = [
     "InventoryTabButton",
     "ItemSlot",
     "InventoryPopupButton",
-    "SkillEquipSlot",
     "LearnableSkillListView",
     "PassiveSkillGrid",
     # global
     "PauseButton",
     "SkillCard",
     "SkillInfoWindow",
+    "ShortcutBar",
+    "ShortcutSlot",
     # pause_scene
     "PausePanelRenderer",
     # title_scene

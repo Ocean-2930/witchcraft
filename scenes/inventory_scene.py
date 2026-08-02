@@ -12,7 +12,7 @@ from ui import (
     InventoryPopupRenderer,
     InventoryTabButton,
     ItemSlot,
-    SkillEquipSlot,
+    ShortcutBar,
     LearnableSkillListView,
     PassiveSkillGrid,
 )
@@ -86,7 +86,8 @@ class InventoryScene(Scene):
         self.equipment_slots = []
         self.item_slots = []
         self.skill_equip_slots = []
-        self.skill_slot_default_transforms = []
+        self.skill_equip_bar = None
+        self.skill_bar_default_layout = None
         self.popup_buttons = {}
         self.popup_mode = None
         self.popup_rect = None
@@ -241,39 +242,32 @@ class InventoryScene(Scene):
         slot_size = 72
         slot_gap = 8
         total_width = slot_size * columns + slot_gap * (columns - 1)
-        first_slot_x = VIRTUAL_WIDTH // 2 - total_width // 2
         first_slot_y = (VIRTUAL_HEIGHT - self.PANEL_HEIGHT) // 2 + 122
-
-        for index, key_text in enumerate(self.SKILL_SLOT_LABELS):
-            row, column = divmod(index, columns)
-            slot_rect = pygame.Rect(
-                first_slot_x + column * (slot_size + slot_gap),
-                first_slot_y + row * (slot_size + slot_gap),
-                slot_size,
-                slot_size,
-            )
-            self.skill_equip_slots.append(
-                SkillEquipSlot(
-                    self,
-                    key_text,
-                    "",
-                    slot_rect.centerx,
-                    slot_rect.centery,
-                    slot_size,
-                    slot_size,
-                    lambda selected_key=key_text: self.assign_to_hotbar(
-                        selected_key
-                    ),
-                )
-            )
-            self.skill_slot_default_transforms.append(
-                (
-                    slot_rect.centerx,
-                    slot_rect.centery,
-                    slot_size,
-                    slot_size,
-                )
-            )
+        total_height = slot_size * 2 + slot_gap
+        self.skill_equip_bar = ShortcutBar(
+            self,
+            labels=self.SKILL_SLOT_LABELS,
+            pos_x=VIRTUAL_WIDTH // 2,
+            pos_y=first_slot_y + total_height // 2,
+            columns=columns,
+            slot_width=slot_size,
+            slot_height=slot_size,
+            horizontal_gap=slot_gap,
+            vertical_gap=slot_gap,
+            item_getter=self.get_hotbar_item,
+            skill_getter=self.get_hotbar_display_skill,
+            on_slot_click=self.assign_to_hotbar,
+        )
+        self.skill_equip_slots = self.skill_equip_bar.slots
+        self.skill_bar_default_layout = (
+            VIRTUAL_WIDTH // 2,
+            first_slot_y + total_height // 2,
+            columns,
+            slot_size,
+            slot_size,
+            slot_gap,
+            slot_gap,
+        )
 
     def create_learnable_skill_list_view(self):
         panel_left = (VIRTUAL_WIDTH - self.PANEL_WIDTH) // 2
@@ -587,22 +581,39 @@ class InventoryScene(Scene):
         first_left = self.popup_rect.centerx - slots_width // 2
         first_top = popup_top + 48
 
-        for index, slot in enumerate(self.skill_equip_slots):
-            row, column = divmod(index, columns)
-            slot.set_transform(
-                first_left + column * (slot_size + slot_gap) + slot_size // 2,
-                first_top + row * (slot_size + slot_gap) + slot_size // 2,
-                slot_size,
-                slot_size,
-            )
+        self.skill_equip_bar.set_layout(
+            first_left + slots_width // 2,
+            first_top + (slot_size * 2 + slot_gap) // 2,
+            columns=columns,
+            slot_width=slot_size,
+            slot_height=slot_size,
+            horizontal_gap=slot_gap,
+            vertical_gap=slot_gap,
+        )
+        for slot in self.skill_equip_slots:
             slot.renderer.draw_layer = 110
 
     def restore_skill_equip_slot_positions(self):
-        for slot, transform in zip(
-            self.skill_equip_slots,
-            self.skill_slot_default_transforms,
-        ):
-            slot.set_transform(*transform)
+        if self.skill_bar_default_layout is not None:
+            (
+                pos_x,
+                pos_y,
+                columns,
+                slot_width,
+                slot_height,
+                horizontal_gap,
+                vertical_gap,
+            ) = self.skill_bar_default_layout
+            self.skill_equip_bar.set_layout(
+                pos_x,
+                pos_y,
+                columns=columns,
+                slot_width=slot_width,
+                slot_height=slot_height,
+                horizontal_gap=horizontal_gap,
+                vertical_gap=vertical_gap,
+            )
+        for slot in self.skill_equip_slots:
             slot.renderer.draw_layer = 0
 
     def get_context_popup_left(self, selected_rect, popup_width):
@@ -754,6 +765,33 @@ class InventoryScene(Scene):
     def get_inventory_items(self):
         return getattr(self.get_item_inventory(), "items", [])
 
+    def get_hotbar_item(self, key_label):
+        dungeon_inventory = getattr(
+            self.parent_scene,
+            "dungeon_inventory",
+            None,
+        )
+        return (
+            dungeon_inventory.get_hotbar_item(key_label)
+            if dungeon_inventory is not None
+            else None
+        )
+
+    def get_hotbar_display_skill(self, key_label):
+        dungeon_inventory = getattr(
+            self.parent_scene,
+            "dungeon_inventory",
+            None,
+        )
+        equipped_skill = (
+            dungeon_inventory.get_hotbar_skill(key_label)
+            if dungeon_inventory is not None
+            else None
+        )
+        if equipped_skill is not None:
+            return equipped_skill
+        return getattr(self.parent_scene, "hotbar_skills", {}).get(key_label)
+
     def get_selected_item(self):
         if self.selected_item_index is None:
             return None
@@ -774,8 +812,7 @@ class InventoryScene(Scene):
         for slot in (*self.equipment_slots, *self.item_slots):
             slot.set_visible(equipment_visible)
 
-        for slot in self.skill_equip_slots:
-            slot.set_visible(skill_visible)
+        self.skill_equip_bar.set_visible(skill_visible)
 
         for button in self.stat_tab_buttons:
             button.set_visible(self.selected_tab == "스탯")
@@ -827,36 +864,6 @@ class InventoryScene(Scene):
             item = getattr(item_instance, "item", None)
             slot.set_text(item_text, stack_text, item)
 
-        dungeon_inventory = getattr(
-            self.parent_scene,
-            "dungeon_inventory",
-            None,
-        )
-        hotbar_skills = getattr(self.parent_scene, "hotbar_skills", {})
-        for slot, key_label in zip(
-            self.skill_equip_slots,
-            self.SKILL_SLOT_LABELS,
-        ):
-            item_instance = (
-                dungeon_inventory.get_hotbar_item(key_label)
-                if dungeon_inventory is not None
-                else None
-            )
-            if item_instance is not None:
-                slot.set_item(item_instance)
-                continue
-
-            equipped_skill = (
-                dungeon_inventory.get_hotbar_skill(key_label)
-                if dungeon_inventory is not None
-                else None
-            )
-            if equipped_skill is not None:
-                slot.set_skill_text(equipped_skill.skill.name)
-                continue
-
-            skill = hotbar_skills.get(key_label)
-            slot.set_skill_text(getattr(skill, "name", ""))
 
     def scene_update(self, delta_time, game_events, mouse_position, wheel_move):
         if game_events[TAB]["keydown"]:
