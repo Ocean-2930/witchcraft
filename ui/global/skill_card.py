@@ -31,11 +31,23 @@ class SkillCardRenderer(Renderer):
         )
         icon = self.card.icon_rect
         pygame.draw.rect(screen, (24, 31, 39), icon, border_radius=5)
-        pygame.draw.rect(screen, (94, 119, 139), icon, 1, border_radius=5)
         skill_icon = self.card.skill_instance.skill.get_icon()
         if skill_icon is not None:
             image = pygame.transform.smoothscale(skill_icon, icon.size)
+            icon_mask = pygame.Surface(icon.size, pygame.SRCALPHA)
+            pygame.draw.rect(
+                icon_mask,
+                (255, 255, 255, 255),
+                icon_mask.get_rect(),
+                border_radius=5,
+            )
+            image.blit(
+                icon_mask,
+                (0, 0),
+                special_flags=pygame.BLEND_RGBA_MULT,
+            )
             screen.blit(image, icon)
+        pygame.draw.rect(screen, (94, 119, 139), icon, 1, border_radius=5)
         name = self.card.name_font.render(
             self.card.skill_instance.skill.name, True, (238, 242, 246)
         )
