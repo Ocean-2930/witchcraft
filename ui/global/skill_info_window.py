@@ -81,8 +81,11 @@ class SkillInfoWindow(UIElement):
         return False
 
     def draw_description(self, screen, start_y):
-        text = self.skill_instance.skill.description or "설명 없음"
-        color = (184, 195, 204) if self.skill_instance.skill.description else (105, 115, 124)
+        text = self.skill_instance.skill.get_description(
+            self.skill_instance.level
+        )
+        color = (184, 195, 204) if text else (105, 115, 124)
+        text = text or "설명 없음"
         available_width = self.rect.width - 24
         lines = []
         current = ""

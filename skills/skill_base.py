@@ -78,6 +78,9 @@ class SkillBase:
             self._icon_cache,
         )
 
+    def get_description(self, level: int) -> str:
+        return self.description
+
     def has_icon(self) -> bool:
         return bool(
             self.skill_code

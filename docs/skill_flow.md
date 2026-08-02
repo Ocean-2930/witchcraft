@@ -10,6 +10,7 @@
 - `SkillInstance.level`은 `LearnableSkill`의 미투자 상태를 위해 0부터 시작할 수 있다. 기본적으로 음수 레벨은 금지하지만 `SkillBase.allow_negative_level`이 참인 스킬은 음수 레벨도 허용한다. `DungeonInventory`의 전투 스킬 집계와 패시브 계산에는 레벨이 0이 아닌 인스턴스가 들어간다.
 - 모든 스킬 정의는 `SkillBase.description`에 UI용 설명을 보관하며, `ActiveSkill` 생성 시에도 설명을 전달할 수 있다.
 - `SkillBase.get_icon()`은 `skill_code`를 기준으로 `assets/images/skills/{skill_code}.png`를 조회하고 캐시한다. 파일이 없는 스킬도 공용 코드 스프라이트 로더가 만든 대체 아이콘을 반환한다.
+- 모든 스킬 설명은 `SkillBase.get_description(level)` 호출로 가져오며, 구체적인 문구와 레벨 계산은 각 스킬 클래스가 제어한다. `StatPassiveSkill`은 `레벨당 수치 × 현재 레벨`을 계산해 `최대 마나 +25` 형식으로 반환하고, `AttackSkill`도 자신의 설명 함수를 직접 구현한다. 효과 객체는 설명 문구를 소유하지 않는다.
 - `DungeonInventory.learnable_skills`는 티어마다 독립된 포인트를 사용한다. `invest_skill(...)`은 항목의 티어 포인트가 남고 `LearnableSkill.max_level`에 도달하지 않았을 때만 레벨을 1 올린다.
 - `DungeonInventory.hotbar_skill_codes`는 현재 보유한 합산 액티브 스킬의 코드를 단축키에 연결한다. 같은 스킬 코드는 퀵슬롯 전체에서 하나만 장착할 수 있으며, 다른 슬롯에 장착하면 기존 슬롯에서 해제된 뒤 새 슬롯으로 이동한다. 던전에서 단축키를 실행할 때는 아이템, 인벤토리에 장착한 액티브 스킬, 기본 hotbar 스킬 순으로 실행 대상을 결정한다.
 - `SkillBase.max_level`과 `LearnableSkill.max_level`의 `None`은 레벨 상한이 없음을 뜻한다. 학습 항목의 상한을 명시하면 스킬 정의에 상한이 있는 경우 그 이하에서 영웅별 투자 상한을 제한한다. 실제 액티브·패시브 스킬 콘텐츠는 `skills/implementations/` 아래의 종류별 폴더에 둔다.

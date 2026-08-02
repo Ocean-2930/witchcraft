@@ -18,3 +18,6 @@ class AttackSkill(ActiveSkill):
             range_vectors=[(0, -1)],
             max_level=max_level,
         )
+
+    def get_description(self, level: int) -> str:
+        return "한 칸 앞의 적에게 공격력 1배의 피해를 준다."
