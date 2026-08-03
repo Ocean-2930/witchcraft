@@ -6,6 +6,7 @@ from .textures import DUNGEON_TEXTURES
 
 class WallTileRenderer(Renderer):
     draw_layer = -50
+    EDGE_WIDTH = 4
     texture_images = {}
 
     def __init__(self, scene, pos_x, pos_y, width, height, floor_height, connections=None):
@@ -79,7 +80,20 @@ class WallTileRenderer(Renderer):
             pygame.draw.rect(screen, (58, 37, 24), body_rect, width=2)
 
         if draw_top_border:
-            self.draw_border_line(screen, body_rect.left, body_rect.top, body_rect.right, body_rect.top)
+            self.draw_edge_rect(
+                screen,
+                self.get_body_top_border_rect(body_rect),
+                (172, 44, 38),
+            )
+
+    @classmethod
+    def get_body_top_border_rect(cls, body_rect):
+        return pygame.Rect(
+            body_rect.left,
+            body_rect.top - cls.EDGE_WIDTH,
+            body_rect.width,
+            cls.EDGE_WIDTH,
+        )
 
     def draw_cap(self, screen, cap_rect):
         self.draw_ceiling_box(screen, cap_rect, self.cap_borders)
@@ -119,7 +133,7 @@ class WallTileRenderer(Renderer):
 
     def draw_ceiling_box(self, screen, rect, borders):
         border_color = (172, 44, 38)
-        border_width = 4
+        border_width = self.EDGE_WIDTH
         black_color = (12, 10, 9)
 
         pygame.draw.rect(screen, black_color, rect)
@@ -156,10 +170,3 @@ class WallTileRenderer(Renderer):
             screen.blit(edge_texture, rect)
         else:
             pygame.draw.rect(screen, fallback_color, rect)
-
-    def draw_border_line(self, screen, start_x, start_y, end_x, end_y):
-        self.draw_edge_rect(
-            screen,
-            pygame.Rect(start_x, start_y, end_x - start_x, 4),
-            (172, 44, 38),
-        )
