@@ -14,12 +14,15 @@ def get_screen_size() -> tuple[int, int]:
 MOUSE_LEFT = "mouse_left"
 MOUSE_MIDDLE = "mouse_middle"
 MOUSE_RIGHT = "mouse_right"
+TEXT_INPUT = "text_input"
 
 ARROW_UP = pygame.K_UP
 ARROW_DOWN = pygame.K_DOWN
 ARROW_LEFT = pygame.K_LEFT
 ARROW_RIGHT = pygame.K_RIGHT
 ESCAPE = pygame.K_ESCAPE
+BACKSPACE = pygame.K_BACKSPACE
+ENTER = pygame.K_RETURN
 TAB = pygame.K_TAB
 KEY_1 = pygame.K_1
 KEY_2 = pygame.K_2

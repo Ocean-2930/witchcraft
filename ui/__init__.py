@@ -10,11 +10,12 @@ from .dungeon_scene import (
     PlayerMarkerRenderer,
     PlayerStatusRenderer,
     SkillDirectionCompassRenderer,
+    StairTileRenderer,
     WallTileRenderer,
 )
 
 # game_entry_scene
-from .game_entry_scene import GameEntryStartButton
+from .game_entry_scene import GameEntryStartButton, SeedInput
 
 # inventory_scene
 from .inventory_scene import (
@@ -56,9 +57,11 @@ __all__ = [
     "PlayerMarkerRenderer",
     "PlayerStatusRenderer",
     "SkillDirectionCompassRenderer",
+    "StairTileRenderer",
     "WallTileRenderer",
     # game_entry_scene
     "GameEntryStartButton",
+    "SeedInput",
     # inventory_scene
     "EquipmentSlot",
     "ActiveSkillGrid",

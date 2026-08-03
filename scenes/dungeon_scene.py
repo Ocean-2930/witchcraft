@@ -31,12 +31,14 @@ from ui import (
     PlayerMarkerRenderer,
     PlayerStatusRenderer,
     SkillDirectionCompassRenderer,
+    StairTileRenderer,
     ShortcutBar,
     WallTileRenderer,
 )
 from skills import SkillDirectionStatus, SkillTargetingInput
 from units import Enemy
 from inventory import DungeonInventory
+from dungeon import DOWN_STAIRS, UP_STAIRS, WALL, DungeonMap
 
 
 class DungeonScene(Scene):
@@ -81,13 +83,24 @@ class DungeonScene(Scene):
         "map": [[1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], [1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1], [1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1], [1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1], [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1], [1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1], [1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 1], [1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]]
     }
 
-    def __init__(self, game, dungeon_map=None):
+    def __init__(self, game, dungeon_map: DungeonMap | dict | None = None):
         self.dungeon_map = dungeon_map or self.DEFAULT_MAP
         super().__init__(game)
 
     def scene_initialize(self):
-        self.map_tiles = self.dungeon_map["map"]
+        if isinstance(self.dungeon_map, DungeonMap):
+            self.map_tiles = self.dungeon_map.map
+            self.up_stairs = self.dungeon_map.up_stairs
+            self.down_stairs = self.dungeon_map.down_stairs
+        else:
+            self.map_tiles = self.dungeon_map["map"]
+            self.up_stairs = None
+            self.down_stairs = None
         self.dungeon_inventory = DungeonInventory()
+        if self.up_stairs is not None:
+            self.dungeon_inventory.set_player_position(*self.up_stairs)
+        else:
+            self.dungeon_inventory.set_player_position(*self.get_first_floor_position())
         self.player_status = PlayerStatusRenderer(
             self,
             self.dungeon_inventory.get_stat,
@@ -140,7 +153,9 @@ class DungeonScene(Scene):
         )
         player_x, player_y = self.dungeon_inventory.get_player_position()
         self.set_dungeon_draw_order(self.player_marker, player_x, player_y, self.DEPTH_UNIT)
-        self.create_monster(6, 3)
+        monster_position = self.get_initial_monster_position()
+        if monster_position is not None:
+            self.create_monster(*monster_position)
         self.hotbar = ShortcutBar(
             self,
             labels=("1", "2", "3", "4", "Q", "W", "E", "R"),
@@ -217,12 +232,23 @@ class DungeonScene(Scene):
             del tile_renderers[tile_position]
 
     def create_floor_tile(self, tile_x, tile_y):
-        tile = FloorTileRenderer(
+        tile_value = self.map_tiles[tile_y][tile_x]
+        renderer_type = FloorTileRenderer
+        renderer_arguments = ()
+        if tile_value == UP_STAIRS:
+            renderer_type = StairTileRenderer
+            renderer_arguments = ((255, 255, 255),)
+        elif tile_value == DOWN_STAIRS:
+            renderer_type = StairTileRenderer
+            renderer_arguments = ((0, 0, 0),)
+
+        tile = renderer_type(
             self,
             self.get_tile_screen_x(tile_x),
             self.get_tile_screen_y(tile_y),
             self.FLOOR_TILE_WIDTH,
             self.FLOOR_TILE_HEIGHT,
+            *renderer_arguments,
         )
         self.set_dungeon_draw_order(tile, tile_x, tile_y, self.DEPTH_FLOOR)
         self.set_maze_base_position(tile)
@@ -269,10 +295,34 @@ class DungeonScene(Scene):
 
         for tile_y, row in enumerate(self.map_tiles):
             for tile_x, tile_value in enumerate(row):
-                if tile_value == 1:
+                if tile_value == WALL:
                     wall_positions.add((tile_x, tile_y))
 
         return wall_positions
+
+    def get_initial_monster_position(self):
+        if not isinstance(self.dungeon_map, DungeonMap):
+            return (6, 3)
+
+        excluded = {
+            self.dungeon_map.hub_room_id,
+            *(
+                room.room_id
+                for room in self.dungeon_map.rooms
+                if room.center in (self.up_stairs, self.down_stairs)
+            ),
+        }
+        for room in self.dungeon_map.rooms:
+            if room.room_id not in excluded:
+                return room.center
+        return None
+
+    def get_first_floor_position(self):
+        for tile_y, row in enumerate(self.map_tiles):
+            for tile_x, tile_value in enumerate(row):
+                if tile_value != WALL:
+                    return (tile_x, tile_y)
+        raise ValueError("던전 맵에 이동 가능한 바닥이 없습니다.")
 
     def get_wall_connections(self, tile_x, tile_y):
         neighbor_offsets = {

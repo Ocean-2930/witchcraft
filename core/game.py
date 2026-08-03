@@ -11,11 +11,14 @@ from settings import (
     MOUSE_LEFT,
     MOUSE_MIDDLE,
     MOUSE_RIGHT,
+    TEXT_INPUT,
 
     ARROW_UP,
     ARROW_DOWN,
     ARROW_LEFT,
     ARROW_RIGHT,
+    BACKSPACE,
+    ENTER,
     ESCAPE,
     TAB,
     KEY_1,
@@ -86,6 +89,8 @@ class Game:
             ARROW_DOWN,
             ARROW_LEFT,
             ARROW_RIGHT,
+            BACKSPACE,
+            ENTER,
             ESCAPE,
             TAB,
             KEY_1,
@@ -155,6 +160,9 @@ class Game:
 
         # detect pygame events
         game_events = {}
+        game_events[TEXT_INPUT] = "".join(
+            event.text for event in events if event.type == pygame.TEXTINPUT
+        )
 
         # detect keyboard input
         keyboards = pygame.key.get_pressed()

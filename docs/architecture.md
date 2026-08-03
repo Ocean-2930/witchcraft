@@ -11,7 +11,8 @@
 | `skills` | 스킬 기반 정의, 방향·범위 정책, 공통 효과와 스킬 인스턴스 및 실제 스킬 구현 | scene, UI, 입력 장치 상태 |
 | `items` | 아이템 기반 계층과 실제 아이템·장비 콘텐츠 구현 | scene, UI, 인벤토리 컬렉션 |
 | `inventory` | 아이템 보관, 장비 슬롯, hotbar 연결, 플레이어의 현재 던전 타일 좌표, 영웅이 배울 수 있는 스킬 목록과 티어 포인트의 원자적 상태 변경 | scene, UI, 입력 장치 상태 |
-| `utilities` | 두 영역 이상에서 재사용하는 순수 helper | 도메인 상태의 소유 |
+| `dungeon` | seed 기반 방 배치, 통로 연결, 계단 위치와 던전 맵 결과 | scene, UI, 인벤토리 상태 |
+| `utilities` | 두 영역 이상에서 재사용하는 순수 helper와 독립적인 난수 생성 상태 | 도메인 상태의 소유 |
 
 ## 의존성 원칙
 
@@ -23,6 +24,8 @@ flowchart LR
     Scenes --> Items["items"]
     Scenes --> Skills["skills"]
     Scenes --> Units["units"]
+    Scenes --> Dungeon["dungeon"]
+    Dungeon --> Utilities["utilities"]
     Inventory --> Items
     Inventory --> Skills
     Inventory --> Units
@@ -38,6 +41,9 @@ flowchart LR
 - 공용 `ShortcutBar`와 `ShortcutSlot`은 던전과 인벤토리에서 동일한 단축키 표현을 제공한다. scene은 getter와 클릭 callback으로 내용과 동작을 전달하고 위치·열·슬롯 크기·간격만 화면별로 구성한다.
 - 공용 `ItemWindow`는 `ItemInstance` getter만 받아 인벤토리 슬롯과 단축키 슬롯에서 재사용한다. 구체 아이템 이름·설명·플레이버 문구는 각 `Item` 클래스가 소유하고, 드롭된 장비의 상세 행은 `EquipmentInstance`가 소유한다.
 - 아이템과 스킬 이미지는 공용 코드 스프라이트 로더를 사용한다. 각각 `item_code`와 `skill_code`를 파일명으로 삼아 `assets/images/items`, `assets/images/skills`에서 PNG를 찾고 캐시하며, 파일이 없으면 코드 기반 색상의 사각형 대체 이미지를 생성한다.
+- `RandomGenerator`는 현재 난수만 내부 상태로 보관한다. 난수를 발급할 때 현재 상태로 출력값과 다음 상태값을 만들고 다음 상태값을 저장하므로, 같은 seed에서 같은 결과열을 재현할 수 있다.
+- `DungeonMapGenerator`는 주입받은 `RandomGenerator`로 8~12개의 방과 굽은 통로를 생성한다. 최소 신장 트리와 추가 간선으로 연결·순환을 보장하고, 계단이 아닌 큰 방 하나를 서로 다른 3개 이상의 면으로 연결되는 hub로 사용한다.
+- 생성된 던전 맵은 바닥·벽·올라가는 계단·내려가는 계단 타일과 정규화된 방·연결 정보를 소유한다. 플레이어는 올라가는 계단에서 시작하며 층 이동은 아직 수행하지 않는다.
 - 스탯 패시브 탭의 `PassiveSkillGrid`는 `DungeonInventory.passive_skills()` 결과를 공용 `SkillCard`로 격자 배치하며, 적용 여부나 중첩 계산을 UI에서 다시 구현하지 않는다.
 - `DungeonInventory`는 영웅과 장비에서 모은 동일 코드의 스킬 레벨을 하나로 합산하고, 스킬 정의에 최대 레벨이 있으면 합산 결과를 그 상한으로 제한한다.
 - `DungeonInventory`가 던전의 `Player` 인스턴스와 현재 타일 좌표를 소유한다. scene과 overlay는 별도의 player 참조를 갖지 않고 이동, 아이템 사용, 장착과 능력치 계산을 `DungeonInventory`에 요청한다.

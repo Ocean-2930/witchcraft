@@ -1,4 +1,5 @@
 from .floor_tile import FloorTileRenderer
+from .stair_tile import StairTileRenderer
 from .monster_marker import MonsterMarkerRenderer
 from .monster_tooltip import MonsterTooltipRenderer
 from .player_marker import PlayerMarkerRenderer
@@ -11,6 +12,7 @@ __all__ = [
     "DUNGEON_TEXTURES",
     "DungeonTextureStore",
     "FloorTileRenderer",
+    "StairTileRenderer",
     "MonsterMarkerRenderer",
     "MonsterTooltipRenderer",
     "PlayerMarkerRenderer",
