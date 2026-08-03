@@ -1,9 +1,16 @@
 from random import Random
+from secrets import randbelow
 from typing import MutableSequence, Sequence, TypeAlias, TypeVar
 
 
 RandomSeed: TypeAlias = int | float | str | bytes | bytearray
 T = TypeVar("T")
+MIN_RANDOM_SEED = 10**15
+RANDOM_SEED_RANGE = 9 * 10**15
+
+
+def create_random_seed() -> int:
+    return randbelow(RANDOM_SEED_RANGE) + MIN_RANDOM_SEED
 
 
 class RandomGenerator:

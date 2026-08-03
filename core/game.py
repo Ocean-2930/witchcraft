@@ -109,6 +109,7 @@ class Game:
         self.formal_events[MOUSE_RIGHT] = False
 
         # set scene
+        self.fixed_seed = None
         self.scene = TitleScene(self)
 
     def run(self):

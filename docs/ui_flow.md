@@ -1,10 +1,12 @@
 # UI 구조와 흐름
 
-## 게임 진입 seed 입력
+## 메인 화면과 고정 seed 입력
 
-- 게임 진입 화면은 실행마다 숫자 16자리 seed를 생성해 입력창 중앙에 `0000-0000-0000-0000` 형식으로 표시한다. 사용자가 입력한 값은 1~16자리를 허용하고 부족한 상위 자릿수는 화면에서 `0`으로 채운다. Backspace는 한 글자를 즉시 지운 뒤 잠시 대기하고 연속 삭제되며, Enter는 현재 seed로 시작한다.
-- 입력창 아래에는 같은 크기의 복사·붙여넣기·비우기·재설정 버튼을 여유 있는 간격으로 한 줄 배치한다. 복사는 0과 하이픈이 포함된 16자리 표시값을 저장하고 붙여넣기는 하이픈 유무와 관계없이 숫자 1~16자리를 받으며, 재설정은 새로운 16자리 seed를 발급한다.
-- 시작 버튼 또는 입력창의 Enter 입력은 표시된 seed로 `DungeonMapGenerator`를 실행한다. 성공하면 생성 결과를 `DungeonScene`에 전달하고, 실패하면 같은 seed를 유지한 채 오류를 표시한다.
+- 제목 화면의 `게임 시작`은 게임 진입 화면으로 이동한다. 게임 진입 화면은 `???`의 `안녕. 오늘도 왔네.` 대화와 `시드 고정`, `게임 시작` 선택지를 표시한다. 선택지는 원래 높이를 유지하면서 가로 폭만 75%로 줄이고 대화 본문과 같은 크기의 글꼴을 사용하며, 선택지 묶음은 대화창의 오른쪽 위에 붙여 배치한다.
+- 게임 진입 화면의 `시드 고정`을 고르면 같은 scene이 고정 seed 설정 상태로 바뀐다. 화면에는 seed 입력창과 `붙여넣기`, `저장`, `취소`만 표시하며 Enter는 저장, Escape는 취소로 동작한다.
+- seed는 숫자 1~16자리를 허용하고 화면에서 `0000-0000-0000-0000` 형식으로 표시한다. 저장한 seed는 파일에 기록하지 않고 실행 중인 `Game`의 공통 상태로 보관한다. 취소하면 현재 고정 seed를 지우고 대화 상태로 돌아간다.
+- `시드 고정` 선택지 왼쪽의 마름모는 고정 seed가 있으면 채워진다. 마우스를 올리면 `시드 저장됨`과 하이픈으로 구분된 seed를 표시하며, 클릭하면 고정 seed를 지워 게임 시작 시 무작위 seed를 사용하게 한다.
+- 게임 진입 화면의 `게임 시작`은 현재 게임 실행에 고정 seed가 있으면 그 값을, 없으면 새로 생성한 무작위 16자리 seed를 사용해 `DungeonMapGenerator`를 실행하고 `DungeonScene`으로 이동한다.
 - 원본 `TEXTINPUT` 이벤트는 `Game.read_inputs()`에서만 읽고 `game_events`를 통해 입력 UI에 전달한다.
 
 ## 프레임 처리
@@ -48,6 +50,8 @@ flowchart LR
 
 - `Renderer`는 `Transform`을 상속하고 생성 시 `draw_listeners`에 등록된다. 갱신이 필요한 renderer는 설정에 따라 background 또는 update listener에도 등록된다.
 - `UIElement`는 focus와 클릭 영역을 담당하며 시각 출력은 연결된 `Renderer`가 맡는다.
+- 공용 `DialogueBox`는 가상 화면 하단에 대화 본문을 표시하고, 본문 상자의 왼쪽 위에 화자 이름표를 겹쳐 표시한다. 화자와 본문은 `set_dialogue(...)`로 교체하며 긴 본문은 표시 영역에 맞춰 자동 줄바꿈하고 넘치는 내용은 말줄임표로 생략한다.
+- 공용 `ChoiceBox`는 전달받은 문자열 목록을 세로로 쌓인 사각형 선택지로 표시한다. 마우스 또는 위·아래 방향키로 항목을 고르고 클릭이나 Enter로 확정하면 선택된 인덱스와 문자열을 callback에 전달한다. `set_choices(...)`로 목록을 교체하면 높이와 선택 상태를 새 목록에 맞게 갱신한다.
 - UI focus는 `ui_listener`를 역순으로 검사하므로 나중에 생성한 UI가 우선한다. focus 변경 시 `on_exit()`와 `on_enter()`를 호출하고, focus 대상에는 hover 후 왼쪽·오른쪽·휠 클릭 순으로 하나의 click hook을 호출한다.
 - 부모·자식 UI는 부모를 먼저 생성하고 자식을 나중에 생성한 뒤 `add_sub_ui(...)`로 연결한다.
 - 던전 HUD의 HP·MP 바는 `DungeonInventory.get_stat()`으로 계산된 최대 HP·MP를 표시하고, 몬스터 인스펙트의 피해·명중·치명 미리보기도 같은 합산 능력치를 공격자 능력치로 사용한다.
@@ -61,15 +65,16 @@ flowchart LR
 
 ```mermaid
 flowchart TD
-    T["TitleScene"] -->|"시작"| G["GameEntryScene"]
-    T -->|"설정"| S["SettingsScene"]
+    T["TitleScene"] -->|"게임 시작"| G["GameEntryScene 대화"]
+    G -->|"시드 고정"| GS["GameEntryScene seed 설정"]
+    GS -->|"저장 / 취소"| G
     G -->|"게임 시작"| D["DungeonScene"]
-    G -->|"일시정지"| P["PauseScene overlay"]
+    T -->|"설정"| S["SettingsScene"]
     D -->|"일시정지"| P
     D -->|"인벤토리"| I["InventoryScene overlay"]
     P -->|"계속"| BACK["부모 scene 복귀"]
     I -->|"닫기"| BACK
-    P -->|"설정"| S
+    P -->|"설정"| S["SettingsScene"]
     P -->|"메인 화면"| T
     S -->|"뒤로"| PREV["전달받은 이전 scene"]
 ```

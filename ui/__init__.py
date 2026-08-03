@@ -15,7 +15,7 @@ from .dungeon_scene import (
 )
 
 # game_entry_scene
-from .game_entry_scene import GameEntryStartButton, SeedInput
+from .game_entry_scene import GameEntryStartButton, SeedInput, SeedStatusMarker
 
 # inventory_scene
 from .inventory_scene import (
@@ -32,6 +32,8 @@ from .inventory_scene import (
 )
 
 # global
+ChoiceBox = import_module(f"{__name__}.global").ChoiceBox
+DialogueBox = import_module(f"{__name__}.global").DialogueBox
 PauseButton = import_module(f"{__name__}.global").PauseButton
 SkillCard = import_module(f"{__name__}.global").SkillCard
 SkillInfoWindow = import_module(f"{__name__}.global").SkillInfoWindow
@@ -62,6 +64,7 @@ __all__ = [
     # game_entry_scene
     "GameEntryStartButton",
     "SeedInput",
+    "SeedStatusMarker",
     # inventory_scene
     "EquipmentSlot",
     "ActiveSkillGrid",
@@ -74,6 +77,8 @@ __all__ = [
     "LearnableSkillListView",
     "PassiveSkillGrid",
     # global
+    "ChoiceBox",
+    "DialogueBox",
     "PauseButton",
     "SkillCard",
     "SkillInfoWindow",

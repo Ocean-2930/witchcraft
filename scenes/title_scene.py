@@ -13,12 +13,8 @@ class TitleScene(Scene):
         button_gap = 18
         first_button_y = VIRTUAL_HEIGHT // 2 - 30
 
-        self.title_font = pygame.font.SysFont("malgungothic", 72, bold=True)
         self.button_font = pygame.font.SysFont("malgungothic", 30, bold=True)
-        self.notice_font = pygame.font.SysFont("malgungothic", 22)
-        self.notice_text = ""
         self.content_renderer = TitleContentRenderer(self)
-
         self.start_button = TitleButton(
             self,
             "게임 시작",
@@ -58,6 +54,5 @@ class TitleScene(Scene):
         self.switch_scene(SettingsScene(self.game, self))
 
     def scene_draw(self):
-        screen = self.game.virtual_screen
-        screen.fill((20, 18, 28))
+        self.game.virtual_screen.fill((20, 18, 28))
         super().scene_draw()

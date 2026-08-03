@@ -1,106 +1,140 @@
-from secrets import randbelow
-
 import pygame
 
 from .scene import Scene
 from settings import ESCAPE, VIRTUAL_HEIGHT, VIRTUAL_WIDTH
-from ui import GameEntryStartButton, PauseButton, SeedInput
-from utilities import RandomGenerator
+from ui import (
+    ChoiceBox,
+    DialogueBox,
+    GameEntryStartButton,
+    SeedInput,
+    SeedStatusMarker,
+)
+from utilities import RandomGenerator, create_random_seed
 from utilities.dungeon import DungeonMapGenerator
 
 
 class GameEntryScene(Scene):
-    MIN_SEED = 10**15
-    SEED_RANGE = 9 * 10**15
+    DIALOGUE_MODE = "dialogue"
+    SEED_MODE = "seed"
 
     def scene_initialize(self):
-        self.button_font = pygame.font.SysFont("malgungothic", 32, bold=True)
+        self.mode = None
+        self.dialogue_box = None
+        self.choice_box = None
+        self.seed_status_marker = None
+        self.seed_input = None
+        self.seed_buttons = []
+        self.button_font = pygame.font.SysFont("malgungothic", 26, bold=True)
         self.seed_font = pygame.font.SysFont("consolas", 26)
         self.seed_label_font = pygame.font.SysFont("malgungothic", 19, bold=True)
         self.seed_error_font = pygame.font.SysFont("malgungothic", 16)
+        self.show_dialogue()
 
+    def show_dialogue(self):
+        self.destroy_seed_ui()
+        self.mode = self.DIALOGUE_MODE
+        self.dialogue_box = DialogueBox(
+            self,
+            "???",
+            "안녕. 오늘도 왔네.",
+        )
+        choice_width = 390
+        option_height = 56
+        option_gap = 12
+        choice_height = option_height * 2 + option_gap
+        self.choice_box = ChoiceBox(
+            self,
+            ["시드 고정", "게임 시작"],
+            self.select_choice,
+            pos_x=self.dialogue_box.rect.right - choice_width // 2,
+            pos_y=self.dialogue_box.rect.top - 12 - choice_height // 2,
+            width=choice_width,
+            choice_height=option_height,
+            gap=option_gap,
+        )
+        first_choice_rect = self.choice_box.get_choice_rect(0)
+        self.seed_status_marker = SeedStatusMarker(
+            self,
+            lambda: self.game.fixed_seed,
+            self.clear_fixed_seed,
+            first_choice_rect.left - 22,
+            first_choice_rect.centery,
+        )
+
+    def select_choice(self, index, choice):
+        if choice == "시드 고정":
+            self.show_seed_settings()
+        elif choice == "게임 시작":
+            self.start_game()
+
+    def show_seed_settings(self):
+        self.destroy_dialogue_ui()
+        self.mode = self.SEED_MODE
+        initial_seed = self.game.fixed_seed or create_random_seed()
         self.seed_input = SeedInput(
             self,
-            self.create_random_seed(),
+            initial_seed,
             VIRTUAL_WIDTH // 2,
-            VIRTUAL_HEIGHT // 2 - 72,
+            VIRTUAL_HEIGHT // 2 - 66,
             410,
             54,
+            self.save_seed,
         )
-        self.copy_seed_button = GameEntryStartButton(
-            self,
-            "복사",
-            VIRTUAL_WIDTH // 2 - 249,
-            VIRTUAL_HEIGHT // 2 - 5,
-            150,
-            48,
-            self.copy_seed,
-        )
-        self.paste_seed_button = GameEntryStartButton(
-            self,
-            "붙여넣기",
-            VIRTUAL_WIDTH // 2 - 83,
-            VIRTUAL_HEIGHT // 2 - 5,
-            150,
-            48,
-            self.paste_seed,
-        )
-        self.clear_seed_button = GameEntryStartButton(
-            self,
-            "비우기",
-            VIRTUAL_WIDTH // 2 + 83,
-            VIRTUAL_HEIGHT // 2 - 5,
-            150,
-            48,
-            self.clear_seed,
-        )
-        self.reset_seed_button = GameEntryStartButton(
-            self,
-            "재설정",
-            VIRTUAL_WIDTH // 2 + 249,
-            VIRTUAL_HEIGHT // 2 - 5,
-            150,
-            48,
-            self.reset_seed,
-        )
-
-        self.start_button = GameEntryStartButton(
-            self,
-            "게임 시작",
-            VIRTUAL_WIDTH // 2,
-            VIRTUAL_HEIGHT // 2 + 100,
-            280,
-            64,
-            self.start_game,
-        )
-        self.pause_button = PauseButton(
-            self,
-            VIRTUAL_WIDTH - 42,
-            42,
-            48,
-            48,
-            self.open_pause,
-        )
+        self.seed_buttons = [
+            GameEntryStartButton(
+                self,
+                "붙여넣기",
+                VIRTUAL_WIDTH // 2 - 176,
+                VIRTUAL_HEIGHT // 2 + 20,
+                160,
+                54,
+                self.paste_seed,
+            ),
+            GameEntryStartButton(
+                self,
+                "저장",
+                VIRTUAL_WIDTH // 2,
+                VIRTUAL_HEIGHT // 2 + 20,
+                160,
+                54,
+                self.save_seed,
+            ),
+            GameEntryStartButton(
+                self,
+                "취소",
+                VIRTUAL_WIDTH // 2 + 176,
+                VIRTUAL_HEIGHT // 2 + 20,
+                160,
+                54,
+                self.cancel_seed_settings,
+            ),
+        ]
 
     def start_game(self):
         from .dungeon_scene import DungeonScene
 
+        seed = self.game.fixed_seed or create_random_seed()
         try:
-            seed = self.seed_input.get_seed()
             dungeon_map = DungeonMapGenerator(RandomGenerator(seed), seed).generate()
+        except ValueError as error:
+            self.dialogue_box.set_dialogue("???", f"던전을 만들지 못했어. {error}")
+            return
+        self.switch_scene(DungeonScene(self.game, dungeon_map))
+
+    def save_seed(self):
+        try:
+            self.game.fixed_seed = self.seed_input.get_seed()
         except ValueError as error:
             self.seed_input.set_error(str(error))
             return
+        self.show_dialogue()
 
-        self.seed_input.deactivate()
-        self.switch_scene(DungeonScene(self.game, dungeon_map))
+    def cancel_seed_settings(self):
+        self.clear_fixed_seed()
+        self.show_dialogue()
 
-    def copy_seed(self):
-        try:
-            self.initialize_clipboard()
-            pygame.scrap.put(pygame.SCRAP_TEXT, self.seed_input.text.encode("utf-8"))
-        except pygame.error:
-            self.seed_input.set_error("클립보드에 시드를 복사하지 못했습니다.")
+    def clear_fixed_seed(self):
+        self.game.fixed_seed = None
 
     def paste_seed(self):
         try:
@@ -121,34 +155,46 @@ class GameEntryScene(Scene):
             return
         self.seed_input.replace_text(digits)
 
-    def clear_seed(self):
-        self.seed_input.clear()
-
-    def reset_seed(self):
-        self.seed_input.replace_text(str(self.create_random_seed()))
-
-    @classmethod
-    def create_random_seed(cls) -> int:
-        return randbelow(cls.SEED_RANGE) + cls.MIN_SEED
-
     @staticmethod
     def initialize_clipboard():
         if not pygame.scrap.get_init():
             pygame.scrap.init()
 
-    def open_pause(self):
-        from .pause_scene import PauseScene
+    def destroy_dialogue_ui(self):
+        if self.seed_status_marker is not None:
+            self.seed_status_marker.destroy()
+            self.seed_status_marker = None
+        if self.choice_box is not None:
+            self.choice_box.destroy()
+            self.choice_box = None
+        if self.dialogue_box is not None:
+            self.dialogue_box.destroy()
+            self.dialogue_box = None
 
-        self.add_overlay(PauseScene(self.game))
+    def destroy_seed_ui(self):
+        for button in self.seed_buttons:
+            button.destroy()
+        self.seed_buttons = []
+        if self.seed_input is not None:
+            self.seed_input.destroy()
+            self.seed_input = None
+
+    def return_to_title(self):
+        from .title_scene import TitleScene
+
+        self.destroy_dialogue_ui()
+        self.destroy_seed_ui()
+        self.switch_scene(TitleScene(self.game))
 
     def scene_update(self, delta_time, game_events, mouse_position, wheel_move):
         if game_events[ESCAPE]["keydown"]:
-            self.open_pause()
-
+            if self.mode == self.SEED_MODE:
+                self.cancel_seed_settings()
+            else:
+                self.return_to_title()
+            return
         super().scene_update(delta_time, game_events, mouse_position, wheel_move)
 
     def scene_draw(self):
-        screen = self.game.virtual_screen
-        screen.fill((18, 22, 29))
-
+        self.game.virtual_screen.fill((18, 22, 29))
         super().scene_draw()

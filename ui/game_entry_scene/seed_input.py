@@ -37,7 +37,7 @@ class SeedInputRenderer(Renderer):
                 (238, 123, 123),
             )
             error_rect = error_surface.get_rect(
-                midtop=(self.rect.centerx, self.rect.bottom + 70)
+                midtop=(self.rect.centerx, self.rect.bottom + 100)
             )
             screen.blit(error_surface, error_rect)
 
@@ -49,7 +49,16 @@ class SeedInput(UIElement):
     BACKSPACE_INITIAL_DELAY = 0.4
     BACKSPACE_REPEAT_INTERVAL = 0.05
 
-    def __init__(self, scene, seed: int, pos_x: int, pos_y: int, width: int, height: int):
+    def __init__(
+        self,
+        scene,
+        seed: int,
+        pos_x: int,
+        pos_y: int,
+        width: int,
+        height: int,
+        on_submit=None,
+    ):
         self._digits = ""
         self.text = str(seed)
         self.error_text = ""
@@ -59,6 +68,7 @@ class SeedInput(UIElement):
         self.font = scene.seed_font
         self.label_font = scene.seed_label_font
         self.error_font = scene.seed_error_font
+        self.on_submit = on_submit
         renderer = SeedInputRenderer(scene, pos_x, pos_y, width, height, self)
         super().__init__(scene, renderer=renderer)
         pygame.key.start_text_input()
@@ -80,8 +90,8 @@ class SeedInput(UIElement):
         else:
             self.backspace_elapsed = 0.0
             self.backspace_repeat_elapsed = 0.0
-        if game_events[ENTER]["keydown"]:
-            self.scene.start_game()
+        if game_events[ENTER]["keydown"] and self.on_submit is not None:
+            self.on_submit()
 
     def update_backspace_repeat(self, delta_time: float) -> None:
         self.backspace_elapsed += delta_time
