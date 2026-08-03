@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING
 
 from items import BluePotion, EquipmentInstance, ItemInstance, SimpleSword
-from inventory import LearnableSkill
+from utilities.inventory import LearnableSkill
 from skills import AttackSkill, SkillInstance, STAT_PASSIVE_SKILLS
 
 if TYPE_CHECKING:

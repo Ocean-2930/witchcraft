@@ -4,7 +4,7 @@ from collections import deque
 from dataclasses import dataclass, replace
 from itertools import combinations
 
-from utilities import RandomGenerator
+from ..random_generator import RandomGenerator
 
 
 FLOOR = 0

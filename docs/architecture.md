@@ -10,9 +10,9 @@
 | `units` | 기초 능력치, 런타임 전투 상태, 피해 계산 | scene, UI, 아이템 보관 상태 |
 | `skills` | 스킬 기반 정의, 방향·범위 정책, 공통 효과와 스킬 인스턴스 및 실제 스킬 구현 | scene, UI, 입력 장치 상태 |
 | `items` | 아이템 기반 계층과 실제 아이템·장비 콘텐츠 구현 | scene, UI, 인벤토리 컬렉션 |
-| `inventory` | 아이템 보관, 장비 슬롯, hotbar 연결, 플레이어의 현재 던전 타일 좌표, 영웅이 배울 수 있는 스킬 목록과 티어 포인트의 원자적 상태 변경 | scene, UI, 입력 장치 상태 |
-| `dungeon` | seed 기반 방 배치, 통로 연결, 계단 위치와 던전 맵 결과 | scene, UI, 인벤토리 상태 |
-| `utilities` | 두 영역 이상에서 재사용하는 순수 helper와 독립적인 난수 생성 상태 | 도메인 상태의 소유 |
+| `utilities` | 한 scene에 두기에는 규모가 크거나 여러 영역에 걸치는 기능 | 개별 scene에 한정된 화면 흐름 |
+| `utilities.inventory` | 아이템 보관, 장비 슬롯, hotbar 연결과 플레이어의 던전 진행 상태 | scene, UI, 입력 장치 상태 |
+| `utilities.dungeon` | seed 기반 방 배치, 통로 연결, 계단 위치와 던전 맵 결과 | scene, UI, 인벤토리 상태 |
 
 ## 의존성 원칙
 
@@ -20,11 +20,11 @@
 flowchart LR
     Core["core"] --> Scenes["scenes"]
     Scenes --> UI["ui"]
-    Scenes --> Inventory["inventory"]
     Scenes --> Items["items"]
     Scenes --> Skills["skills"]
     Scenes --> Units["units"]
-    Scenes --> Dungeon["dungeon"]
+    Scenes --> Inventory["utilities.inventory"]
+    Scenes --> Dungeon["utilities.dungeon"]
     Dungeon --> Utilities["utilities"]
     Inventory --> Items
     Inventory --> Skills
@@ -47,7 +47,7 @@ flowchart LR
 - 스탯 패시브 탭의 `PassiveSkillGrid`는 `DungeonInventory.passive_skills()` 결과를 공용 `SkillCard`로 격자 배치하며, 적용 여부나 중첩 계산을 UI에서 다시 구현하지 않는다.
 - `DungeonInventory`는 영웅과 장비에서 모은 동일 코드의 스킬 레벨을 하나로 합산하고, 스킬 정의에 최대 레벨이 있으면 합산 결과를 그 상한으로 제한한다.
 - `DungeonInventory`가 던전의 `Player` 인스턴스와 현재 타일 좌표를 소유한다. scene과 overlay는 별도의 player 참조를 갖지 않고 이동, 아이템 사용, 장착과 능력치 계산을 `DungeonInventory`에 요청한다.
-- 던전 맵 데이터에는 플레이어 위치를 포함하지 않는다. 개발용 시작 좌표는 `test_scenario.senario(...)`가 `DungeonInventory.set_player_position(...)`으로 설정하며, 타일과 유닛 renderer를 만들기 전에 적용한다.
+- 던전 맵 데이터에는 올라가는 계단과 내려가는 계단 위치를 포함하며, 플레이어는 올라가는 계단 좌표에서 시작한다.
 - 던전 HUD와 몬스터 인스펙트의 플레이어 능력치 표시는 `DungeonInventory.player`를 직접 계산에 사용하지 않고 `DungeonInventory.get_stat()`의 합산 결과를 읽는다.
 - 여러 컬렉션을 함께 변경하는 장착·해제·아이템 및 액티브 스킬 단축키 연결은 `DungeonInventory`가 한 번의 연산으로 처리한다.
 - `SkilledEquip` 원형은 드롭 시 사용할 기본 스킬 행만 제공한다. `EquipmentInstance`는 생성 시 이를 7행의 `stat_rows`로 깊은 복사하며, 이후 장비 설명과 패시브 합산은 원형이 아니라 인스턴스 행만 읽는다.

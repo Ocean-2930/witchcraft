@@ -37,8 +37,8 @@ from ui import (
 )
 from skills import SkillDirectionStatus, SkillTargetingInput
 from units import Enemy
-from inventory import DungeonInventory
-from dungeon import DOWN_STAIRS, UP_STAIRS, WALL, DungeonMap
+from utilities.dungeon import DOWN_STAIRS, UP_STAIRS, WALL, DungeonMap
+from utilities.inventory import DungeonInventory
 
 
 class DungeonScene(Scene):

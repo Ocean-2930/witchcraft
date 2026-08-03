@@ -5,8 +5,8 @@ import pygame
 from .scene import Scene
 from settings import ESCAPE, VIRTUAL_HEIGHT, VIRTUAL_WIDTH
 from ui import GameEntryStartButton, PauseButton, SeedInput
-from dungeon import DungeonMapGenerator
 from utilities import RandomGenerator
+from utilities.dungeon import DungeonMapGenerator
 
 
 class GameEntryScene(Scene):

@@ -1,6 +1,6 @@
 # Inventory Instructions
 
-`inventory/`는 보유 아이템, 장비 슬롯, hotbar 아이템 연결을 담당한다.
+`utilities/inventory/`는 보유 아이템, 장비 슬롯, hotbar 아이템 연결을 담당한다.
 
 ## Model
 
@@ -17,4 +17,4 @@
 
 ## Exports
 
-- 외부에서 인벤토리를 구성하고 조작하는 데 필요한 모델만 `inventory/__init__.py`에 공개한다.
+- 외부에서 인벤토리를 구성하고 조작하는 데 필요한 모델만 `utilities/inventory/__init__.py`에 공개한다.
