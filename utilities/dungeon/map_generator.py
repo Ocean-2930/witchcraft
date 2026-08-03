@@ -13,6 +13,7 @@ UP_STAIRS = 2
 DOWN_STAIRS = 3
 
 Position = tuple[int, int]
+CorridorEdge = tuple[str, int, int]
 Side = str
 SIDES: tuple[Side, ...] = ("top", "right", "bottom", "left")
 
@@ -135,6 +136,8 @@ class DungeonMapGenerator:
             connection_pairs, hub_sides = self._build_connection_graph(rooms)
             paths = self._route_connections(rooms, connection_pairs, hub_sides)
             if paths is None:
+                continue
+            if self._has_wide_room_opening(rooms, paths):
                 continue
 
             floor_tiles = self._carve_floor(rooms, paths)
@@ -321,16 +324,28 @@ class DungeonMapGenerator:
         if not pairs:
             return None
         connections: list[MapConnection] = []
+        corridor_edges: set[CorridorEdge] = set()
         for room_a_id, room_b_id in pairs:
             room_a, room_b = rooms[room_a_id], rooms[room_b_id]
             side_a = hub_sides.get((room_a_id, room_b_id)) or self._relative_side(room_a, room_b)
             side_b = self._opposite_side(side_a)
-            start = self._door_position(room_a, side_a)
-            end = self._door_position(room_b, side_b)
-            path = self._find_corridor_path(start, end, rooms, {room_a_id, room_b_id})
-            if path is None:
+            start_door = self._door_position(room_a, side_a)
+            end_door = self._door_position(room_b, side_b)
+            start = self._move_to_outside(start_door, side_a)
+            end = self._move_to_outside(end_door, side_b)
+            allowed_contacts = {room_a_id: start, room_b_id: end}
+            outside_path = self._find_corridor_path(
+                start,
+                end,
+                rooms,
+                allowed_contacts,
+                corridor_edges,
+            )
+            if outside_path is None:
                 return None
-            connections.append(MapConnection(room_a_id, room_b_id, side_a, side_b, tuple(path)))
+            path = (start_door, *outside_path, end_door)
+            connections.append(MapConnection(room_a_id, room_b_id, side_a, side_b, path))
+            corridor_edges.update(self._path_edges(path))
         return connections
 
     def _find_corridor_path(
@@ -338,15 +353,25 @@ class DungeonMapGenerator:
         start: Position,
         end: Position,
         rooms: list[Room],
-        allowed_rooms: set[int],
+        allowed_contacts: dict[int, Position],
+        corridor_edges: set[CorridorEdge],
     ) -> list[Position] | None:
         variants = self._corridor_variants(start, end)
         self.random.shuffle(variants)
         for waypoints in variants:
             path = self._expand_waypoints(waypoints)
-            if not self._crosses_other_room(path, rooms, allowed_rooms):
+            if (
+                not self._touches_room_buffer(path, rooms, allowed_contacts)
+                and not self._has_adjacent_parallel_edge(path, corridor_edges)
+            ):
                 return path
-        return self._route_around_rooms(start, end, rooms, allowed_rooms)
+        return self._route_around_rooms(
+            start,
+            end,
+            rooms,
+            allowed_contacts,
+            corridor_edges,
+        )
 
     def _corridor_variants(self, start: Position, end: Position) -> list[list[Position]]:
         start_x, start_y = start
@@ -374,22 +399,97 @@ class DungeonMapGenerator:
         return path
 
     @staticmethod
-    def _crosses_other_room(
-        path: list[Position], rooms: list[Room], allowed_rooms: set[int]
+    def _touches_room_buffer(
+        path: list[Position], rooms: list[Room], allowed_contacts: dict[int, Position]
     ) -> bool:
         return any(
-            room.contains(position)
+            position != allowed_contacts.get(room.room_id)
+            and DungeonMapGenerator._is_in_room_buffer(position, room)
             for room in rooms
-            if room.room_id not in allowed_rooms
             for position in path
         )
+
+    @staticmethod
+    def _is_in_room_buffer(position: Position, room: Room) -> bool:
+        x, y = position
+        return (
+            room.left - 1 <= x <= room.right + 1
+            and room.top - 1 <= y <= room.bottom + 1
+        )
+
+    @staticmethod
+    def _has_adjacent_parallel_edge(
+        path: list[Position], corridor_edges: set[CorridorEdge]
+    ) -> bool:
+        for orientation, x, y in DungeonMapGenerator._path_edges(path):
+            if orientation == "horizontal":
+                adjacent_edges = (
+                    (orientation, x, y - 1),
+                    (orientation, x, y + 1),
+                )
+            else:
+                adjacent_edges = (
+                    (orientation, x - 1, y),
+                    (orientation, x + 1, y),
+                )
+            if any(edge in corridor_edges for edge in adjacent_edges):
+                return True
+        return False
+
+    @staticmethod
+    def _path_edges(path: list[Position] | tuple[Position, ...]) -> set[CorridorEdge]:
+        edges = set()
+        for start, end in zip(path, path[1:]):
+            if start[1] == end[1]:
+                edges.add(("horizontal", min(start[0], end[0]), start[1]))
+            else:
+                edges.add(("vertical", start[0], min(start[1], end[1])))
+        return edges
+
+    @staticmethod
+    def _has_wide_room_opening(
+        rooms: list[Room], connections: list[MapConnection]
+    ) -> bool:
+        corridor_tiles = {
+            position
+            for connection in connections
+            for position in connection.path
+        }
+        for room in rooms:
+            wall_contacts = (
+                [
+                    (x, room.top - 1)
+                    for x in range(room.left, room.right + 1)
+                ],
+                [
+                    (room.right + 1, y)
+                    for y in range(room.top, room.bottom + 1)
+                ],
+                [
+                    (x, room.bottom + 1)
+                    for x in range(room.left, room.right + 1)
+                ],
+                [
+                    (room.left - 1, y)
+                    for y in range(room.top, room.bottom + 1)
+                ],
+            )
+            for contacts in wall_contacts:
+                previous_is_open = False
+                for position in contacts:
+                    is_open = position in corridor_tiles
+                    if previous_is_open and is_open:
+                        return True
+                    previous_is_open = is_open
+        return False
 
     def _route_around_rooms(
         self,
         start: Position,
         end: Position,
         rooms: list[Room],
-        allowed_rooms: set[int],
+        allowed_contacts: dict[int, Position],
+        corridor_edges: set[CorridorEdge],
     ) -> list[Position] | None:
         margin = self.config.max_room_gap + 4
         min_x = min(room.left for room in rooms) - margin
@@ -399,9 +499,10 @@ class DungeonMapGenerator:
         blocked = {
             (x, y)
             for room in rooms
-            if room.room_id not in allowed_rooms
-            for y in range(room.top, room.bottom + 1)
-            for x in range(room.left, room.right + 1)
+            for y in range(room.top - 1, room.bottom + 2)
+            for x in range(room.left - 1, room.right + 2)
+            if self._is_in_room_buffer((x, y), room)
+            and (x, y) != allowed_contacts.get(room.room_id)
         }
         queue = deque([start])
         previous: dict[Position, Position | None] = {start: None}
@@ -420,6 +521,10 @@ class DungeonMapGenerator:
                 if not (min_x <= next_position[0] <= max_x and min_y <= next_position[1] <= max_y):
                     continue
                 if next_position in blocked or next_position in previous:
+                    continue
+                if self._has_adjacent_parallel_edge(
+                    [current, next_position], corridor_edges
+                ):
                     continue
                 previous[next_position] = current
                 queue.append(next_position)
@@ -443,6 +548,16 @@ class DungeonMapGenerator:
             return (x, room.top if side == "top" else room.bottom)
         y = self.random.randint(room.top, room.bottom)
         return (room.left if side == "left" else room.right, y)
+
+    @staticmethod
+    def _move_to_outside(position: Position, side: Side) -> Position:
+        offset_x, offset_y = {
+            "top": (0, -1),
+            "right": (1, 0),
+            "bottom": (0, 1),
+            "left": (-1, 0),
+        }[side]
+        return (position[0] + offset_x, position[1] + offset_y)
 
     @staticmethod
     def _carve_floor(rooms: list[Room], connections: list[MapConnection]) -> set[Position]:

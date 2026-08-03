@@ -153,9 +153,6 @@ class DungeonScene(Scene):
         )
         player_x, player_y = self.dungeon_inventory.get_player_position()
         self.set_dungeon_draw_order(self.player_marker, player_x, player_y, self.DEPTH_UNIT)
-        monster_position = self.get_initial_monster_position()
-        if monster_position is not None:
-            self.create_monster(*monster_position)
         self.hotbar = ShortcutBar(
             self,
             labels=("1", "2", "3", "4", "Q", "W", "E", "R"),
@@ -299,23 +296,6 @@ class DungeonScene(Scene):
                     wall_positions.add((tile_x, tile_y))
 
         return wall_positions
-
-    def get_initial_monster_position(self):
-        if not isinstance(self.dungeon_map, DungeonMap):
-            return (6, 3)
-
-        excluded = {
-            self.dungeon_map.hub_room_id,
-            *(
-                room.room_id
-                for room in self.dungeon_map.rooms
-                if room.center in (self.up_stairs, self.down_stairs)
-            ),
-        }
-        for room in self.dungeon_map.rooms:
-            if room.room_id not in excluded:
-                return room.center
-        return None
 
     def get_first_floor_position(self):
         for tile_y, row in enumerate(self.map_tiles):
