@@ -9,8 +9,9 @@ from ui import (
     SeedInput,
     SeedStatusMarker,
 )
-from utilities import RandomGenerator, create_random_seed
+from utilities import create_random_seed
 from utilities.dungeon import DungeonMapGenerator
+from utilities.inventory import DungeonInventory
 
 
 class GameEntryScene(Scene):
@@ -114,12 +115,19 @@ class GameEntryScene(Scene):
         from .dungeon_scene import DungeonScene
 
         seed = self.game.fixed_seed or create_random_seed()
+        dungeon_inventory = DungeonInventory(game_seed=seed)
         try:
-            dungeon_map = DungeonMapGenerator(RandomGenerator(seed), seed).generate()
+            floor_random = dungeon_inventory.get_floor_random(1)
+            dungeon_map = DungeonMapGenerator(
+                dungeon_inventory.get_map_random_generator(1),
+                floor_random,
+            ).generate()
         except ValueError as error:
             self.dialogue_box.set_dialogue("???", f"던전을 만들지 못했어. {error}")
             return
-        self.switch_scene(DungeonScene(self.game, dungeon_map))
+        self.switch_scene(
+            DungeonScene(self.game, dungeon_map, dungeon_inventory)
+        )
 
     def save_seed(self):
         try:

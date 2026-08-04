@@ -7,6 +7,7 @@ from typing import ClassVar
 from items import EquipmentInstance, Equip, ItemInstance, SkilledEquip
 from skills import SkillInstance
 from units import Player
+from ..random_generator import RandomGenerator, RandomSeed, create_random_seed
 
 from .item_inventory import ItemInventory
 
@@ -41,6 +42,12 @@ class LearnableSkill:
 class DungeonInventory:
     """던전행 한 번에 사용되는 플레이어 인벤토리."""
 
+    game_seed: RandomSeed = field(default_factory=create_random_seed)
+    floor_randoms: list[float] = field(init=False)
+    map_random_generators: list[RandomGenerator] = field(init=False)
+    enemy_random_generators: list[RandomGenerator] = field(init=False)
+    item_random_generators: list[RandomGenerator] = field(init=False)
+    battle_random_generators: list[RandomGenerator] = field(init=False)
     player: Player = field(default_factory=lambda: Player("플레이어"))
     item_inventory: ItemInventory = field(default_factory=ItemInventory)
     hotbar_items: dict[str, ItemInstance] = field(default_factory=dict)
@@ -52,6 +59,8 @@ class DungeonInventory:
     accessory_2: EquipmentInstance | None = None
     learnable_skills: list[LearnableSkill] = field(default_factory=list)
     tier_skill_points: dict[int, int] = field(default_factory=dict)
+
+    FLOOR_COUNT: ClassVar[int] = 10
 
     EQUIPMENT_SLOTS_BY_TYPE: ClassVar[dict[str, tuple[str, ...]]] = {
         Equip.TYPE_WEAPON: ("weapon",),
@@ -66,6 +75,45 @@ class DungeonInventory:
         "accessory_1",
         "accessory_2",
     )
+
+    def __post_init__(self):
+        game_random = RandomGenerator(self.game_seed)
+        self.floor_randoms = game_random.random(self.FLOOR_COUNT)
+        self.map_random_generators = []
+        self.enemy_random_generators = []
+        self.item_random_generators = []
+        self.battle_random_generators = []
+
+        for floor_random in self.floor_randoms:
+            floor_generator = RandomGenerator(floor_random)
+            map_seed, enemy_seed, item_seed, battle_seed = floor_generator.random(4)
+            self.map_random_generators.append(RandomGenerator(map_seed))
+            self.enemy_random_generators.append(RandomGenerator(enemy_seed))
+            self.item_random_generators.append(RandomGenerator(item_seed))
+            self.battle_random_generators.append(RandomGenerator(battle_seed))
+
+    def get_floor_random(self, floor: int) -> float:
+        return self.floor_randoms[self._floor_index(floor)]
+
+    def get_map_random_generator(self, floor: int) -> RandomGenerator:
+        return self.map_random_generators[self._floor_index(floor)]
+
+    def get_enemy_random_generator(self, floor: int) -> RandomGenerator:
+        return self.enemy_random_generators[self._floor_index(floor)]
+
+    def get_item_random_generator(self, floor: int) -> RandomGenerator:
+        return self.item_random_generators[self._floor_index(floor)]
+
+    def get_battle_random_generator(self, floor: int) -> RandomGenerator:
+        return self.battle_random_generators[self._floor_index(floor)]
+
+    @classmethod
+    def _floor_index(cls, floor: int) -> int:
+        if isinstance(floor, bool) or not isinstance(floor, int):
+            raise TypeError("floor는 정수여야 합니다.")
+        if not 1 <= floor <= cls.FLOOR_COUNT:
+            raise ValueError(f"floor는 1부터 {cls.FLOOR_COUNT} 사이여야 합니다.")
+        return floor - 1
 
     def set_player_position(self, tile_x: int, tile_y: int):
         self.player.tile_x = tile_x

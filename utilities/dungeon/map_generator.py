@@ -4,7 +4,7 @@ from collections import deque
 from dataclasses import dataclass, replace
 from itertools import combinations
 
-from ..random_generator import RandomGenerator
+from ..random_generator import RandomGenerator, RandomSeed
 
 
 FLOOR = 0
@@ -99,7 +99,7 @@ class DungeonMap:
     hub_room_id: int
     up_stairs: Position
     down_stairs: Position
-    seed: int
+    seed: RandomSeed
 
     @property
     def width(self) -> int:
@@ -119,7 +119,7 @@ class DungeonMapGenerator:
     def __init__(
         self,
         random_generator: RandomGenerator,
-        seed: int,
+        seed: RandomSeed,
         config: DungeonMapConfig | None = None,
     ) -> None:
         self.random = random_generator
