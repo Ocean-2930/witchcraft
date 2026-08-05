@@ -41,7 +41,14 @@ from ui import (
 )
 from skills import SkillDirectionStatus, SkillTargetingInput
 from units import Enemy
-from utilities.dungeon import CombatTimer, DOWN_STAIRS, UP_STAIRS, WALL, DungeonMap
+from utilities.dungeon import (
+    CombatTimer,
+    DOWN_STAIRS,
+    UP_STAIRS,
+    WALL,
+    DungeonMap,
+    MonsterSpawner,
+)
 from utilities.inventory import DungeonInventory
 
 
@@ -128,6 +135,10 @@ class DungeonScene(Scene):
             28 + 92 // 2,
         )
         self.monsters = []
+        self.monster_spawner = MonsterSpawner(
+            self.map_tiles,
+            self.dungeon_inventory.get_enemy_random_generator(self.CURRENT_FLOOR),
+        )
         self.hovered_monster = None
         self.peek_font = pygame.font.SysFont("malgungothic", 16, bold=True)
         self.monster_tooltip = MonsterTooltipRenderer(
@@ -165,6 +176,7 @@ class DungeonScene(Scene):
             senario(self)
 
         self.refresh_visible_tiles()
+        self.spawn_initial_monsters()
         self.fog_renderer = DungeonFogRenderer(
             self,
             lambda: self.floor_tiles,
@@ -438,6 +450,31 @@ class DungeonScene(Scene):
         self.monsters.append(monster)
         monster["renderer"].set_visible((tile_x, tile_y) in self.current_visible_tiles)
         return monster
+
+    def spawn_initial_monsters(self):
+        for tile_x, tile_y in self.monster_spawner.initial_positions(
+            self.get_monster_spawn_excluded_positions()
+        ):
+            self.create_monster(tile_x, tile_y)
+
+    def spawn_periodic_monsters(self, completed_turns):
+        alive_count = sum(monster["unit"].is_alive for monster in self.monsters)
+        for tile_x, tile_y in self.monster_spawner.periodic_positions(
+            completed_turns,
+            self.get_monster_spawn_excluded_positions(),
+            alive_count,
+        ):
+            self.create_monster(tile_x, tile_y)
+
+    def get_monster_spawn_excluded_positions(self):
+        excluded_positions = set(self.current_visible_tiles)
+        excluded_positions.add(self.dungeon_inventory.get_player_position())
+        excluded_positions.update(
+            (monster["unit"].tile_x, monster["unit"].tile_y)
+            for monster in self.monsters
+            if monster["unit"].is_alive
+        )
+        return excluded_positions
 
     def refresh_monster_visibility(self):
         for monster in self.monsters:
@@ -1073,10 +1110,12 @@ class DungeonScene(Scene):
         self.dungeon_inventory.move_player(move["move_x"], move["move_y"])
         move_turn_cost = self.dungeon_inventory.get_stat().move_turn_cost
         self.combat_timer.advance(move_turn_cost)
+        completed_turns = self.combat_timer.last_completed_turns
         self.combat_timer.schedule(self.dungeon_inventory.player, move_turn_cost)
         self.set_player_draw_order()
         self.active_move = None
         self.refresh_visible_tiles()
+        self.spawn_periodic_monsters(completed_turns)
 
     def set_maze_base_position(self, renderer):
         renderer.maze_base_x = renderer.rect.centerx - self.maze_offset_x

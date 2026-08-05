@@ -46,6 +46,7 @@ class CombatTimer:
     def __init__(self):
         self.entries: list[CombatTimerEntry] = []
         self.turn_counter = TurnCounter()
+        self.last_completed_turns = 0
 
     def register(self, unit: Unit, turn_cost: int | None = None):
         entry = self.get_entry(unit)
@@ -82,7 +83,7 @@ class CombatTimer:
         if ticks < 0:
             raise ValueError("전투 타이머의 진행 틱은 0 이상이어야 합니다.")
 
-        self.turn_counter.advance(ticks)
+        self.last_completed_turns = self.turn_counter.advance(ticks)
         for entry in self.entries:
             entry.remaining = max(0, entry.remaining - ticks)
 
@@ -91,11 +92,14 @@ class CombatTimer:
     def advance_to_next(self):
         """가장 가까운 행동 시점까지 진행하고 동시에 준비된 유닛을 반환한다."""
         if self.ready_units:
+            self.last_completed_turns = 0
             return self.ready_units
 
         pending = [entry.remaining for entry in self.entries if entry.remaining > 0]
         if pending:
             self.advance(min(pending))
+        else:
+            self.last_completed_turns = 0
         return self.ready_units
 
     @property

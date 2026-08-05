@@ -10,6 +10,7 @@ from .map_generator import (
     Room,
 )
 from .combat_timer import CombatTimer, CombatTimerEntry, TurnCounter
+from .monster_spawner import MonsterSpawnConfig, MonsterSpawner
 
 __all__ = [
     "DOWN_STAIRS",
@@ -19,6 +20,8 @@ __all__ = [
     "CombatTimer",
     "CombatTimerEntry",
     "TurnCounter",
+    "MonsterSpawnConfig",
+    "MonsterSpawner",
     "DungeonMap",
     "DungeonMapConfig",
     "DungeonMapGenerator",
