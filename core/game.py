@@ -29,7 +29,8 @@ from settings import (
     KEY_W,
     KEY_E,
     KEY_R,
-    KEY_T
+    KEY_T,
+    KEY_M,
 )
 
 # develop setting import
@@ -102,6 +103,7 @@ class Game:
             KEY_E,
             KEY_R,
             KEY_T,
+            KEY_M,
         ]
         self.formal_events = { k:False for k in self.game_events }
         self.formal_events[MOUSE_LEFT] = False

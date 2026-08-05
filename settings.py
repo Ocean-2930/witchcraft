@@ -33,6 +33,7 @@ KEY_W = pygame.K_w
 KEY_E = pygame.K_e
 KEY_R = pygame.K_r
 KEY_T = pygame.K_t
+KEY_M = pygame.K_m
 
 # develop settings
 ENABLE_TEST_SCENARIO = True

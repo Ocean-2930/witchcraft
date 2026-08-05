@@ -16,6 +16,7 @@ from settings import (
     KEY_3,
     KEY_4,
     KEY_E,
+    KEY_M,
     KEY_Q,
     KEY_R,
     KEY_T,
@@ -25,7 +26,9 @@ from settings import (
 )
 from ui import (
     FloorTileRenderer,
+    DungeonFogRenderer,
     MonsterMarkerRenderer,
+    MiniMap,
     MonsterTooltipRenderer,
     PauseButton,
     PlayerMarkerRenderer,
@@ -46,6 +49,8 @@ class DungeonScene(Scene):
     FLOOR_TILE_HEIGHT = 60
     WALL_TILE_HEIGHT = 80
     TILE_RENDER_BUFFER = 2
+    SIGHT_RADIUS = 4
+    CURRENT_FLOOR = 1
     MOVE_DURATION = 0.16
     MOVE_REPEAT_DELAY = 0.24
     MONSTER_MARKER_SIZE = 54
@@ -96,10 +101,14 @@ class DungeonScene(Scene):
     def scene_initialize(self):
         if isinstance(self.dungeon_map, DungeonMap):
             self.map_tiles = self.dungeon_map.map
+            self.rooms = self.dungeon_map.rooms
+            self.connections = self.dungeon_map.connections
             self.up_stairs = self.dungeon_map.up_stairs
             self.down_stairs = self.dungeon_map.down_stairs
         else:
             self.map_tiles = self.dungeon_map["map"]
+            self.rooms = ()
+            self.connections = ()
             self.up_stairs = None
             self.down_stairs = None
         self.dungeon_inventory = (
@@ -145,6 +154,7 @@ class DungeonScene(Scene):
         self.floor_tiles = {}
         self.wall_tiles = {}
         self.filtered_tile_renderers = set()
+        self.current_visible_tiles = set()
 
         if settings.ENABLE_TEST_SCENARIO:
             from .test_scenario import senario
@@ -152,6 +162,12 @@ class DungeonScene(Scene):
             senario(self)
 
         self.refresh_visible_tiles()
+        self.fog_renderer = DungeonFogRenderer(
+            self,
+            lambda: self.floor_tiles,
+            lambda: self.wall_tiles,
+            lambda: self.current_visible_tiles,
+        )
         self.player_marker = PlayerMarkerRenderer(
             self,
             VIRTUAL_WIDTH // 2,
@@ -191,15 +207,34 @@ class DungeonScene(Scene):
             48,
             self.open_pause,
         )
+        self.mini_map = MiniMap(
+            self,
+            VIRTUAL_WIDTH - 92,
+            142,
+            148,
+            128,
+            lambda: self.map_tiles,
+            self.get_explored_tiles,
+            self.dungeon_inventory.get_player_position,
+            lambda: self.rooms,
+            lambda: self.connections,
+            self.open_map,
+        )
 
     def refresh_visible_tiles(self):
-        visible_tiles = self.get_visible_tile_positions()
-        visible_walls = visible_tiles & self.wall_positions
+        self.current_visible_tiles = self.get_sight_tile_positions()
+        explored_tiles = self.dungeon_inventory.explore_tiles(
+            self.CURRENT_FLOOR,
+            self.current_visible_tiles,
+        )
+        camera_tiles = self.get_camera_tile_positions()
+        render_tiles = camera_tiles & explored_tiles
+        visible_walls = render_tiles & self.wall_positions
 
-        self.remove_hidden_tiles(self.floor_tiles, visible_tiles)
+        self.remove_hidden_tiles(self.floor_tiles, render_tiles)
         self.remove_hidden_tiles(self.wall_tiles, visible_walls)
 
-        for tile_x, tile_y in visible_tiles:
+        for tile_x, tile_y in render_tiles:
             if (tile_x, tile_y) not in self.floor_tiles:
                 self.create_floor_tile(tile_x, tile_y)
 
@@ -207,7 +242,9 @@ class DungeonScene(Scene):
             if (tile_x, tile_y) not in self.wall_tiles:
                 self.create_wall_tile(tile_x, tile_y)
 
-    def get_visible_tile_positions(self):
+        self.refresh_monster_visibility()
+
+    def get_camera_tile_positions(self):
         horizontal_radius = ceil((VIRTUAL_WIDTH / 2) / self.FLOOR_TILE_WIDTH) + self.TILE_RENDER_BUFFER
         vertical_radius = ceil((VIRTUAL_HEIGHT / 2) / self.FLOOR_TILE_HEIGHT) + self.TILE_RENDER_BUFFER
         visible_tiles = set()
@@ -225,6 +262,117 @@ class DungeonScene(Scene):
                 visible_tiles.add((tile_x, tile_y))
 
         return visible_tiles
+
+    def get_sight_tile_positions(self):
+        player_x, player_y = self.dungeon_inventory.get_player_position()
+        visible_tiles = set()
+
+        for tile_y in range(max(0, player_y - self.SIGHT_RADIUS), min(len(self.map_tiles), player_y + self.SIGHT_RADIUS + 1)):
+            row = self.map_tiles[tile_y]
+            for tile_x in range(max(0, player_x - self.SIGHT_RADIUS), min(len(row), player_x + self.SIGHT_RADIUS + 1)):
+                tile_position = (tile_x, tile_y)
+                if self.has_line_of_sight((player_x, player_y), tile_position):
+                    visible_tiles.add(tile_position)
+
+        room = next(
+            (room for room in self.rooms if room.contains((player_x, player_y))),
+            None,
+        )
+        if room is not None:
+            for tile_y in range(max(0, room.top - 1), min(len(self.map_tiles), room.bottom + 2)):
+                row = self.map_tiles[tile_y]
+                for tile_x in range(max(0, room.left - 1), min(len(row), room.right + 2)):
+                    if room.contains((tile_x, tile_y)) or row[tile_x] == WALL:
+                        visible_tiles.add((tile_x, tile_y))
+
+        self.add_walls_next_to_visible_floor(visible_tiles)
+        return visible_tiles
+
+    def add_walls_next_to_visible_floor(self, visible_tiles):
+        """보이는 바닥에 직접 닿은 벽만 더해 통로 윤곽을 끊김 없이 보여준다."""
+        neighbor_offsets = (
+            (-1, -1),
+            (0, -1),
+            (1, -1),
+            (-1, 0),
+            (1, 0),
+            (-1, 1),
+            (0, 1),
+            (1, 1),
+        )
+        visible_floor_tiles = (
+            tile_position
+            for tile_position in tuple(visible_tiles)
+            if tile_position not in self.wall_positions
+        )
+
+        for tile_x, tile_y in visible_floor_tiles:
+            for offset_x, offset_y in neighbor_offsets:
+                wall_position = (tile_x + offset_x, tile_y + offset_y)
+                if wall_position in self.wall_positions:
+                    visible_tiles.add(wall_position)
+
+    def has_line_of_sight(self, origin, target):
+        """목표 벽은 보이게 두되 중간 벽과 막힌 대각선 모서리는 통과하지 않는다."""
+        line = self.get_grid_line(origin, target)
+        previous = line[0]
+
+        for position in line[1:]:
+            move_x = position[0] - previous[0]
+            move_y = position[1] - previous[1]
+
+            # 시야선의 목표인 벽 모서리는 주변 벽에 막혀도 벽 자체를 보여준다.
+            if position == target and position in self.wall_positions:
+                return True
+
+            if move_x != 0 and move_y != 0:
+                side_x = (previous[0] + move_x, previous[1])
+                side_y = (previous[0], previous[1] + move_y)
+                if side_x in self.wall_positions and side_y in self.wall_positions:
+                    return False
+
+            if position == target:
+                return True
+
+            if position in self.wall_positions:
+                return False
+
+            previous = position
+
+        return True
+
+    @staticmethod
+    def get_grid_line(origin, target):
+        """두 타일 중심을 잇는 정수 격자선을 반환한다."""
+        x, y = origin
+        target_x, target_y = target
+        width = abs(target_x - x)
+        height = abs(target_y - y)
+        step_x = 1 if target_x > x else -1
+        step_y = 1 if target_y > y else -1
+        moved_x = 0
+        moved_y = 0
+        positions = [(x, y)]
+
+        while moved_x < width or moved_y < height:
+            decision = (1 + 2 * moved_x) * height - (1 + 2 * moved_y) * width
+            if decision == 0:
+                x += step_x
+                y += step_y
+                moved_x += 1
+                moved_y += 1
+            elif decision < 0:
+                x += step_x
+                moved_x += 1
+            else:
+                y += step_y
+                moved_y += 1
+            positions.append((x, y))
+
+        return positions
+
+    def get_explored_tiles(self):
+        return self.dungeon_inventory.get_explored_tiles(self.CURRENT_FLOOR)
 
     def remove_hidden_tiles(self, tile_renderers, visible_tiles):
         for tile_position, renderer in list(tile_renderers.items()):
@@ -276,7 +424,13 @@ class DungeonScene(Scene):
         self.set_maze_base_position(monster["renderer"])
         self.maze_renderers.append(monster["renderer"])
         self.monsters.append(monster)
+        monster["renderer"].set_visible((tile_x, tile_y) in self.current_visible_tiles)
         return monster
+
+    def refresh_monster_visibility(self):
+        for monster in self.monsters:
+            position = (monster["unit"].tile_x, monster["unit"].tile_y)
+            monster["renderer"].set_visible(position in self.current_visible_tiles)
 
     def create_wall_tile(self, tile_x, tile_y):
         wall_y_offset = (self.WALL_TILE_HEIGHT - self.FLOOR_TILE_HEIGHT) // 2
@@ -379,6 +533,20 @@ class DungeonScene(Scene):
 
         self.add_overlay(InventoryScene(self.game))
 
+    def open_map(self):
+        from .map_scene import MapScene
+
+        self.add_overlay(
+            MapScene(
+                self.game,
+                lambda: self.map_tiles,
+                self.get_explored_tiles,
+                self.dungeon_inventory.get_player_position,
+                lambda: self.rooms,
+                lambda: self.connections,
+            )
+        )
+
     def scene_update(self, delta_time, game_events, mouse_position, wheel_move):
         if game_events[ESCAPE]["keydown"]:
             self.open_pause()
@@ -386,6 +554,10 @@ class DungeonScene(Scene):
 
         if game_events[TAB]["keydown"]:
             self.open_inventory()
+            return
+
+        if game_events[KEY_M]["keydown"]:
+            self.open_map()
             return
 
         self.update_hovered_monster(mouse_position)
@@ -438,7 +610,8 @@ class DungeonScene(Scene):
             return
 
         for monster in reversed(self.monsters):
-            if self.is_mouse_over_monster(monster, mouse_position):
+            position = (monster["unit"].tile_x, monster["unit"].tile_y)
+            if position in self.current_visible_tiles and self.is_mouse_over_monster(monster, mouse_position):
                 self.hovered_monster = monster
                 return
 
@@ -903,6 +1076,6 @@ class DungeonScene(Scene):
 
     def scene_draw(self):
         screen = self.game.virtual_screen
-        screen.fill((42, 48, 50))
+        screen.fill((0, 0, 0))
 
         super().scene_draw()

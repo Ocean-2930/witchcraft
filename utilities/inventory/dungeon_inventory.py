@@ -59,6 +59,7 @@ class DungeonInventory:
     accessory_2: EquipmentInstance | None = None
     learnable_skills: list[LearnableSkill] = field(default_factory=list)
     tier_skill_points: dict[int, int] = field(default_factory=dict)
+    explored_tiles_by_floor: dict[int, set[tuple[int, int]]] = field(default_factory=dict)
 
     FLOOR_COUNT: ClassVar[int] = 10
 
@@ -125,6 +126,18 @@ class DungeonInventory:
     def move_player(self, move_x: int, move_y: int):
         self.player.tile_x += move_x
         self.player.tile_y += move_y
+
+    def explore_tiles(self, floor: int, tile_positions) -> set[tuple[int, int]]:
+        """층별 발견 지형에 타일 좌표를 누적하고 현재 기록의 복사본을 반환한다."""
+        self._floor_index(floor)
+        explored_tiles = self.explored_tiles_by_floor.setdefault(floor, set())
+        explored_tiles.update(tile_positions)
+        return set(explored_tiles)
+
+    def get_explored_tiles(self, floor: int) -> set[tuple[int, int]]:
+        """외부에서 내부 기록을 변경하지 못하도록 발견 좌표 복사본을 반환한다."""
+        self._floor_index(floor)
+        return set(self.explored_tiles_by_floor.get(floor, set()))
 
     def use_item(self, item_instance: ItemInstance):
         use = getattr(getattr(item_instance, "item", None), "use", None)

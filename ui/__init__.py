@@ -12,6 +12,8 @@ from .dungeon_scene import (
     SkillDirectionCompassRenderer,
     StairTileRenderer,
     WallTileRenderer,
+    MiniMap,
+    DungeonFogRenderer,
 )
 
 # game_entry_scene
@@ -44,6 +46,9 @@ ItemWindow = import_module(f"{__name__}.global").ItemWindow
 # pause_scene
 from .pause_scene import PausePanelRenderer
 
+# map_scene
+from .map_scene import MapPanelRenderer
+
 # title_scene
 from .title_scene import TitleButton, TitleContentRenderer
 
@@ -61,6 +66,8 @@ __all__ = [
     "SkillDirectionCompassRenderer",
     "StairTileRenderer",
     "WallTileRenderer",
+    "MiniMap",
+    "DungeonFogRenderer",
     # game_entry_scene
     "GameEntryStartButton",
     "SeedInput",
@@ -87,6 +94,8 @@ __all__ = [
     "ItemWindow",
     # pause_scene
     "PausePanelRenderer",
+    # map_scene
+    "MapPanelRenderer",
     # title_scene
     "TitleButton",
     "TitleContentRenderer",
