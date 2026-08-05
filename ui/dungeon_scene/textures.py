@@ -7,6 +7,7 @@ ASSET_ROOT = Path(__file__).resolve().parents[2] / "assets" / "images" / "dungeo
 
 TEXTURE_SOURCES = {
     "character": "character.png",
+    "player_profile": "player_profile.png",
     "floor": "floor_tile.png",
     "wall": "wall_tile.png",
     "wall_edge": "wall_edge.png",

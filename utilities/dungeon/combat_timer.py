@@ -17,11 +17,35 @@ class CombatTimerEntry:
         return self.remaining == 0
 
 
+@dataclass
+class TurnCounter:
+    interval: int = 100
+    value: int = 0
+
+    def __post_init__(self):
+        if self.interval <= 0:
+            raise ValueError("턴 간격은 1 이상이어야 합니다.")
+        self.value %= self.interval
+
+    @property
+    def ticks_until_next(self):
+        return self.interval - self.value
+
+    def advance(self, ticks: int):
+        if ticks < 0:
+            raise ValueError("턴 카운터의 진행 틱은 0 이상이어야 합니다.")
+
+        total = self.value + ticks
+        completed_turns, self.value = divmod(total, self.interval)
+        return completed_turns
+
+
 class CombatTimer:
     """던전 전투 유닛의 다음 행동까지 남은 정수 틱을 관리한다."""
 
     def __init__(self):
         self.entries: list[CombatTimerEntry] = []
+        self.turn_counter = TurnCounter()
 
     def register(self, unit: Unit, turn_cost: int | None = None):
         entry = self.get_entry(unit)
@@ -58,6 +82,7 @@ class CombatTimer:
         if ticks < 0:
             raise ValueError("전투 타이머의 진행 틱은 0 이상이어야 합니다.")
 
+        self.turn_counter.advance(ticks)
         for entry in self.entries:
             entry.remaining = max(0, entry.remaining - ticks)
 

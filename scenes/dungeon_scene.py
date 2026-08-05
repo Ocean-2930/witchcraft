@@ -25,6 +25,7 @@ from settings import (
     VIRTUAL_WIDTH,
 )
 from ui import (
+    CombatTimelineRenderer,
     FloorTileRenderer,
     DungeonFogRenderer,
     MonsterMarkerRenderer,
@@ -176,6 +177,14 @@ class DungeonScene(Scene):
             VIRTUAL_HEIGHT // 2,
             72,
             72,
+        )
+        self.combat_timeline = CombatTimelineRenderer(
+            self,
+            self.dungeon_inventory.get_stat,
+            lambda: self.combat_timer.turn_counter.value,
+            self.player_status.rect.centerx,
+            self.player_status.rect.bottom + 46,
+            width=self.player_status.rect.width,
         )
         player_x, player_y = self.dungeon_inventory.get_player_position()
         self.set_dungeon_draw_order(self.player_marker, player_x, player_y, self.DEPTH_UNIT)
@@ -1062,6 +1071,9 @@ class DungeonScene(Scene):
             return
 
         self.dungeon_inventory.move_player(move["move_x"], move["move_y"])
+        move_turn_cost = self.dungeon_inventory.get_stat().move_turn_cost
+        self.combat_timer.advance(move_turn_cost)
+        self.combat_timer.schedule(self.dungeon_inventory.player, move_turn_cost)
         self.set_player_draw_order()
         self.active_move = None
         self.refresh_visible_tiles()

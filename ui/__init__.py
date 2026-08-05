@@ -4,6 +4,7 @@ from .renderer import Renderer
 
 # dungeon_scene
 from .dungeon_scene import (
+    CombatTimelineRenderer,
     FloorTileRenderer,
     MonsterMarkerRenderer,
     MonsterTooltipRenderer,
@@ -59,6 +60,7 @@ __all__ = [
     "Renderer",
     # dungeon_scene
     "FloorTileRenderer",
+    "CombatTimelineRenderer",
     "MonsterMarkerRenderer",
     "MonsterTooltipRenderer",
     "PlayerMarkerRenderer",

@@ -1,6 +1,7 @@
 import pygame
 
 from ui.renderer import Renderer
+from .textures import DUNGEON_TEXTURES
 
 
 class PlayerStatusRenderer(Renderer):
@@ -24,7 +25,15 @@ class PlayerStatusRenderer(Renderer):
         self.content_gap = 10
         self.bar_height = 32
         self.bar_gap = 12
-        self.profile_image = profile_image
+        self.profile_image = (
+            profile_image
+            if profile_image is not None
+            else DUNGEON_TEXTURES.get_scaled(
+                "player_profile",
+                profile_size,
+                profile_size,
+            )
+        )
         self.label_font = pygame.font.SysFont("malgungothic", 15, bold=True)
         self.value_font = pygame.font.SysFont("malgungothic", 16, bold=True)
         self.profile_font = pygame.font.SysFont("malgungothic", 15, bold=True)

@@ -9,7 +9,7 @@ from .map_generator import (
     MapConnection,
     Room,
 )
-from .combat_timer import CombatTimer, CombatTimerEntry
+from .combat_timer import CombatTimer, CombatTimerEntry, TurnCounter
 
 __all__ = [
     "DOWN_STAIRS",
@@ -18,6 +18,7 @@ __all__ = [
     "WALL",
     "CombatTimer",
     "CombatTimerEntry",
+    "TurnCounter",
     "DungeonMap",
     "DungeonMapConfig",
     "DungeonMapGenerator",

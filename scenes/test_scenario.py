@@ -10,6 +10,7 @@ if TYPE_CHECKING:
 
 def senario(scene: "DungeonScene"):
     """개발 중 던전의 초기 상태를 변경하는 테스트 시나리오."""
+    scene.dungeon_inventory.player.move_speed = -2
     scene.dungeon_inventory.add_item(ItemInstance(BluePotion(), stack=3))
     scene.dungeon_inventory.add_item(
         EquipmentInstance(

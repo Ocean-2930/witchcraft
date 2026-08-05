@@ -74,7 +74,7 @@ class DungeonMapConfig:
     placement_attempts: int = 240
     generation_attempts: int = 12
     extra_connection_chance: float = 0.28
-    outer_wall_padding: int = 1
+    outer_wall_padding: int = 2
 
     def validate(self) -> None:
         if self.min_rooms < 7 or self.max_rooms < self.min_rooms:
@@ -87,8 +87,8 @@ class DungeonMapConfig:
             raise ValueError("생성 시도 횟수는 1 이상이어야 합니다.")
         if not 0.0 <= self.extra_connection_chance <= 1.0:
             raise ValueError("추가 연결 확률은 0과 1 사이여야 합니다.")
-        if self.outer_wall_padding < 1:
-            raise ValueError("외곽 벽 두께는 1 이상이어야 합니다.")
+        if self.outer_wall_padding < 2:
+            raise ValueError("외곽 벽 두께는 2 이상이어야 합니다.")
 
 
 @dataclass(frozen=True)
