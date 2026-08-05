@@ -415,7 +415,7 @@ class Unit(UnitBase):
 
     @staticmethod
     def get_speed_turn_cost(speed_step):
-        return round(
+        return int(
             BASE_TURN_COST
             / (SPEED_MULTIPLIER_BASE ** (clamp(speed_step, MIN_SPEED_STEP, MAX_SPEED_STEP) / SPEED_STEP_DIVISOR))
         )

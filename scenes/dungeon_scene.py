@@ -40,7 +40,7 @@ from ui import (
 )
 from skills import SkillDirectionStatus, SkillTargetingInput
 from units import Enemy
-from utilities.dungeon import DOWN_STAIRS, UP_STAIRS, WALL, DungeonMap
+from utilities.dungeon import CombatTimer, DOWN_STAIRS, UP_STAIRS, WALL, DungeonMap
 from utilities.inventory import DungeonInventory
 
 
@@ -114,6 +114,8 @@ class DungeonScene(Scene):
         self.dungeon_inventory = (
             self.initial_dungeon_inventory or DungeonInventory()
         )
+        self.combat_timer = CombatTimer()
+        self.combat_timer.register(self.dungeon_inventory.player)
         if self.up_stairs is not None:
             self.dungeon_inventory.set_player_position(*self.up_stairs)
         else:
@@ -410,6 +412,7 @@ class DungeonScene(Scene):
 
     def create_monster(self, tile_x, tile_y):
         unit = Enemy("적 몬스터", max_hp=100, attack_power=0, tile_x=tile_x, tile_y=tile_y)
+        self.combat_timer.register(unit)
         monster = {
             "unit": unit,
             "renderer": MonsterMarkerRenderer(

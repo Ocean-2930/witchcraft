@@ -9,12 +9,15 @@ from .map_generator import (
     MapConnection,
     Room,
 )
+from .combat_timer import CombatTimer, CombatTimerEntry
 
 __all__ = [
     "DOWN_STAIRS",
     "FLOOR",
     "UP_STAIRS",
     "WALL",
+    "CombatTimer",
+    "CombatTimerEntry",
     "DungeonMap",
     "DungeonMapConfig",
     "DungeonMapGenerator",
