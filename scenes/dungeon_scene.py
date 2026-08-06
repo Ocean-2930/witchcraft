@@ -471,7 +471,13 @@ class DungeonScene(Scene):
             self.rooms,
             self.SIGHT_RADIUS,
         )
-        enemy.set_ai_mode(EnemyMode.COMBAT if can_see_player else EnemyMode.GUARD)
+        if can_see_player:
+            enemy.remember_player_position(player_position)
+        elif (
+            enemy.last_known_player_position is not None
+            and enemy_position == enemy.last_known_player_position
+        ):
+            enemy.forget_player_position()
         monster["renderer"].set_combat(enemy.is_in_combat)
 
         occupied = {
@@ -480,17 +486,26 @@ class DungeonScene(Scene):
             if other["unit"] is not enemy and other["unit"].is_alive
         }
         if enemy.is_in_combat:
-            if max(
-                abs(enemy.tile_x - player_position[0]),
-                abs(enemy.tile_y - player_position[1]),
+            target_position = enemy.last_known_player_position
+            if target_position is None:
+                enemy.forget_player_position()
+                monster["renderer"].set_combat(False)
+                return
+            if can_see_player and max(
+                abs(enemy.tile_x - target_position[0]),
+                abs(enemy.tile_y - target_position[1]),
             ) <= 1:
                 return
             path = find_shortest_path(
                 self.map_tiles,
                 enemy_position,
-                player_position,
+                target_position,
                 occupied,
             )
+            if not path:
+                enemy.forget_player_position()
+                monster["renderer"].set_combat(False)
+                return
         else:
             path = self.get_guard_path(enemy, occupied | {player_position})
 
