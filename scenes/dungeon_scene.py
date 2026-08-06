@@ -40,14 +40,19 @@ from ui import (
     WallTileRenderer,
 )
 from skills import SkillDirectionStatus, SkillTargetingInput
-from units import Enemy
+from units import Enemy, EnemyMode
 from utilities.dungeon import (
     CombatTimer,
     DOWN_STAIRS,
+    FLOOR,
     UP_STAIRS,
     WALL,
     DungeonMap,
     MonsterSpawner,
+    find_shortest_path,
+    get_grid_line,
+    get_visible_tiles,
+    has_line_of_sight,
 )
 from utilities.inventory import DungeonInventory
 
@@ -135,10 +140,8 @@ class DungeonScene(Scene):
             28 + 92 // 2,
         )
         self.monsters = []
-        self.monster_spawner = MonsterSpawner(
-            self.map_tiles,
-            self.dungeon_inventory.get_enemy_random_generator(self.CURRENT_FLOOR),
-        )
+        self.enemy_random = self.dungeon_inventory.get_enemy_random_generator(self.CURRENT_FLOOR)
+        self.monster_spawner = MonsterSpawner(self.map_tiles, self.enemy_random)
         self.hovered_monster = None
         self.peek_font = pygame.font.SysFont("malgungothic", 16, bold=True)
         self.monster_tooltip = MonsterTooltipRenderer(
@@ -287,29 +290,12 @@ class DungeonScene(Scene):
         return visible_tiles
 
     def get_sight_tile_positions(self):
-        player_x, player_y = self.dungeon_inventory.get_player_position()
-        visible_tiles = set()
-
-        for tile_y in range(max(0, player_y - self.SIGHT_RADIUS), min(len(self.map_tiles), player_y + self.SIGHT_RADIUS + 1)):
-            row = self.map_tiles[tile_y]
-            for tile_x in range(max(0, player_x - self.SIGHT_RADIUS), min(len(row), player_x + self.SIGHT_RADIUS + 1)):
-                tile_position = (tile_x, tile_y)
-                if self.has_line_of_sight((player_x, player_y), tile_position):
-                    visible_tiles.add(tile_position)
-
-        room = next(
-            (room for room in self.rooms if room.contains((player_x, player_y))),
-            None,
+        return get_visible_tiles(
+            self.map_tiles,
+            self.dungeon_inventory.get_player_position(),
+            self.rooms,
+            self.SIGHT_RADIUS,
         )
-        if room is not None:
-            for tile_y in range(max(0, room.top - 1), min(len(self.map_tiles), room.bottom + 2)):
-                row = self.map_tiles[tile_y]
-                for tile_x in range(max(0, room.left - 1), min(len(row), room.right + 2)):
-                    if room.contains((tile_x, tile_y)) or row[tile_x] == WALL:
-                        visible_tiles.add((tile_x, tile_y))
-
-        self.add_walls_next_to_visible_floor(visible_tiles)
-        return visible_tiles
 
     def add_walls_next_to_visible_floor(self, visible_tiles):
         """보이는 바닥에 직접 닿은 벽만 더해 통로 윤곽을 끊김 없이 보여준다."""
@@ -337,62 +323,12 @@ class DungeonScene(Scene):
 
     def has_line_of_sight(self, origin, target):
         """목표 벽은 보이게 두되 중간 벽과 막힌 대각선 모서리는 통과하지 않는다."""
-        line = self.get_grid_line(origin, target)
-        previous = line[0]
-
-        for position in line[1:]:
-            move_x = position[0] - previous[0]
-            move_y = position[1] - previous[1]
-
-            # 시야선의 목표인 벽 모서리는 주변 벽에 막혀도 벽 자체를 보여준다.
-            if position == target and position in self.wall_positions:
-                return True
-
-            if move_x != 0 and move_y != 0:
-                side_x = (previous[0] + move_x, previous[1])
-                side_y = (previous[0], previous[1] + move_y)
-                if side_x in self.wall_positions and side_y in self.wall_positions:
-                    return False
-
-            if position == target:
-                return True
-
-            if position in self.wall_positions:
-                return False
-
-            previous = position
-
-        return True
+        return has_line_of_sight(origin, target, self.wall_positions)
 
     @staticmethod
     def get_grid_line(origin, target):
         """두 타일 중심을 잇는 정수 격자선을 반환한다."""
-        x, y = origin
-        target_x, target_y = target
-        width = abs(target_x - x)
-        height = abs(target_y - y)
-        step_x = 1 if target_x > x else -1
-        step_y = 1 if target_y > y else -1
-        moved_x = 0
-        moved_y = 0
-        positions = [(x, y)]
-
-        while moved_x < width or moved_y < height:
-            decision = (1 + 2 * moved_x) * height - (1 + 2 * moved_y) * width
-            if decision == 0:
-                x += step_x
-                y += step_y
-                moved_x += 1
-                moved_y += 1
-            elif decision < 0:
-                x += step_x
-                moved_x += 1
-            else:
-                y += step_y
-                moved_y += 1
-            positions.append((x, y))
-
-        return positions
+        return get_grid_line(origin, target)
 
     def get_explored_tiles(self):
         return self.dungeon_inventory.get_explored_tiles(self.CURRENT_FLOOR)
@@ -480,6 +416,123 @@ class DungeonScene(Scene):
         for monster in self.monsters:
             position = (monster["unit"].tile_x, monster["unit"].tile_y)
             monster["renderer"].set_visible(position in self.current_visible_tiles)
+
+    def advance_monster_turns(self, ticks):
+        """플레이어 행동 시간 동안 준비되는 모든 몬스터 행동을 처리한다."""
+        remaining_ticks = ticks
+        completed_turns = 0
+
+        while remaining_ticks > 0:
+            pending = [
+                entry.remaining
+                for entry in self.combat_timer.entries
+                if isinstance(entry.unit, Enemy) and entry.unit.is_alive and entry.remaining > 0
+            ]
+            step = min(remaining_ticks, min(pending)) if pending else remaining_ticks
+            self.combat_timer.advance(step)
+            completed_turns += self.combat_timer.last_completed_turns
+            remaining_ticks -= step
+
+            ready_enemies = [
+                unit
+                for unit in self.combat_timer.ready_units
+                if isinstance(unit, Enemy) and unit.is_alive
+            ]
+            for enemy in ready_enemies:
+                self.run_monster_turn(enemy)
+                self.combat_timer.schedule(enemy, enemy.move_turn_cost)
+
+        return completed_turns
+
+    def run_monster_turn(self, enemy):
+        monster = next(
+            (monster for monster in self.monsters if monster["unit"] is enemy),
+            None,
+        )
+        if monster is None:
+            return
+
+        enemy_position = (enemy.tile_x, enemy.tile_y)
+        player_position = self.dungeon_inventory.get_player_position()
+        can_see_player = player_position in get_visible_tiles(
+            self.map_tiles,
+            enemy_position,
+            self.rooms,
+            self.SIGHT_RADIUS,
+        )
+        enemy.set_ai_mode(EnemyMode.COMBAT if can_see_player else EnemyMode.GUARD)
+        monster["renderer"].set_combat(enemy.is_in_combat)
+
+        occupied = {
+            (other["unit"].tile_x, other["unit"].tile_y)
+            for other in self.monsters
+            if other["unit"] is not enemy and other["unit"].is_alive
+        }
+        if enemy.is_in_combat:
+            if max(
+                abs(enemy.tile_x - player_position[0]),
+                abs(enemy.tile_y - player_position[1]),
+            ) <= 1:
+                return
+            path = find_shortest_path(
+                self.map_tiles,
+                enemy_position,
+                player_position,
+                occupied,
+            )
+        else:
+            path = self.get_guard_path(enemy, occupied | {player_position})
+
+        if path:
+            self.move_monster(monster, path[0])
+
+    def get_guard_path(self, enemy, blocked_positions):
+        position = (enemy.tile_x, enemy.tile_y)
+        if enemy.patrol_target == position:
+            enemy.patrol_target = None
+
+        if enemy.patrol_target is not None:
+            path = find_shortest_path(
+                self.map_tiles,
+                position,
+                enemy.patrol_target,
+                blocked_positions,
+            )
+            if path:
+                return path
+            enemy.patrol_target = None
+
+        candidates = [
+            (tile_x, tile_y)
+            for tile_y, row in enumerate(self.map_tiles)
+            for tile_x, tile_value in enumerate(row)
+            if tile_value == FLOOR
+            and (tile_x, tile_y) != position
+            and (tile_x, tile_y) not in blocked_positions
+        ]
+        self.enemy_random.shuffle(candidates)
+        for target in candidates:
+            path = find_shortest_path(
+                self.map_tiles,
+                position,
+                target,
+                blocked_positions,
+            )
+            if path:
+                enemy.patrol_target = target
+                return path
+        return []
+
+    def move_monster(self, monster, target_position):
+        unit = monster["unit"]
+        unit.tile_x, unit.tile_y = target_position
+        renderer = monster["renderer"]
+        renderer.set_transform(
+            self.get_tile_screen_x(unit.tile_x),
+            self.get_tile_screen_y(unit.tile_y),
+        )
+        self.set_dungeon_draw_order(renderer, unit.tile_x, unit.tile_y, self.DEPTH_UNIT)
+        self.set_maze_base_position(renderer)
 
     def create_wall_tile(self, tile_x, tile_y):
         wall_y_offset = (self.WALL_TILE_HEIGHT - self.FLOOR_TILE_HEIGHT) // 2
@@ -1109,8 +1162,7 @@ class DungeonScene(Scene):
 
         self.dungeon_inventory.move_player(move["move_x"], move["move_y"])
         move_turn_cost = self.dungeon_inventory.get_stat().move_turn_cost
-        self.combat_timer.advance(move_turn_cost)
-        completed_turns = self.combat_timer.last_completed_turns
+        completed_turns = self.advance_monster_turns(move_turn_cost)
         self.combat_timer.schedule(self.dungeon_inventory.player, move_turn_cost)
         self.set_player_draw_order()
         self.active_move = None
