@@ -12,4 +12,6 @@ assets/**/*
 !assets/images/dungeon_scene/
 !assets/images/dungeon_scene/player_profile.png
 
+tests/**
+
 **/__pycache__
