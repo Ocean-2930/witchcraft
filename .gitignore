@@ -5,12 +5,6 @@
 assets/**/*
 !assets/**/.gitkeep
 !assets/**/AGENTS.md
-!assets/images/
-!assets/images/ui/
-!assets/images/ui/combat_timeline/
-!assets/images/ui/combat_timeline/*.png
-!assets/images/dungeon_scene/
-!assets/images/dungeon_scene/player_profile.png
 
 tests/**
 
