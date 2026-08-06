@@ -350,10 +350,10 @@ class DungeonScene(Scene):
         renderer_arguments = ()
         if tile_value == UP_STAIRS:
             renderer_type = StairTileRenderer
-            renderer_arguments = ((255, 255, 255),)
+            renderer_arguments = ("up_stairs",)
         elif tile_value == DOWN_STAIRS:
             renderer_type = StairTileRenderer
-            renderer_arguments = ((0, 0, 0),)
+            renderer_arguments = ("down_stairs",)
 
         tile = renderer_type(
             self,

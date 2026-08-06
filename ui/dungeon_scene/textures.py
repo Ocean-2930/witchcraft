@@ -9,6 +9,8 @@ TEXTURE_SOURCES = {
     "character": "character.png",
     "player_profile": "player_profile.png",
     "floor": "floor_tile.png",
+    "up_stairs": "up_stairs.png",
+    "down_stairs": "down_stairs.png",
     "wall": "wall_tile.png",
     "wall_edge": "wall_edge.png",
 }
