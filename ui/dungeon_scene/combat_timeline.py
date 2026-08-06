@@ -26,9 +26,11 @@ class CombatTimelineRenderer(Renderer):
         pos_y,
         width=424,
         height=84,
+        enemy_turns_getter=None,
     ):
         self.player_getter = player_getter
         self.turn_counter_getter = turn_counter_getter
+        self.enemy_turns_getter = enemy_turns_getter or (lambda: ())
         self.profile_image = DUNGEON_TEXTURES.get_scaled(
             "player_profile",
             21,
@@ -50,9 +52,10 @@ class CombatTimelineRenderer(Renderer):
     def draw(self, screen):
         player = self.player_getter()
         turn_counter = self.turn_counter_getter()
-        events = self.build_player_events(
+        events = self.build_events(
             player.attack_turn_cost,
             player.move_turn_cost,
+            self.enemy_turns_getter(),
         )
         tokens = self.build_timeline_tokens(events, turn_counter)
         token_widths = [
@@ -64,11 +67,12 @@ class CombatTimelineRenderer(Renderer):
         for token, token_width in zip(tokens, token_widths):
             center_x = cursor_x + token_width // 2
             if token[0] == "badge":
-                self.draw_player_badge(
+                self.draw_action_badge(
                     screen,
                     center_x,
                     token[1],
                     token[2],
+                    token[3],
                 )
             else:
                 self.draw_tick_divider(
@@ -79,26 +83,32 @@ class CombatTimelineRenderer(Renderer):
             cursor_x += token_width + self.BADGE_GAP
 
     @classmethod
-    def build_player_events(cls, attack_cost, move_cost):
+    def build_events(cls, attack_cost, move_cost, enemy_turns=()):
         return sorted(
-            (
-                (attack_cost, "attack"),
-                (move_cost, "move"),
-            ),
-            key=lambda event: (event[0], event[1]),
+            [
+                (attack_cost, "attack", "player"),
+                (move_cost, "move", "player"),
+                *((turn_tick, "turn", "enemy") for turn_tick in enemy_turns),
+            ],
+            key=lambda event: (event[0], event[2] == "enemy", event[1]),
         )[:cls.MAX_BADGES]
+
+    @classmethod
+    def build_player_events(cls, attack_cost, move_cost):
+        """플레이어 전용 호출을 위한 이전 인터페이스를 유지한다."""
+        return cls.build_events(attack_cost, move_cost)
 
     @classmethod
     def build_timeline_tokens(cls, events, turn_counter):
         tokens = []
         next_divider = cls.TICK_INTERVAL - turn_counter
 
-        for tick, action in events:
+        for tick, action, owner in events:
             while next_divider < tick:
                 tokens.append(("divider", next_divider))
                 next_divider += cls.TICK_INTERVAL
 
-            tokens.append(("badge", tick, action))
+            tokens.append(("badge", tick, action, owner))
 
             while next_divider == tick:
                 tokens.append(("divider", next_divider))
@@ -106,7 +116,7 @@ class CombatTimelineRenderer(Renderer):
 
         return tokens
 
-    def draw_player_badge(self, screen, center_x, relative_tick, action):
+    def draw_action_badge(self, screen, center_x, relative_tick, action, owner):
         tick_label = self.tick_font.render(
             str(relative_tick),
             True,
@@ -117,17 +127,19 @@ class CombatTimelineRenderer(Renderer):
             tick_label.get_rect(midtop=(center_x, self.rect.top)),
         )
 
-        badge = pygame.transform.smoothscale(self.badge_image, self.BADGE_SIZE)
+        badge_image = self.enemy_badge_image if owner == "enemy" else self.badge_image
+        badge = pygame.transform.smoothscale(badge_image, self.BADGE_SIZE)
         badge_rect = badge.get_rect(midtop=(center_x, self.rect.top + 15))
         screen.blit(badge, badge_rect)
 
-        if self.profile_image is None:
-            return
+        if owner == "player" and self.profile_image is not None:
+            profile_rect = self.profile_image.get_rect(
+                center=(badge_rect.centerx, badge_rect.top + 12)
+            )
+            screen.blit(self.profile_image, profile_rect)
 
-        profile_rect = self.profile_image.get_rect(
-            center=(badge_rect.centerx, badge_rect.top + 12)
-        )
-        screen.blit(self.profile_image, profile_rect)
+        if owner == "enemy":
+            return
 
         action_image = pygame.transform.smoothscale(self.action_images[action], (11, 11))
         action_rect = action_image.get_rect(

@@ -200,6 +200,7 @@ class DungeonScene(Scene):
             self.player_status.rect.centerx,
             self.player_status.rect.bottom + 46,
             width=self.player_status.rect.width,
+            enemy_turns_getter=self.get_visible_monster_turns,
         )
         player_x, player_y = self.dungeon_inventory.get_player_position()
         self.set_dungeon_draw_order(self.player_marker, player_x, player_y, self.DEPTH_UNIT)
@@ -416,6 +417,16 @@ class DungeonScene(Scene):
         for monster in self.monsters:
             position = (monster["unit"].tile_x, monster["unit"].tile_y)
             monster["renderer"].set_visible(position in self.current_visible_tiles)
+
+    def get_visible_monster_turns(self):
+        turns = []
+        for entry in self.combat_timer.entries:
+            if not isinstance(entry.unit, Enemy) or not entry.unit.is_alive:
+                continue
+            position = (entry.unit.tile_x, entry.unit.tile_y)
+            if position in self.current_visible_tiles:
+                turns.append(entry.remaining)
+        return turns
 
     def advance_monster_turns(self, ticks):
         """플레이어 행동 시간 동안 준비되는 모든 몬스터 행동을 처리한다."""
