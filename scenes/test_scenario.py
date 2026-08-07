@@ -29,16 +29,17 @@ def senario(scene: "DungeonScene"):
         )
     )
     for tier in (1, 2):
-        scene.dungeon_inventory.add_learnable_skill(
-            LearnableSkill(
-                tier=tier,
-                skill=SkillInstance(
-                    AttackSkill(),
-                    level=0,
-                ),
-                max_level=3,
+        if tier == 1:
+            scene.dungeon_inventory.add_learnable_skill(
+                LearnableSkill(
+                    tier=tier,
+                    skill=SkillInstance(
+                        AttackSkill(),
+                        level=1,
+                    ),
+                    max_level=1,
+                )
             )
-        )
         for passive_skill in STAT_PASSIVE_SKILLS[:4]:
             scene.dungeon_inventory.add_learnable_skill(
                 LearnableSkill(
@@ -51,6 +52,7 @@ def senario(scene: "DungeonScene"):
                 )
             )
         scene.dungeon_inventory.set_tier_skill_points(tier, 50)
+    scene.dungeon_inventory.assign_hotbar_skill("R", "attack")
     scene.dungeon_inventory.add_learnable_skill(
         LearnableSkill(
             tier=8,
