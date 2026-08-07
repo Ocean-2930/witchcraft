@@ -379,6 +379,7 @@ class DungeonScene(Scene):
                 self.get_tile_screen_y(unit.tile_y),
                 self.MONSTER_MARKER_SIZE,
                 self.MONSTER_MARKER_SIZE,
+                unit,
             ),
         }
         self.set_dungeon_draw_order(monster["renderer"], unit.tile_x, unit.tile_y, self.DEPTH_UNIT)
