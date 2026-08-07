@@ -3,6 +3,7 @@ import pygame
 from ui.renderer import Renderer
 from ui.ui import UIElement
 from .item_window import ItemWindow
+from .skill_info_window import SkillInfoWindow
 
 
 class ShortcutSlotRenderer(Renderer):
@@ -137,6 +138,10 @@ class ShortcutSlot(UIElement):
         )
         super().__init__(scene, renderer=renderer, background=False)
         self.item_window = ItemWindow(scene, self.get_item)
+        self.skill_info_window = SkillInfoWindow(
+            scene,
+            skill_instance_getter=self.get_skill,
+        )
 
     def get_item(self):
         return self.item_getter(self.label) if self.item_getter else None
@@ -161,7 +166,7 @@ class ShortcutSlot(UIElement):
         if not visible and self.scene.ui_focus is self:
             self.scene.ui_focus = None
         if not visible:
-            self.item_window.hide()
+            self.hide_info_windows()
 
     def pos_check(self, mouse_pos):
         return self.visible and super().pos_check(mouse_pos)
@@ -171,25 +176,38 @@ class ShortcutSlot(UIElement):
             self.on_click(self.label)
 
     def on_enter(self):
-        self.show_item_window(self.rect.bottomright)
+        self.show_info_window(self.rect.bottomright)
 
     def on_hover(self, delta_time, game_events, mouse_position, wheel_move):
-        self.show_item_window(mouse_position)
+        self.show_info_window(mouse_position)
 
     def on_exit(self):
-        self.item_window.hide()
+        self.hide_info_windows()
 
-    def show_item_window(self, mouse_position):
+    def show_info_window(self, mouse_position):
         if (
             self.item_window_enabled_getter is not None
             and not self.item_window_enabled_getter()
         ):
-            self.item_window.hide()
+            self.hide_info_windows()
             return
-        self.item_window.show_at(mouse_position)
+        if self.get_item() is not None:
+            self.skill_info_window.hide()
+            self.item_window.show_at(mouse_position)
+            return
+        if self.get_skill() is not None:
+            self.item_window.hide()
+            self.skill_info_window.show_at(mouse_position)
+            return
+        self.hide_info_windows()
+
+    def hide_info_windows(self):
+        self.item_window.hide()
+        self.skill_info_window.hide()
 
     def destroy(self):
         self.item_window.destroy()
+        self.skill_info_window.destroy()
         super().destroy()
         self.renderer.destroy()
 

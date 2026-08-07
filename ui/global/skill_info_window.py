@@ -13,14 +13,16 @@ class SkillInfoWindowRenderer(Renderer):
         self.window = window
 
     def draw(self, screen):
-        if not self.window.visible:
+        skill_instance = self.window.get_skill_instance()
+        if not self.window.visible or skill_instance is None:
             return
         pygame.draw.rect(screen, (12, 15, 19), self.rect, border_radius=6)
         pygame.draw.rect(screen, (115, 129, 142), self.rect, 2, border_radius=6)
-        max_level_text = "∞" if self.window.max_level is None else self.window.max_level
+        max_level = self.window.get_max_level()
+        max_level_text = "∞" if max_level is None else max_level
         title = self.window.title_font.render(
-            f"{self.window.skill_instance.skill.name}  "
-            f"Lv.{self.window.skill_instance.level}/{max_level_text}",
+            f"{skill_instance.skill.name}  "
+            f"Lv.{skill_instance.level}/{max_level_text}",
             True,
             (240, 244, 247),
         )
@@ -41,18 +43,25 @@ class SkillInfoWindow(UIElement):
     def __init__(
         self,
         scene,
-        skill_instance,
+        skill_instance=None,
         max_level=None,
         width=280,
         height=142,
+        skill_instance_getter=None,
     ):
         self.skill_instance = skill_instance
+        self.skill_instance_getter = skill_instance_getter
+        if skill_instance is None and skill_instance_getter is None:
+            raise ValueError("skill_instance 또는 skill_instance_getter가 필요합니다.")
         self.max_level = (
-            skill_instance.max_level if max_level is None else max_level
+            skill_instance.max_level
+            if skill_instance is not None and max_level is None
+            else max_level
         )
         if (
-            self.max_level is not None
-            and self.max_level < self.skill_instance.level
+            skill_instance is not None
+            and self.max_level is not None
+            and self.max_level < skill_instance.level
         ):
             raise ValueError("max_level은 현재 스킬 레벨 이상이어야 합니다.")
         self.visible = False
@@ -62,7 +71,8 @@ class SkillInfoWindow(UIElement):
         super().__init__(scene, renderer=renderer, background=False)
 
     def show_at(self, mouse_position):
-        if mouse_position is None:
+        if mouse_position is None or self.get_skill_instance() is None:
+            self.hide()
             return
         left = min(mouse_position[0] + 16, VIRTUAL_WIDTH - self.rect.width - 8)
         top = min(mouse_position[1] + 16, VIRTUAL_HEIGHT - self.rect.height - 8)
@@ -80,10 +90,24 @@ class SkillInfoWindow(UIElement):
     def pos_check(self, mouse_pos):
         return False
 
+    def get_skill_instance(self):
+        if self.skill_instance_getter is not None:
+            return self.skill_instance_getter()
+        return self.skill_instance
+
+    def get_max_level(self):
+        skill_instance = self.get_skill_instance()
+        if skill_instance is None:
+            return self.max_level
+        if self.skill_instance_getter is not None and self.max_level is None:
+            return skill_instance.max_level
+        return self.max_level
+
     def draw_description(self, screen, start_y):
-        text = self.skill_instance.skill.get_description(
-            self.skill_instance.level
-        )
+        skill_instance = self.get_skill_instance()
+        if skill_instance is None:
+            return
+        text = skill_instance.skill.get_description(skill_instance.level)
         color = (184, 195, 204) if text else (105, 115, 124)
         text = text or "설명 없음"
         available_width = self.rect.width - 24
