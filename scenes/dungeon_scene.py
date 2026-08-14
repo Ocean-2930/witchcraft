@@ -940,6 +940,38 @@ class DungeonScene(Scene):
         )
         self.clean_tile_filters()
         item_instance = self.dungeon_inventory.get_hotbar_item(label)
+        skill_instance = None if item_instance is not None else self.dungeon_inventory.get_hotbar_skill(label)
+        targets_by_tile = {
+            (monster["unit"].tile_x, monster["unit"].tile_y): monster
+            for monster in self.monsters
+            if monster["unit"].is_alive
+        }
+        target_monsters = [
+            targets_by_tile[tile]
+            for tile in target_tiles
+            if tile in targets_by_tile
+        ]
+        targets = [monster["unit"] for monster in target_monsters]
+        battle_rng = self.dungeon_inventory.get_battle_random_generator(self.CURRENT_FLOOR)
+        action_skill = skill if skill_instance is None else skill_instance
+        results = self.dungeon_inventory.use_skill(action_skill, targets, battle_rng)
+        used = results is not None
+
+        if used and item_instance is not None:
+            self.dungeon_inventory.item_inventory.remove_amount(item_instance, 1)
+            self.dungeon_inventory.get_hotbar_item(label)
+
+        defeated = [monster for monster in target_monsters if not monster["unit"].is_alive]
+        for monster in defeated:
+            self.remove_monster(monster)
+
+        completed_turns = 0
+        if used:
+            attack_turn_cost = self.dungeon_inventory.get_stat().attack_turn_cost
+            completed_turns = self.advance_monster_turns(attack_turn_cost)
+            self.combat_timer.schedule(self.dungeon_inventory.player, attack_turn_cost)
+            self.spawn_periodic_monsters(completed_turns)
+
         self.last_skill_call = {
             "label": label,
             "skill": skill,
@@ -947,7 +979,26 @@ class DungeonScene(Scene):
             "direction": direction,
             "target_vectors": target_vectors,
             "target_tiles": target_tiles,
+            "targets": targets,
+            "results": results or [],
+            "used": used,
+            "empty_target": not targets,
         }
+        return used
+
+    def remove_monster(self, monster):
+        if monster not in self.monsters:
+            return False
+        unit = monster["unit"]
+        renderer = monster["renderer"]
+        self.combat_timer.unregister(unit)
+        renderer.destroy()
+        if renderer in self.maze_renderers:
+            self.maze_renderers.remove(renderer)
+        self.monsters.remove(monster)
+        if self.hovered_monster is monster:
+            self.hovered_monster = None
+        return True
 
     def get_hotbar_action_skill(self, label):
         item_instance = self.dungeon_inventory.get_hotbar_item(label)

@@ -249,9 +249,26 @@ class Unit(UnitBase):
 
     def get_damage_block_rates(self, damage_block):
         target = damage_block.defender
-        calculated_hit_rate = self.get_calculated_hit_rate(target, damage_block.accuracy_bonus)
+        if damage_block.hit_rate_calculator is None:
+            calculated_hit_rate = self.get_calculated_hit_rate(target, damage_block.accuracy_bonus)
+        else:
+            calculated_hit_rate = damage_block.hit_rate_calculator(
+                damage_block.cast_context,
+                damage_block,
+            )
         hit_rate = clamp(calculated_hit_rate, DamageBlock.MIN_HIT_RATE, DamageBlock.MAX_HIT_RATE)
-        critical_raw_rate = self.get_critical_raw_rate(target, calculated_hit_rate, damage_block.critical_chance_bonus)
+        if damage_block.critical_rate_calculator is None:
+            critical_raw_rate = self.get_critical_raw_rate(
+                target,
+                calculated_hit_rate,
+                damage_block.critical_chance_bonus,
+            )
+        else:
+            critical_raw_rate = damage_block.critical_rate_calculator(
+                damage_block.cast_context,
+                damage_block,
+                calculated_hit_rate,
+            )
         critical_rate = clamp(
             critical_raw_rate,
             DamageBlock.MIN_CRITICAL_RATE,
@@ -274,17 +291,46 @@ class Unit(UnitBase):
             base_damage = self.attack_power
 
         base_damage = base_damage * damage_block.skill_coefficient + damage_block.flat_damage_bonus
-        damage = (
-            base_damage
-            * self.get_defense_modifier(target, damage_block.penetration_bonus)
-            * self.get_excess_penetration_modifier(target, damage_block.penetration_bonus)
-            * self.get_critical_modifier(
+        defense_modifier = (
+            self.get_defense_modifier(target, damage_block.penetration_bonus)
+            if damage_block.defense_modifier_calculator is None
+            else damage_block.defense_modifier_calculator(damage_block.cast_context, damage_block)
+        )
+        excess_penetration_modifier = (
+            self.get_excess_penetration_modifier(target, damage_block.penetration_bonus)
+            if damage_block.excess_penetration_modifier_calculator is None
+            else damage_block.excess_penetration_modifier_calculator(damage_block.cast_context, damage_block)
+        )
+        critical_modifier = (
+            self.get_critical_modifier(
                 critical_type,
                 critical_damage_conversion,
                 damage_block.critical_damage_bonus,
                 target.critical_damage_reduction,
             )
-            * self.get_damage_increase_modifier(damage_increase_conversion, damage_block.damage_increase_bonus)
+            if damage_block.critical_modifier_calculator is None
+            else damage_block.critical_modifier_calculator(
+                damage_block.cast_context,
+                damage_block,
+                critical_type,
+                critical_damage_conversion,
+            )
+        )
+        damage_increase_modifier = (
+            self.get_damage_increase_modifier(damage_increase_conversion, damage_block.damage_increase_bonus)
+            if damage_block.damage_increase_modifier_calculator is None
+            else damage_block.damage_increase_modifier_calculator(
+                damage_block.cast_context,
+                damage_block,
+                damage_increase_conversion,
+            )
+        )
+        damage = (
+            base_damage
+            * defense_modifier
+            * excess_penetration_modifier
+            * critical_modifier
+            * damage_increase_modifier
             * self.get_overloaded_damage_modifier()
             * damage_block.outgoing_damage_modifier
             * target.get_incoming_damage_modifier(damage_block.incoming_damage_reduction_bonus)
@@ -293,6 +339,12 @@ class Unit(UnitBase):
             * random_modifier
         )
 
+        if damage_block.final_damage_calculator is not None:
+            return damage_block.final_damage_calculator(
+                damage_block.cast_context,
+                damage_block,
+                damage,
+            )
         return max(1, floor(damage))
 
     def get_calculated_hit_rate(self, target, accuracy_bonus=0):

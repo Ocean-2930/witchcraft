@@ -65,6 +65,7 @@ flowchart LR
 - package `__init__.py`는 다른 패키지가 소유한 타입을 편의상 재공개하지 않는다.
 - 실제 아이템 콘텐츠는 `items/items`, 장비 콘텐츠는 종류별 `items/equips` 하위 폴더에 둔다. 실제 스킬 콘텐츠는 `skills/implementations/{item_skills,active_skills,passive_skills}`에 두어 기반 모델과 구현체를 경로상으로 구분한다.
 - 여러 스킬이 공유하는 효과 구현은 `skills/effect_classes.py`에 모으고, 한 스킬에서만 필요한 전용 효과는 해당 스킬 구현 파일 안에 둔다.
+- 스킬 시전은 `SkillCastContext`로 스킬 정의, 합산 레벨, 시전자와 대상을 효과에 전달한다. 스킬이 제공하는 선택적 계산 callable은 `AttackEffect`가 `DamageBlock`으로 넘기며, callable이 없는 계산 단계는 `Unit`의 기본 피해 공식을 사용한다.
 
 ## 현재 남은 경계
 

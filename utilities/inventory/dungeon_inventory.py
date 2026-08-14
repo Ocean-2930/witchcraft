@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from typing import ClassVar
 
 from items import EquipmentInstance, Equip, ItemInstance, SkilledEquip
-from skills import SkillInstance
+from skills import SkillBase, SkillInstance
 from units import Player
 from ..random_generator import RandomGenerator, RandomSeed, create_random_seed
 
@@ -284,6 +284,31 @@ class DungeonInventory:
                     calculated_stat = result
 
         return calculated_stat
+
+    def use_skill(
+        self,
+        skill: SkillInstance | SkillBase,
+        targets,
+        rng=None,
+    ):
+        """패시브가 반영된 전투 능력치로 스킬을 시전하고 런타임 상태를 원본에 반영한다."""
+        if isinstance(skill, SkillInstance):
+            skill_base = skill.skill
+            level = skill.level
+        else:
+            skill_base = skill
+            level = 1
+
+        caster = self.get_stat()
+        targets = list(targets)
+        if not skill_base.can_use_targets(caster, targets, level):
+            return None
+
+        results = skill_base.use_targets(caster, targets, rng, level)
+        self.player.hp = caster.hp
+        self.player.mp = caster.mp
+        self.player.buffs = caster.buffs
+        return results
 
     def add_learnable_skill(self, learnable_skill: LearnableSkill) -> bool:
         if any(

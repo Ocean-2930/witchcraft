@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING, Callable, ClassVar
 
 if TYPE_CHECKING:
     from .unit import Unit
@@ -52,6 +52,14 @@ class DamageBlock:
     incoming_damage_modifier: float = 1.0
     random_modifier: float | None = None
     use_random_modifier: bool = True
+    cast_context: object | None = None
+    hit_rate_calculator: Callable | None = None
+    critical_rate_calculator: Callable | None = None
+    defense_modifier_calculator: Callable | None = None
+    excess_penetration_modifier_calculator: Callable | None = None
+    critical_modifier_calculator: Callable | None = None
+    damage_increase_modifier_calculator: Callable | None = None
+    final_damage_calculator: Callable | None = None
 
     def peek(self):
         return self.attacker.peek_damage_block(self)

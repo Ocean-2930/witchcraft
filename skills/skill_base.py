@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from enum import Enum, auto
 from pathlib import Path
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING, ClassVar, Protocol
 
 import pygame
 
@@ -12,11 +12,46 @@ from utilities import load_code_sprite
 if TYPE_CHECKING:
     from random import Random
 
-    from units import Unit
+    from units import DamageBlock, Unit
     from .skill_effect import SkillEffect
 
 
 RangeVector = tuple[int, int]
+
+
+class HitRateCalculator(Protocol):
+    def __call__(self, context: SkillCastContext, block: DamageBlock) -> float: ...
+
+
+class CriticalRateCalculator(Protocol):
+    def __call__(self, context: SkillCastContext, block: DamageBlock, calculated_hit_rate: float) -> float: ...
+
+
+class DamageModifierCalculator(Protocol):
+    def __call__(self, context: SkillCastContext, block: DamageBlock) -> float: ...
+
+
+class CriticalModifierCalculator(Protocol):
+    def __call__(
+        self,
+        context: SkillCastContext,
+        block: DamageBlock,
+        critical_type: str,
+        critical_damage_conversion: float,
+    ) -> float: ...
+
+
+class DamageIncreaseModifierCalculator(Protocol):
+    def __call__(
+        self,
+        context: SkillCastContext,
+        block: DamageBlock,
+        damage_increase_conversion: float,
+    ) -> float: ...
+
+
+class FinalDamageCalculator(Protocol):
+    def __call__(self, context: SkillCastContext, block: DamageBlock, damage: float) -> int: ...
 
 
 class SkillDirectionStatus(Enum):
@@ -30,6 +65,14 @@ class SkillDirectionStatus(Enum):
 class SkillTargetingInput:
     origin: RangeVector
     direction: RangeVector | None
+
+
+@dataclass(frozen=True)
+class SkillCastContext:
+    skill: SkillBase
+    level: int
+    caster: Unit
+    target: Unit | None
 
 
 @dataclass
@@ -49,6 +92,13 @@ class SkillBase:
     requires_direction: bool = True
     allow_diagonal: bool = False
     effects: list[SkillEffect] = field(default_factory=list)
+    hit_rate_calculator: HitRateCalculator | None = None
+    critical_rate_calculator: CriticalRateCalculator | None = None
+    defense_modifier_calculator: DamageModifierCalculator | None = None
+    excess_penetration_modifier_calculator: DamageModifierCalculator | None = None
+    critical_modifier_calculator: CriticalModifierCalculator | None = None
+    damage_increase_modifier_calculator: DamageIncreaseModifierCalculator | None = None
+    final_damage_calculator: FinalDamageCalculator | None = None
 
     def __post_init__(self):
         if self.max_level is not None and self.max_level < 0:
@@ -56,16 +106,30 @@ class SkillBase:
         if not self.skill_code:
             self.skill_code = self.name
 
-    def can_use(self, caster: Unit, target: Unit | None = None):
+    def can_cast(self, caster: Unit):
         return (
             caster.is_alive
             and caster.mp >= self.mp_cost
             and any(effect.is_active_effect for effect in self.effects)
-            and all(
-                effect.can_apply(caster, target)
-                for effect in self.effects
-                if effect.is_active_effect
-            )
+        )
+
+    def can_use(self, caster: Unit, target: Unit | None = None, level: int = 1):
+        if not self.can_cast(caster):
+            return False
+        context = SkillCastContext(self, level, caster, target)
+        return all(
+            effect.can_apply(caster, target, context)
+            for effect in self.effects
+            if effect.is_active_effect
+        )
+
+    def can_use_targets(self, caster: Unit, targets, level: int = 1):
+        targets = list(targets)
+        if not targets:
+            return self.can_cast(caster)
+        return self.can_cast(caster) and all(
+            self.can_use(caster, target, level)
+            for target in targets
         )
 
     def spend_cost(self, caster: Unit):
@@ -141,27 +205,37 @@ class SkillBase:
             for offset_x, offset_y in self.get_range_vectors(targeting.direction)
         ]
 
-    def peek(self, caster: Unit, target: Unit | None = None):
+    def peek(self, caster: Unit, target: Unit | None = None, level: int = 1):
         previews = []
+        context = SkillCastContext(self, level, caster, target)
 
         for effect in self.effects:
             if not effect.is_active_effect:
                 continue
 
-            preview = effect.peek(caster, target)
+            preview = effect.peek(caster, target, context)
 
             if preview is not None:
                 previews.append(preview)
 
         return previews
 
-    def use(self, caster: Unit, target: Unit | None = None, rng: Random | None = None):
-        if not self.can_use(caster, target):
+    def use_targets(self, caster: Unit, targets, rng: Random | None = None, level: int = 1):
+        targets = list(targets)
+        if not self.can_use_targets(caster, targets, level):
             raise ValueError(f"{caster.name} cannot use {self.name}.")
 
         self.spend_cost(caster)
-        return [
-            effect.apply(caster, target, rng)
-            for effect in self.effects
-            if effect.is_active_effect
-        ]
+        contexts = [SkillCastContext(self, level, caster, target) for target in targets]
+        empty_context = SkillCastContext(self, level, caster, None)
+        results = []
+        for effect in self.effects:
+            if not effect.is_active_effect:
+                continue
+            effect_contexts = contexts or [empty_context]
+            results.extend(effect.apply_targets(caster, effect_contexts, rng))
+        return results
+
+    def use(self, caster: Unit, target: Unit | None = None, rng: Random | None = None, level: int = 1):
+        targets = [] if target is None else [target]
+        return self.use_targets(caster, targets, rng, level)

@@ -47,6 +47,9 @@ class RandomGenerator:
 
         return start + int(self._issue_one() * (end - start + 1))
 
+    def uniform(self, start: float, end: float) -> float:
+        return start + self._issue_one() * (end - start)
+
     def choice(self, values: Sequence[T]) -> T:
         """비어 있지 않은 시퀀스에서 값 하나를 발급한다."""
         if not values:

@@ -27,6 +27,13 @@ class ActiveSkill(SkillBase):
         allow_negative_level: bool = False,
         skill_code: str | None = None,
         description: str = "",
+        hit_rate_calculator=None,
+        critical_rate_calculator=None,
+        defense_modifier_calculator=None,
+        excess_penetration_modifier_calculator=None,
+        critical_modifier_calculator=None,
+        damage_increase_modifier_calculator=None,
+        final_damage_calculator=None,
     ):
         super().__init__(
             name=name,
@@ -39,23 +46,33 @@ class ActiveSkill(SkillBase):
             requires_direction=requires_direction,
             allow_diagonal=allow_diagonal,
             effects=[AttackEffect(skill_coefficient=skill_coefficient)],
+            hit_rate_calculator=hit_rate_calculator,
+            critical_rate_calculator=critical_rate_calculator,
+            defense_modifier_calculator=defense_modifier_calculator,
+            excess_penetration_modifier_calculator=excess_penetration_modifier_calculator,
+            critical_modifier_calculator=critical_modifier_calculator,
+            damage_increase_modifier_calculator=damage_increase_modifier_calculator,
+            final_damage_calculator=final_damage_calculator,
         )
         self.skill_coefficient = skill_coefficient
 
-    def can_use(self, caster: Unit, target: Unit | None = None):
-        return super().can_use(caster, target)
+    def can_use(self, caster: Unit, target: Unit | None = None, level: int = 1):
+        return super().can_use(caster, target, level)
 
-    def make_damage_block(self, caster: Unit, target: Unit) -> DamageBlock:
-        return self.effects[0].make_damage_block(caster, target)
+    def make_damage_block(self, caster: Unit, target: Unit, level: int = 1) -> DamageBlock:
+        from .skill_base import SkillCastContext
 
-    def peek(self, caster: Unit, target: Unit) -> DamagePreview:
-        return self.make_damage_block(caster, target).peek()
+        context = SkillCastContext(self, level, caster, target)
+        return self.effects[0].make_damage_block(caster, target, context)
 
-    def use(self, caster: Unit, target: Unit, rng: Random | None = None) -> AttackResult:
-        if not self.can_use(caster, target):
+    def peek(self, caster: Unit, target: Unit, level: int = 1) -> DamagePreview:
+        return self.make_damage_block(caster, target, level).peek()
+
+    def use(self, caster: Unit, target: Unit, rng: Random | None = None, level: int = 1) -> AttackResult:
+        if not self.can_use(caster, target, level):
             raise ValueError(f"{caster.name} cannot use {self.name}.")
 
-        return super().use(caster, target, rng)[0]
+        return super().use(caster, target, rng, level)[0]
 
 
 Skill = ActiveSkill
