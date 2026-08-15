@@ -25,6 +25,7 @@ from settings import (
     VIRTUAL_WIDTH,
 )
 from ui import (
+    CombatLogRenderer,
     CombatTimelineRenderer,
     FloorTileRenderer,
     DungeonFogRenderer,
@@ -40,7 +41,7 @@ from ui import (
     WallTileRenderer,
 )
 from skills import SkillDirectionStatus, SkillTargetingInput
-from units import Enemy, EnemyMode
+from units import AttackResult, Enemy, EnemyMode
 from utilities.dungeon import (
     CombatTimer,
     DOWN_STAIRS,
@@ -58,6 +59,8 @@ from utilities.inventory import DungeonInventory
 
 
 class DungeonScene(Scene):
+    COMBAT_LOG_MAX_COUNT = 6
+    COMBAT_LOG_WIDTH = 420
     FLOOR_TILE_WIDTH = 90
     FLOOR_TILE_HEIGHT = 60
     WALL_TILE_HEIGHT = 80
@@ -165,6 +168,7 @@ class DungeonScene(Scene):
         self.movement_input_guard = False
         self.hotbar_input_guard = False
         self.last_skill_call = None
+        self.combat_logs = []
         self.maze_offset_x = 0.0
         self.maze_offset_y = 0.0
         self.maze_renderers = []
@@ -246,6 +250,21 @@ class DungeonScene(Scene):
             lambda: self.rooms,
             lambda: self.connections,
             self.open_map,
+        )
+        self.combat_log = CombatLogRenderer(
+            self,
+            lambda: self.combat_logs,
+            VIRTUAL_WIDTH - 28 - self.COMBAT_LOG_WIDTH // 2,
+            VIRTUAL_HEIGHT
+            - 28
+            - (
+                CombatLogRenderer.PADDING_Y * 2
+                + CombatLogRenderer.TITLE_HEIGHT
+                + CombatLogRenderer.LINE_HEIGHT * self.COMBAT_LOG_MAX_COUNT
+            )
+            // 2,
+            self.COMBAT_LOG_WIDTH,
+            self.COMBAT_LOG_MAX_COUNT,
         )
 
     def refresh_visible_tiles(self):
@@ -984,7 +1003,33 @@ class DungeonScene(Scene):
             "used": used,
             "empty_target": not targets,
         }
+        if used:
+            self.add_skill_combat_logs(skill, targets, results)
         return used
+
+    def add_combat_log(self, message):
+        if not hasattr(self, "combat_logs"):
+            self.combat_logs = []
+        self.combat_logs.append(str(message))
+        overflow = len(self.combat_logs) - self.COMBAT_LOG_MAX_COUNT
+        if overflow > 0:
+            del self.combat_logs[:overflow]
+
+    def add_skill_combat_logs(self, skill, targets, results):
+        self.add_combat_log(f"{skill.name} 스킬을 사용했다.")
+        attack_results = [result for result in results if isinstance(result, AttackResult)]
+        if not targets:
+            return
+        for index, result in enumerate(attack_results):
+            target = targets[index % len(targets)]
+            if result.hit:
+                self.add_combat_log(
+                    f"플레이어 > {target.name} {result.damage} 데미지"
+                )
+            else:
+                self.add_combat_log(
+                    f"플레이어 > {target.name} 공격이 빗나갔다"
+                )
 
     def remove_monster(self, monster):
         if monster not in self.monsters:

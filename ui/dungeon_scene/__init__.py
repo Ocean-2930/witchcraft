@@ -10,6 +10,7 @@ from .wall_tile import WallTileRenderer
 from .mini_map import MiniMap
 from .fog_overlay import DungeonFogRenderer
 from .combat_timeline import CombatTimelineRenderer
+from .combat_log import CombatLogRenderer
 
 __all__ = [
     "DUNGEON_TEXTURES",
@@ -25,4 +26,5 @@ __all__ = [
     "MiniMap",
     "DungeonFogRenderer",
     "CombatTimelineRenderer",
+    "CombatLogRenderer",
 ]

@@ -4,6 +4,7 @@ from .renderer import Renderer
 
 # dungeon_scene
 from .dungeon_scene import (
+    CombatLogRenderer,
     CombatTimelineRenderer,
     FloorTileRenderer,
     MonsterMarkerRenderer,
@@ -59,6 +60,7 @@ from .settings_scene import SettingsButton, SettingsContentRenderer, SettingsSli
 __all__ = [
     "Renderer",
     # dungeon_scene
+    "CombatLogRenderer",
     "FloorTileRenderer",
     "CombatTimelineRenderer",
     "MonsterMarkerRenderer",
