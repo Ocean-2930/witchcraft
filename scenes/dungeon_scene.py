@@ -894,6 +894,13 @@ class DungeonScene(Scene):
             "item_code": item_code,
             "used": bool(used_amount),
         }
+        if used_amount:
+            item = item_instance.item
+            self.add_combat_log(f"{item.get_name()}을 사용했다.")
+            get_use_log = getattr(item, "get_use_log", None)
+            effect_log = get_use_log(used_amount) if callable(get_use_log) else None
+            if effect_log:
+                self.add_combat_log(effect_log)
         return bool(used_amount)
 
     def update_active_hotbar_direction(self, game_events):

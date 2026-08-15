@@ -21,3 +21,7 @@ class UsableItem(Item):
             return None
 
         return self.skillbase.use(user, target, rng)
+
+    def get_use_log(self, result) -> str | None:
+        """사용 결과에 따른 추가 로그를 반환한다."""
+        return None

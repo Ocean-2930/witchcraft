@@ -14,6 +14,9 @@ class BluePotion(UsableItem):
     def use(self, user, target=None, rng=None):
         return user.recover_mp(self.MP_RECOVERY)
 
+    def get_use_log(self, result) -> str | None:
+        return f"마력을 {result} 회복했다."
+
     def get_name(self) -> str:
         return "푸른 물약"
 
