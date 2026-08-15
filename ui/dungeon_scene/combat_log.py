@@ -9,7 +9,6 @@ class CombatLogRenderer(Renderer):
     draw_layer = 60
     PADDING_X = 14
     PADDING_Y = 12
-    TITLE_HEIGHT = 24
     LINE_HEIGHT = 25
 
     def __init__(
@@ -23,11 +22,9 @@ class CombatLogRenderer(Renderer):
     ):
         self.log_getter = log_getter
         self.max_log_count = max(1, int(max_log_count))
-        self.title_font = pygame.font.SysFont("malgungothic", 16, bold=True)
         self.log_font = pygame.font.SysFont("malgungothic", 15)
         height = (
             self.PADDING_Y * 2
-            + self.TITLE_HEIGHT
             + self.LINE_HEIGHT * self.max_log_count
         )
         super().__init__(scene, pos_x, pos_y, width, height)
@@ -47,9 +44,6 @@ class CombatLogRenderer(Renderer):
             width=2,
             border_radius=6,
         )
-
-        title = self.title_font.render("전투 로그", True, (240, 233, 220))
-        panel.blit(title, (self.PADDING_X, self.PADDING_Y))
 
         logs = list(self.log_getter())[-self.max_log_count :]
         bottom = self.rect.height - self.PADDING_Y

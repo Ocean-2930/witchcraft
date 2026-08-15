@@ -259,7 +259,6 @@ class DungeonScene(Scene):
             - 28
             - (
                 CombatLogRenderer.PADDING_Y * 2
-                + CombatLogRenderer.TITLE_HEIGHT
                 + CombatLogRenderer.LINE_HEIGHT * self.COMBAT_LOG_MAX_COUNT
             )
             // 2,
