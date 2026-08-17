@@ -173,6 +173,7 @@ class DungeonScene(Scene):
         self.maze_offset_y = 0.0
         self.maze_renderers = []
         self.floor_tiles = {}
+        self.stair_tiles = {}
         self.wall_tiles = {}
         self.filtered_tile_renderers = set()
         self.current_visible_tiles = set()
@@ -277,6 +278,7 @@ class DungeonScene(Scene):
         visible_walls = render_tiles & self.wall_positions
 
         self.remove_hidden_tiles(self.floor_tiles, render_tiles)
+        self.remove_hidden_tiles(self.stair_tiles, render_tiles)
         self.remove_hidden_tiles(self.wall_tiles, visible_walls)
 
         for tile_x, tile_y in render_tiles:
@@ -364,27 +366,40 @@ class DungeonScene(Scene):
 
     def create_floor_tile(self, tile_x, tile_y):
         tile_value = self.map_tiles[tile_y][tile_x]
-        renderer_type = FloorTileRenderer
-        renderer_arguments = ()
-        if tile_value == UP_STAIRS:
-            renderer_type = StairTileRenderer
-            renderer_arguments = ("up_stairs",)
-        elif tile_value == DOWN_STAIRS:
-            renderer_type = StairTileRenderer
-            renderer_arguments = ("down_stairs",)
-
-        tile = renderer_type(
+        tile = FloorTileRenderer(
             self,
             self.get_tile_screen_x(tile_x),
             self.get_tile_screen_y(tile_y),
             self.FLOOR_TILE_WIDTH,
             self.FLOOR_TILE_HEIGHT,
-            *renderer_arguments,
         )
         self.set_dungeon_draw_order(tile, tile_x, tile_y, self.DEPTH_FLOOR)
         self.set_maze_base_position(tile)
         self.floor_tiles[(tile_x, tile_y)] = tile
         self.maze_renderers.append(tile)
+
+        stair_texture_key = None
+        if tile_value == UP_STAIRS:
+            stair_texture_key = "up_stairs"
+        elif tile_value == DOWN_STAIRS:
+            stair_texture_key = "down_stairs"
+
+        if stair_texture_key is not None:
+            self.create_stair_tile(tile_x, tile_y, stair_texture_key)
+
+    def create_stair_tile(self, tile_x, tile_y, texture_key):
+        stair = StairTileRenderer(
+            self,
+            self.get_tile_screen_x(tile_x),
+            self.get_tile_screen_y(tile_y),
+            self.FLOOR_TILE_WIDTH,
+            self.FLOOR_TILE_HEIGHT,
+            texture_key,
+        )
+        self.set_dungeon_draw_order(stair, tile_x, tile_y, self.DEPTH_FLOOR)
+        self.set_maze_base_position(stair)
+        self.stair_tiles[(tile_x, tile_y)] = stair
+        self.maze_renderers.append(stair)
 
     def create_monster(self, tile_x, tile_y):
         unit = Enemy("적 몬스터", max_hp=100, attack_power=0, tile_x=tile_x, tile_y=tile_y)
