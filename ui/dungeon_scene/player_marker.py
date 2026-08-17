@@ -7,10 +7,10 @@ from .textures import DUNGEON_TEXTURES
 class PlayerMarkerRenderer(ShiftRenderer):
     draw_layer = -75
     IDLE_FRAME_COUNT = 14
-    WALK_FRAME_COUNT = 8
+    WALK_FRAME_COUNT = 4
     IDLE_FRAME_LENGTH = 6
-    WALK_FRAME_LENGTH = 3
-    WALK_CONTACT_INDICES = (0, 4)
+    WALK_FRAME_LENGTH = 5
+    WALK_CONTACT_INDICES = (0, 2)
     flipped_texture_images = {}
 
     def __init__(self, scene, pos_x, pos_y, width, height):
@@ -83,7 +83,12 @@ class PlayerMarkerRenderer(ShiftRenderer):
             return
 
         if self.walk_stop_index is None:
-            self.walk_stop_index = 4 if self.index < 4 else 0
+            self.walk_stop_index = min(
+                self.WALK_CONTACT_INDICES,
+                key=lambda contact_index: (
+                    (contact_index - self.index) % self.WALK_FRAME_COUNT or self.WALK_FRAME_COUNT
+                ),
+            )
             return
 
         if self.index == self.walk_stop_index:
