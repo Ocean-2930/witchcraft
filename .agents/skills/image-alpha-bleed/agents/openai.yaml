@@ -1,0 +1,4 @@
+interface:
+  display_name: "Image Alpha Bleed"
+  short_description: "투명 이미지의 흰 테두리와 RGB 번짐을 제작 단계에서 제거"
+  default_prompt: "Use $image-alpha-bleed to remove white halos from this transparent game sprite before it is added to the project."
