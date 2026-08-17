@@ -7,6 +7,7 @@ ASSET_ROOT = Path(__file__).resolve().parents[2] / "assets" / "images" / "dungeo
 
 TEXTURE_SOURCES = {
     "character": "character.png",
+    "character_idle": "player/idle_sheet.png",
     "player_profile": "player_profile.png",
     "floor": "floor_tile.png",
     "up_stairs": "up_stairs.png",
@@ -76,6 +77,34 @@ class DungeonTextureStore:
         scaled_image = self.scale_contain(image, cache_key[2], cache_key[3])
         self.scaled_cache[cache_key] = scaled_image
         return scaled_image
+
+    def get_sheet_frames(self, key, columns, rows=1):
+        cache_key = ("sheet", key, int(columns), int(rows))
+
+        if cache_key in self.scaled_cache:
+            return self.scaled_cache[cache_key]
+
+        image = self.get(key)
+        if image is None:
+            self.scaled_cache[cache_key] = ()
+            return ()
+
+        frame_width = image.get_width() // columns
+        frame_height = image.get_height() // rows
+        frames = tuple(
+            image.subsurface(
+                pygame.Rect(
+                    column * frame_width,
+                    row * frame_height,
+                    frame_width,
+                    frame_height,
+                )
+            ).copy()
+            for row in range(rows)
+            for column in range(columns)
+        )
+        self.scaled_cache[cache_key] = frames
+        return frames
 
     @staticmethod
     def scale_cover(image, width, height):
