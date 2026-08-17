@@ -157,6 +157,7 @@ class DungeonScene(Scene):
         )
         self.wall_positions = self.get_wall_positions()
         self.active_move = None
+        self.queued_move_direction = None
         self.held_direction = None
         self.hold_elapsed = 0.0
         self.repeat_move_enabled = False
@@ -728,6 +729,7 @@ class DungeonScene(Scene):
             self.block_hotbar_input_during_move(game_events)
             self.update_player_facing(game_events)
             self.update_held_direction(delta_time, game_events)
+            self.queue_maze_move_input(game_events)
             self.update_maze_move(delta_time)
 
             if self.active_move is None:
@@ -1183,6 +1185,7 @@ class DungeonScene(Scene):
             self.hotbar_input_guard = False
 
     def reset_movement_repeat(self):
+        self.queued_move_direction = None
         self.held_direction = None
         self.hold_elapsed = 0.0
         self.repeat_move_enabled = False
@@ -1222,6 +1225,12 @@ class DungeonScene(Scene):
 
         direction = self.get_keydown_direction(game_events)
 
+        if direction is not None:
+            self.queued_move_direction = None
+        elif self.queued_move_direction is not None:
+            direction = self.queued_move_direction
+            self.queued_move_direction = None
+
         if direction is None and self.repeat_move_enabled:
             direction = self.held_direction
 
@@ -1232,6 +1241,23 @@ class DungeonScene(Scene):
             return
 
         self.start_maze_move(direction)
+
+    def queue_maze_move_input(self, game_events):
+        direction = self.get_keydown_direction(game_events)
+        if direction is None or not self.can_start_move_direction(direction, game_events):
+            return
+
+        self.queued_move_direction = direction
+
+    def should_continue_player_walk(self):
+        if self.active_move is not None or self.queued_move_direction is not None:
+            return True
+        if self.held_direction is None:
+            return False
+
+        player_x, player_y = self.dungeon_inventory.get_player_position()
+        move_x, move_y = self.held_direction
+        return self.can_move_to((player_x + move_x, player_y + move_y))
 
     def get_keydown_direction(self, game_events):
         if not self.has_direction_keydown(game_events):
