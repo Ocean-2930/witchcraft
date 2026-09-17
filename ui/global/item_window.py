@@ -38,6 +38,9 @@ class ItemWindowRenderer(Renderer):
             (self.rect.left + 10, line_y),
             (self.rect.right - 10, line_y),
         )
+        if self.window.scrollable:
+            self.window.draw_scrollable_contents(screen)
+            return
         detail_rows = item_instance.get_detail_rows()
         content_y = line_y + 9
         if item.get_description():
@@ -58,8 +61,15 @@ class ItemWindow(UIElement):
         item_instance_getter,
         width=280,
         height=142,
+        detail_colors_getter=None,
+        scrollable=False,
     ):
         self.item_instance_getter = item_instance_getter
+        self.detail_colors_getter = detail_colors_getter
+        self.scrollable = scrollable
+        self.scroll_offset = 0
+        self.max_scroll = 0
+        self._scroll_item = None
         self.visible = False
         self.title_font = pygame.font.SysFont("malgungothic", 16, bold=True)
         self.description_font = pygame.font.SysFont("malgungothic", 14)
@@ -97,7 +107,84 @@ class ItemWindow(UIElement):
         self.visible = False
 
     def pos_check(self, mouse_pos):
-        return False
+        return self.scrollable and self.visible and super().pos_check(mouse_pos)
+
+    @staticmethod
+    def wrap_lines(text, font, width):
+        lines = []
+        for paragraph in text.split("\n"):
+            current = ""
+            for character in paragraph:
+                if current and font.size(current + character)[0] > width:
+                    lines.append(current)
+                    current = ""
+                current += character
+            lines.append(current)
+        return lines
+
+    def scroll_layout(self):
+        item_instance = self.get_item_instance()
+        if item_instance is not self._scroll_item:
+            self.scroll_offset = 0
+            self._scroll_item = item_instance
+        viewport = pygame.Rect(self.rect.left + 12, self.rect.top + 48,
+                               self.rect.width - 32, self.rect.height - 60)
+        entries = []
+        y = 0
+        if item_instance is not None:
+            item = item_instance.item
+            for text, font, color in (
+                (item.get_description(), self.description_font, (184, 195, 204)),
+            ):
+                if text:
+                    for line in self.wrap_lines(text, font, viewport.width):
+                        entries.append((0, y, line, font, color))
+                        y += font.get_linesize()
+                    y += 8
+            colors = self.detail_colors_getter() if self.detail_colors_getter else []
+            level_x = min(178, viewport.width - 70)
+            for index, (name, level) in enumerate(item_instance.get_detail_rows()):
+                color = colors[index] if index < len(colors) else (210, 220, 228)
+                lines = self.wrap_lines(name, self.detail_font, level_x - 10)
+                entries.append((level_x, y, level, self.detail_font, color))
+                for line in lines:
+                    entries.append((0, y, line, self.detail_font, color))
+                    y += max(24, self.detail_font.get_linesize())
+            flavor = item.get_flavor_text()
+            if flavor:
+                y += 12
+                for line in self.wrap_lines(flavor, self.flavor_font, viewport.width):
+                    entries.append((0, y, line, self.flavor_font, (137, 149, 159)))
+                    y += self.flavor_font.get_linesize()
+        self.max_scroll = max(0, y - viewport.height)
+        self.scroll_offset = max(0, min(self.scroll_offset, self.max_scroll))
+        return viewport, entries, y
+
+    def on_hover(self, delta_time, game_events, mouse_position, wheel_move):
+        if self.scrollable and self.visible:
+            self.scroll_layout()
+            self.scroll_offset = max(0, min(self.max_scroll,
+                                           self.scroll_offset - wheel_move * 32))
+
+    def draw_scrollable_contents(self, screen):
+        viewport, entries, content_height = self.scroll_layout()
+        previous_clip = screen.get_clip()
+        screen.set_clip(previous_clip.clip(viewport))
+        try:
+            for x, y, text, font, color in entries:
+                screen.blit(font.render(text, True, color),
+                            (viewport.left + x, viewport.top + y - self.scroll_offset))
+        finally:
+            screen.set_clip(previous_clip)
+        if self.max_scroll:
+            track = pygame.Rect(self.rect.right - 10, viewport.top, 4, viewport.height)
+            thumb_height = max(18, int(track.height * viewport.height / content_height))
+            thumb = pygame.Rect(track.left,
+                                track.top + int((track.height - thumb_height)
+                                                * self.scroll_offset / self.max_scroll),
+                                track.width, thumb_height)
+            pygame.draw.rect(screen, (45, 55, 66), track, border_radius=2)
+            pygame.draw.rect(screen, (145, 177, 202), thumb, border_radius=2)
 
     def draw_description(self, screen, text, start_y):
         color = (184, 195, 204)
@@ -138,18 +225,19 @@ class ItemWindow(UIElement):
         return start_y + len(visible_lines) * line_height
 
     def draw_detail_rows(self, screen, detail_rows, start_y):
+        colors = self.detail_colors_getter() if self.detail_colors_getter else []
         level_x = self.rect.left + 190
         for index, (name, level_text) in enumerate(detail_rows):
             row_y = start_y + index * 24
             name_surface = self.detail_font.render(
                 name,
                 True,
-                (210, 220, 228),
+                colors[index] if index < len(colors) else (210, 220, 228),
             )
             level_surface = self.detail_font.render(
                 level_text,
                 True,
-                (170, 193, 211),
+                colors[index] if index < len(colors) else (170, 193, 211),
             )
             screen.blit(name_surface, (self.rect.left + 12, row_y))
             screen.blit(level_surface, (level_x, row_y))

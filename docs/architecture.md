@@ -73,4 +73,8 @@ flowchart LR
 - `InventoryScene`은 dungeon 전용 overlay이므로 현재 부모 scene에서 `dungeon_inventory`를 읽는다. 다른 부모 scene에서 재사용할 필요가 생기면 이를 생성자 입력으로 전환한다.
 - 일부 scene별 renderer는 폰트와 표시 상태를 scene에서 직접 읽는다. 재사용 가능성이 생기는 시점에 데이터 또는 getter 입력으로 전환한다.
 
-- 합성 화면의 메인·재료 인스턴스 선택은 별도 overlay인 `SynthesisScene`의 임시 상태다. `InventoryScene`은 아이템 보관함과 선택 장비를 전달하여 합성창을 연다. `SynthesisPanel`은 getter와 재료 해제 callback을 받아 슬롯과 원본 장비를 보여 주는 공용 `ItemWindow` 정보창을 표시하고, 실제 인벤토리나 장비 데이터는 변경하지 않는다. 두 화면은 `ui/global`의 `ItemSlot`과 `InventorySlot` 기반을 공유한다.
+- 합성 화면의 메인·재료 인스턴스 선택은 별도 overlay인 `SynthesisScene`의 임시 상태다. `InventoryScene`은 아이템 보관함과 선택 장비를 전달하여 합성창을 연다. `SynthesisPanel`은 getter와 재료 해제 callback을 받아 슬롯과 결과 장비를 보여 주는 공용 `ItemWindow` 정보창을 표시하고, 실제 인벤토리나 장비 데이터는 변경하지 않는다. 두 화면은 `ui/global`의 `ItemSlot`과 `InventorySlot` 기반을 공유한다.
+
+- `SkilledEquip.synthesize_rows()`는 스킬 코드·레벨 비교, 합성 행 정렬 및 7개 이상 거부를 소유한다. `EquipmentInstance.synthesis_preview()`는 원본 인스턴스 행을 사용해 독립적인 결과 복사본과 의미별 행 분류를 반환한다. `SynthesisScene`은 선택 시 결과를 계산하고 행 분류를 UI 색상으로 매핑한다. `ItemWindow`는 선택적 행 색상 getter를 받아 이름과 레벨에 적용한다.
+
+- 공용 `ItemWindow`의 선택적 `scrollable` 모드는 본문 줄바꿈·클리핑·휠 입력·스크롤 범위를 관리한다. 합성 결과창만 이를 활성화하며 스킬 색상과 고정 제목을 유지한다.

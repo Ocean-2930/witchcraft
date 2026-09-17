@@ -58,6 +58,16 @@ class EquipmentInstance(ItemInstance):
     def skill_instances(self):
         return [row for row in self.stat_rows if row is not None]
 
+    def synthesis_preview(self, material):
+        if material is self:
+            raise ValueError("메인 장비는 재료로 선택할 수 없습니다.")
+        if not isinstance(material, EquipmentInstance) or not isinstance(self.item, SkilledEquip):
+            raise ValueError("스킬 장비만 합성할 수 있습니다.")
+        rows, kinds = self.item.synthesize_rows(
+            material.item, self.stat_rows, material.stat_rows
+        )
+        return EquipmentInstance(deepcopy(self.item), stat_rows=rows), kinds
+
     def get_detail_rows(self) -> list[tuple[str, str]]:
         return [
             (row.skill.name, f"Lv.{row.level}")

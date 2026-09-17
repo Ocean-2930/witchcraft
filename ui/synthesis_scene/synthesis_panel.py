@@ -8,14 +8,17 @@ ItemWindow = import_module("ui.global.item_window").ItemWindow
 
 
 class SynthesisPanel(Renderer):
-    """합성 입력 슬롯과 원본 장비의 결과 미리보기를 표시한다."""
+    """합성 입력 슬롯과 합성 결과 미리보기를 표시한다."""
 
     draw_layer = -5
 
-    def __init__(self, scene, panel_rect, main_getter, material_getter, on_clear):
+    def __init__(self, scene, panel_rect, main_getter, material_getter, on_clear,
+                 result_getter, result_colors_getter, message_getter):
         super().__init__(scene, *panel_rect.center, *panel_rect.size)
         self.visible = False
         self.main_getter = main_getter
+        self.result_getter = result_getter
+        self.message_getter = message_getter
         self.material_getter = material_getter
         self.label_font = scene.slot_label_font
         self.text_font = scene.item_font
@@ -30,8 +33,10 @@ class SynthesisPanel(Renderer):
             panel_rect.left + 570, panel_rect.top + 112, 344, 281
         )
         self.result_window = ItemWindow(
-            scene, main_getter, width=self.info_rect.width,
+            scene, result_getter, width=self.info_rect.width,
             height=self.info_rect.height,
+            detail_colors_getter=result_colors_getter,
+            scrollable=True,
         )
         self.result_window.set_transform(*self.info_rect.center)
         self.result_window.renderer.draw_layer = 0
@@ -57,7 +62,7 @@ class SynthesisPanel(Renderer):
                          (self.rect.left + 30, self.rect.top + 104),
                          (self.rect.right - 30, self.rect.top + 104), 2)
         for slot, item in zip(
-            self.slots, (self.main_getter(), self.material_getter(), self.main_getter())
+            self.slots, (self.main_getter(), self.material_getter(), self.result_getter())
         ):
             slot.set_text("", item_instance=item)
         for slot, label in zip(self.slots, ("메인 장비", "재료 장비", "결과")):
@@ -69,6 +74,8 @@ class SynthesisPanel(Renderer):
                                                     self.rect.top + 228)))
         guide = self.text_font.render("아래 장비를 눌러 재료 선택 · 재료 칸을 눌러 해제", True, (174, 187, 199))
         screen.blit(guide, (self.rect.left + 54, self.rect.top + 302))
+        message = self.text_font.render(self.message_getter(), True, (255, 130, 130))
+        screen.blit(message, (self.rect.left + 54, self.rect.top + 336))
         title = self.label_font.render("인벤토리", True, (232, 238, 243))
         screen.blit(title, (self.rect.left + 75, self.rect.top + 382))
 

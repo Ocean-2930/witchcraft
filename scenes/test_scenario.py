@@ -28,14 +28,29 @@ def senario(scene: "DungeonScene"):
             ],
         )
     )
-    # 기존 철검과 스킬 2개를 공유하고, 명중 증가를 가진 비교용 철검.
+    # 원본 4행 방어력은 +1로 맨 위, 3행 마나는 낮은 원본 레벨로 그다음에 온다.
     scene.dungeon_inventory.add_item(
         EquipmentInstance(
             SimpleSword(),
             stat_rows=[
-                SkillInstance(STAT_PASSIVE_SKILLS[0], level=3),
-                SkillInstance(STAT_PASSIVE_SKILLS[1], level=2),
+                SkillInstance(STAT_PASSIVE_SKILLS[2], level=6),
+                SkillInstance(STAT_PASSIVE_SKILLS[3], level=4),
                 SkillInstance(STAT_PASSIVE_SKILLS[5], level=2),
+                None,
+                None,
+                None,
+                None,
+            ],
+        )
+    )
+    # 첫 번째 철검의 5개 스킬과 합치면 8개가 되어 재료 선택이 거부된다.
+    scene.dungeon_inventory.add_item(
+        EquipmentInstance(
+            SimpleSword(),
+            stat_rows=[
+                SkillInstance(STAT_PASSIVE_SKILLS[5], level=2),
+                SkillInstance(STAT_PASSIVE_SKILLS[6], level=2),
+                SkillInstance(STAT_PASSIVE_SKILLS[7], level=2),
                 None,
                 None,
                 None,

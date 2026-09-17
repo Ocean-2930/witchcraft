@@ -1,6 +1,6 @@
 import pygame
 
-from items import Equip
+from items import EquipmentInstance
 from settings import ESCAPE, TAB, VIRTUAL_HEIGHT, VIRTUAL_WIDTH
 from ui import InventoryTabButton, ItemSlot, SynthesisPanel
 from .scene import Scene
@@ -13,6 +13,9 @@ class SynthesisScene(Scene):
         self.inventory = inventory
         self.main_item = main_item
         self.material_item = None
+        self.result_item = main_item
+        self.result_kinds = []
+        self.selection_message = ""
         super().__init__(game)
 
     def scene_initialize(self):
@@ -24,6 +27,8 @@ class SynthesisScene(Scene):
         self.panel = SynthesisPanel(
             self, panel_rect, lambda: self.main_item,
             lambda: self.material_item, self.clear_material,
+            lambda: self.result_item, self.get_result_colors,
+            lambda: self.selection_message,
         )
         self.panel.set_visible(True)
         self.back_button = InventoryTabButton(
@@ -47,21 +52,32 @@ class SynthesisScene(Scene):
         if item is self.material_item:
             self.clear_material()
             return
-        main_equipment = self.main_item.item
-        if (
-            item is self.main_item
-            or not isinstance(item.item, Equip)
-            or not isinstance(main_equipment, Equip)
-            or main_equipment.type not in (
-                Equip.TYPE_WEAPON, Equip.TYPE_ARMOR, Equip.TYPE_ACCESSORY
-            )
-            or item.item.type != main_equipment.type
-        ):
+        if not isinstance(self.main_item, EquipmentInstance):
+            return
+        try:
+            result, kinds = self.main_item.synthesis_preview(item)
+        except ValueError as error:
+            self.selection_message = str(error)
             return
         self.material_item = item
+        self.result_item = result
+        self.result_kinds = kinds
+        self.selection_message = ""
+
+    def get_result_colors(self):
+        palette = {
+            "upgraded": (100, 230, 140),
+            "lower": (255, 110, 110),
+            "original": (240, 244, 247),
+            "added": (255, 220, 90),
+        }
+        return [palette[kind] for kind in self.result_kinds]
 
     def clear_material(self):
         self.material_item = None
+        self.result_item = self.main_item
+        self.result_kinds = []
+        self.selection_message = ""
 
     def refresh_slots(self):
         for index, slot in enumerate(self.item_slots):
