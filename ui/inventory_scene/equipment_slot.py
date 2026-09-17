@@ -11,7 +11,7 @@ ItemWindow = import_module("ui.global").ItemWindow
 
 
 class EquipmentSlotRenderer(InventorySlotRenderer):
-    IMAGE_PADDING = 6
+    IMAGE_PADDING = 7
 
     def draw(self, screen):
         if not self.slot.visible:
@@ -28,7 +28,7 @@ class EquipmentSlotRenderer(InventorySlotRenderer):
             (182, 195, 207),
         )
         label_rect = label_surface.get_rect(
-            midbottom=(self.rect.centerx, self.rect.top - 7)
+            midtop=(self.rect.centerx, self.rect.bottom + 8)
         )
         screen.blit(label_surface, label_rect)
 

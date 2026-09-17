@@ -26,10 +26,12 @@ class ItemSlotRenderer(InventorySlotRenderer):
         slot = self.slot
 
         if slot.item_image is not None:
-            image_size = (
-                self.rect.width - self.IMAGE_PADDING * 2,
-                self.rect.height - self.IMAGE_PADDING * 2,
+            source_width, source_height = slot.item_image.get_size()
+            scale = min(
+                (self.rect.width - self.IMAGE_PADDING * 2) / source_width,
+                (self.rect.height - self.IMAGE_PADDING * 2) / source_height,
             )
+            image_size = (max(1, round(source_width * scale)), max(1, round(source_height * scale)))
             image = pygame.transform.smoothscale(slot.item_image, image_size)
             image_rect = image.get_rect(center=self.rect.center)
             screen.blit(image, image_rect)

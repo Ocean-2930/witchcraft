@@ -14,7 +14,7 @@ class CurrencyBar(Renderer):
 
     def __init__(self, scene, right, center_y, inventory_getter, visible_getter=lambda: True,
                  entry_centers=None):
-        super().__init__(scene, right - 300, center_y, 600, 26)
+        super().__init__(scene, right - 300, center_y, 600, 32)
         self.inventory_getter = inventory_getter
         self.visible_getter = visible_getter
         self.entry_centers = entry_centers
@@ -43,15 +43,24 @@ class CurrencyBar(Renderer):
             )
         ]
         box_widths = [max(self.minimum_box_width, text.get_width() + 24) for _, text in entries]
-        total_width = sum(32 + width for width in box_widths) + 32
+        total_width = sum(32 + width for width in box_widths) + 16
         x = self.rect.right - total_width
         for index, (icon, text) in enumerate(entries):
             box_width = box_widths[index]
             if self.entry_centers is not None:
                 x = self.entry_centers[index] - (32 + box_width) // 2
-            screen.blit(icon, icon.get_rect(center=(x + 12, self.rect.centery)))
-            box = pygame.Rect(x + 32, self.rect.centery - 13, box_width, 26)
-            pygame.draw.rect(screen, (12, 19, 27), box)
-            pygame.draw.rect(screen, (103, 119, 135), box, 1)
-            screen.blit(text, text.get_rect(center=box.center))
-            x += 32 + box_width + 32
+            box = pygame.Rect(x, self.rect.centery - 16, 32 + box_width, 32)
+            pygame.draw.rect(screen, (31, 39, 49), box, border_radius=5)
+            pygame.draw.rect(screen, (65, 80, 95), box, 1, border_radius=5)
+            # 투명 여백과 글꼴의 ascent/descent 대신 실제 픽셀 영역을 정렬한다.
+            icon_bounds = icon.get_bounding_rect(min_alpha=32)
+            text_bounds = text.get_bounding_rect()
+            screen.blit(icon, (
+                box.left + 20 - icon_bounds.centerx,
+                box.centery - icon_bounds.centery,
+            ))
+            screen.blit(text, (
+                box.right - 12 - text_bounds.right,
+                box.centery - text_bounds.centery,
+            ))
+            x += box.width + 16

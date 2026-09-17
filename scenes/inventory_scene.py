@@ -74,6 +74,10 @@ class InventoryScene(Scene):
     ITEM_SLOT_COUNT = 20
     PANEL_WIDTH = 960
     PANEL_HEIGHT = 600
+    CONTENT_MARGIN = 44
+    ITEM_SLOT_SIZE = 80
+    ITEM_SLOT_GAP = 8
+    EQUIPMENT_SLOT_SIZE = 100
 
     def scene_initialize(self):
         self.button_font = pygame.font.SysFont("malgungothic", 24, bold=True)
@@ -108,8 +112,8 @@ class InventoryScene(Scene):
             self.PANEL_HEIGHT,
         )
         self.currency_bar = CurrencyBar(
-            self, self.content_renderer.rect.right - 46,
-            self.content_renderer.rect.bottom - 18,
+            self, self.content_renderer.rect.right - self.CONTENT_MARGIN,
+            self.content_renderer.rect.bottom - 36,
             lambda: getattr(self.parent_scene, "dungeon_inventory", None),
             lambda: self.selected_tab == "장비",
         )
@@ -151,14 +155,13 @@ class InventoryScene(Scene):
             self.tab_buttons.append(button)
 
     def create_equipment_slots(self):
-        slot_size = 96
-        slot_gap = 22
-        total_width = (
-            slot_size * len(self.EQUIPMENT_SLOTS)
-            + slot_gap * (len(self.EQUIPMENT_SLOTS) - 1)
-        )
-        first_slot_x = VIRTUAL_WIDTH // 2 - total_width // 2
-        slot_y = (VIRTUAL_HEIGHT - self.PANEL_HEIGHT) // 2 + 158
+        slot_size = self.EQUIPMENT_SLOT_SIZE
+        # 장비 한 칸을 인벤토리 두 열의 중앙에 맞춘다.
+        pair_pitch = 2 * (self.ITEM_SLOT_SIZE + self.ITEM_SLOT_GAP)
+        content_left = self.content_renderer.rect.left + self.CONTENT_MARGIN
+        first_slot_x = content_left + (2 * self.ITEM_SLOT_SIZE + self.ITEM_SLOT_GAP - slot_size) // 2
+        slot_gap = pair_pitch - slot_size
+        slot_y = self.content_renderer.rect.top + 168
 
         for index, (attribute_name, label_text) in enumerate(
             self.EQUIPMENT_SLOTS
@@ -213,11 +216,11 @@ class InventoryScene(Scene):
 
     def create_item_slots(self):
         columns = 10
-        slot_size = 72
-        slot_gap = 10
+        slot_size = self.ITEM_SLOT_SIZE
+        slot_gap = self.ITEM_SLOT_GAP
         total_width = slot_size * columns + slot_gap * (columns - 1)
         first_slot_x = VIRTUAL_WIDTH // 2 - total_width // 2
-        first_slot_y = (VIRTUAL_HEIGHT - self.PANEL_HEIGHT) // 2 + 316
+        first_slot_y = (VIRTUAL_HEIGHT - self.PANEL_HEIGHT) // 2 + 352
 
         for index in range(self.ITEM_SLOT_COUNT):
             row, column = divmod(index, columns)
@@ -479,6 +482,8 @@ class InventoryScene(Scene):
         self.update_slot_visibility()
 
     def update_popup_visibility(self):
+        for index, slot in enumerate(self.item_slots):
+            slot.selected = self.popup_mode is not None and index == self.selected_item_index
         item = getattr(self.get_selected_item(), "item", None)
         can_use = callable(getattr(item, "use", None))
         can_equip = isinstance(item, Equip)
@@ -520,7 +525,7 @@ class InventoryScene(Scene):
             selected_slot.rect,
             button_width,
         )
-        panel_bottom = (VIRTUAL_HEIGHT + self.PANEL_HEIGHT) // 2
+        panel_bottom = self.currency_bar.rect.top
         popup_top = min(
             selected_slot.rect.top,
             panel_bottom - total_height - 12,
@@ -551,7 +556,7 @@ class InventoryScene(Scene):
             selected_slot.rect,
             popup_width,
         )
-        panel_bottom = (VIRTUAL_HEIGHT + self.PANEL_HEIGHT) // 2
+        panel_bottom = self.currency_bar.rect.top
         popup_top = min(
             selected_slot.rect.top,
             panel_bottom - popup_height - 12,

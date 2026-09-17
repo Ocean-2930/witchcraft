@@ -13,10 +13,11 @@ class InventorySlotRenderer(Renderer):
         if not self.slot.visible:
             return
 
-        pygame.draw.rect(screen, (31, 39, 49), self.rect, border_radius=5)
+        hovered = self.slot.scene.ui_focus is self.slot
+        pygame.draw.rect(screen, (40, 53, 66) if hovered else (31, 39, 49), self.rect, border_radius=5)
         pygame.draw.rect(
             screen,
-            (103, 119, 135),
+            (145, 177, 201) if hovered else (82, 98, 114),
             self.rect,
             width=2,
             border_radius=5,

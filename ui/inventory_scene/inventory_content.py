@@ -29,7 +29,8 @@ class InventoryContentRenderer(Renderer):
             self.draw_stat_tab(screen, panel_rect)
 
     def draw_equipment_titles(self, screen, panel_rect):
-        self.draw_section_title(screen, panel_rect, "장비")
+        title = self.scene.section_font.render("장착 장비", True, (232, 238, 243))
+        screen.blit(title, (panel_rect.left + self.scene.CONTENT_MARGIN, panel_rect.top + 112))
 
         inventory = self.scene.get_item_inventory()
         item_count = len(getattr(inventory, "items", []))
@@ -39,14 +40,21 @@ class InventoryContentRenderer(Renderer):
             self.scene.ITEM_SLOT_COUNT,
         )
         title_surface = self.scene.section_font.render(
-            f"인벤토리  {item_count} / {capacity}",
+            "인벤토리",
             True,
             (232, 238, 243),
         )
         screen.blit(
             title_surface,
-            (panel_rect.left + 46, panel_rect.top + 274),
+            (panel_rect.left + self.scene.CONTENT_MARGIN, panel_rect.top + 310),
         )
+        count_surface = self.scene.slot_label_font.render(
+            f"{item_count} / {capacity}", True, (153, 168, 182)
+        )
+        screen.blit(count_surface, count_surface.get_rect(
+            midright=(panel_rect.right - self.scene.CONTENT_MARGIN, panel_rect.top + 326)
+        ))
+
 
     def draw_section_title(self, screen, panel_rect, text):
         title_surface = self.scene.section_font.render(
