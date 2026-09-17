@@ -50,6 +50,8 @@ class DungeonInventory:
     battle_random_generators: list[RandomGenerator] = field(init=False)
     player: Player = field(default_factory=lambda: Player("플레이어"))
     item_inventory: ItemInventory = field(default_factory=ItemInventory)
+    gold: int = 0
+    harmony_stones: int = 0
     hotbar_items: dict[str, ItemInstance] = field(default_factory=dict)
     hotbar_skill_codes: dict[str, str] = field(default_factory=dict)
     weapon: EquipmentInstance | None = None
@@ -148,6 +150,24 @@ class DungeonInventory:
 
     def remove_item(self, item_instance: ItemInstance):
         return self.item_inventory.remove_item(item_instance)
+
+    def synthesize_equipment(self, main: EquipmentInstance, material: EquipmentInstance) -> int:
+        """검증 후 조화석과 재료를 소비하고 메인 장비에 결과 행을 적용한다."""
+        if not self.item_inventory.contains(main) or not self.item_inventory.contains(material):
+            raise ValueError("인벤토리에 있는 장비만 합성할 수 있습니다.")
+        if not isinstance(main, EquipmentInstance):
+            raise ValueError("스킬 장비만 합성할 수 있습니다.")
+        result, kinds = main.synthesis_preview(material)
+        cost = result.synthesis_cost(kinds)
+        if self.harmony_stones < cost:
+            raise ValueError(f"조화석이 부족합니다. 필요 {cost}개 / 보유 {self.harmony_stones}개")
+        self.item_inventory.remove_item(material)
+        main.stat_rows = result.stat_rows
+        self.harmony_stones -= cost
+        for label, item in tuple(self.hotbar_items.items()):
+            if item is material:
+                self.hotbar_items.pop(label)
+        return cost
 
     def equip_item(self, item_instance: ItemInstance) -> bool:
         item_index = self.item_inventory.find_item_index(item_instance)

@@ -68,6 +68,20 @@ class EquipmentInstance(ItemInstance):
         )
         return EquipmentInstance(deepcopy(self.item), stat_rows=rows), kinds
 
+    def synthesis_cost(self, kinds) -> int:
+        """합성 결과의 행 분류로 필요한 조화석 수를 계산한다."""
+        total = 0
+        for row, kind in zip(self.stat_rows, kinds):
+            if row is None:
+                continue
+            if kind == "upgraded":
+                total += row.level ** 2
+            elif kind == "lower":
+                total += 1
+            elif kind == "added":
+                total += max(0, row.level)
+        return total
+
     def get_detail_rows(self) -> list[tuple[str, str]]:
         return [
             (row.skill.name, f"Lv.{row.level}")

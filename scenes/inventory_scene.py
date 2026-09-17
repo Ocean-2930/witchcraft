@@ -5,6 +5,7 @@ from .scene import Scene
 from settings import ESCAPE, MOUSE_LEFT, TAB, VIRTUAL_HEIGHT, VIRTUAL_WIDTH
 from ui import (
     ActiveSkillGrid,
+    CurrencyBar,
     EquipmentSlot,
     InventoryContentRenderer,
     InventoryPanelRenderer,
@@ -105,6 +106,12 @@ class InventoryScene(Scene):
             self,
             self.PANEL_WIDTH,
             self.PANEL_HEIGHT,
+        )
+        self.currency_bar = CurrencyBar(
+            self, self.content_renderer.rect.right - 46,
+            self.content_renderer.rect.bottom - 18,
+            lambda: getattr(self.parent_scene, "dungeon_inventory", None),
+            lambda: self.selected_tab == "장비",
         )
         self.popup_renderer = InventoryPopupRenderer(self)
         self.create_tab_buttons()
@@ -447,7 +454,7 @@ class InventoryScene(Scene):
         self.hide_item_windows()
         from .synthesis_scene import SynthesisScene
 
-        self.add_overlay(SynthesisScene(self.game, self.get_item_inventory(), item))
+        self.add_overlay(SynthesisScene(self.game, self.parent_scene.dungeon_inventory, item))
 
     def open_discard_popup(self):
         item_instance = self.get_selected_item()

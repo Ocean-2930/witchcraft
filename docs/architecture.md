@@ -73,8 +73,16 @@ flowchart LR
 - `InventoryScene`은 dungeon 전용 overlay이므로 현재 부모 scene에서 `dungeon_inventory`를 읽는다. 다른 부모 scene에서 재사용할 필요가 생기면 이를 생성자 입력으로 전환한다.
 - 일부 scene별 renderer는 폰트와 표시 상태를 scene에서 직접 읽는다. 재사용 가능성이 생기는 시점에 데이터 또는 getter 입력으로 전환한다.
 
-- 합성 화면의 메인·재료 인스턴스 선택은 별도 overlay인 `SynthesisScene`의 임시 상태다. `InventoryScene`은 아이템 보관함과 선택 장비를 전달하여 합성창을 연다. `SynthesisPanel`은 getter와 재료 해제 callback을 받아 슬롯과 결과 장비를 보여 주는 공용 `ItemWindow` 정보창을 표시하고, 실제 인벤토리나 장비 데이터는 변경하지 않는다. 두 화면은 `ui/global`의 `ItemSlot`과 `InventorySlot` 기반을 공유한다.
+- 합성 화면의 메인·재료 인스턴스 선택은 별도 overlay인 `SynthesisScene`의 임시 상태다. `InventoryScene`은 던전 인벤토리와 선택 장비를 전달하여 합성창을 연다. `SynthesisPanel`은 getter와 재료 해제 callback을 받아 슬롯과 결과 장비를 보여 주는 공용 `ItemWindow` 정보창을 표시하고, UI는 직접 인벤토리나 장비 데이터를 변경하지 않고 합성 실행을 `DungeonInventory`에 요청한다. 두 화면은 `ui/global`의 `ItemSlot`과 `InventorySlot` 기반을 공유한다.
 
 - `SkilledEquip.synthesize_rows()`는 스킬 코드·레벨 비교, 합성 행 정렬 및 7개 이상 거부를 소유한다. `EquipmentInstance.synthesis_preview()`는 원본 인스턴스 행을 사용해 독립적인 결과 복사본과 의미별 행 분류를 반환한다. `SynthesisScene`은 선택 시 결과를 계산하고 행 분류를 UI 색상으로 매핑한다. `ItemWindow`는 선택적 행 색상 getter를 받아 이름과 레벨에 적용한다.
 
 - 공용 `ItemWindow`의 선택적 `scrollable` 모드는 본문 줄바꿈·클리핑·휠 입력·스크롤 범위를 관리한다. 합성 결과창만 이를 활성화하며 스킬 색상과 고정 제목을 유지한다.
+
+- `DungeonInventory`는 골드(`gold`)와 조화석(`harmony_stones`) 보유량을 0부터 관리한다. 공용 `CurrencyBar`는 getter로 인벤토리를 받아 현재 값을 매번 읽고 장비 탭 오른쪽 하단에는 오른쪽 정렬하고, 합성창에서는 개별 중심 좌표를 받아 골드·조화석을 각각 메인·재료 장비 칸 아래에 중앙 정렬한다. 재화는 일반 아이템 슬롯과 분리된다.
+
+- `EquipmentInstance.synthesis_cost()`는 결과 행의 분류와 레벨로 조화석 비용을 계산한다. `DungeonInventory.synthesize_equipment()`는 소유·규칙·잔액 검증을 모두 마친 뒤 재료 제거, 메인 행 적용, 조화석 차감과 재료의 단축키 참조 정리를 수행한다. 미리보기는 원본을 바꾸지 않으며 실행 시 다시 계산한다.
+
+- 합성 거부 안내의 위치·페이드 렌더링은 `MaterialNotice`가 담당하고, `SynthesisScene`은 거부 사유와 해당 슬롯 영역을 전달하며 프레임 시간으로 표시 수명을 갱신한다.
+
+- `SynthesisScene`은 초기화와 합성 성공 후 도메인의 `synthesis_preview()`로 재료 선택 가능 인스턴스를 계산해 슬롯 명도에 반영한다. `InventoryTabButton`은 선택적 `enabled_getter`와 `emphasized`를 지원하며 합성창에서 비활성 클릭 차단과 실행 버튼 강조에 사용한다.

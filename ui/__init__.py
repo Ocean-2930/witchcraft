@@ -35,9 +35,10 @@ from .inventory_scene import (
 )
 
 # synthesis_scene
-from .synthesis_scene import SynthesisPanel
+from .synthesis_scene import MaterialNotice, SynthesisPanel
 
 # global
+CurrencyBar = import_module(f"{__name__}.global").CurrencyBar
 ItemSlot = import_module(f"{__name__}.global").ItemSlot
 ChoiceBox = import_module(f"{__name__}.global").ChoiceBox
 DialogueBox = import_module(f"{__name__}.global").DialogueBox
@@ -91,6 +92,7 @@ __all__ = [
     "LearnableSkillListView",
     "PassiveSkillGrid",
     "SynthesisPanel",
+    "MaterialNotice",
     # global
     "ChoiceBox",
     "DialogueBox",
@@ -100,6 +102,7 @@ __all__ = [
     "ShortcutBar",
     "ShortcutSlot",
     "ItemWindow",
+    "CurrencyBar",
     # pause_scene
     "PausePanelRenderer",
     # map_scene

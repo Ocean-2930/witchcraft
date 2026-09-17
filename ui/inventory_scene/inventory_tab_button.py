@@ -15,7 +15,10 @@ class InventoryTabButtonRenderer(Renderer):
 
         is_selected = self.button.is_selected()
 
-        if is_selected:
+        if not self.button.enabled_getter():
+            color = (28, 35, 43)
+            border_color = (62, 74, 86)
+        elif is_selected or self.button.emphasized:
             color = (72, 102, 128)
             border_color = (218, 235, 245)
         elif self.button.is_hovered:
@@ -28,7 +31,8 @@ class InventoryTabButtonRenderer(Renderer):
         pygame.draw.rect(screen, color, self.rect, border_radius=7)
         pygame.draw.rect(screen, border_color, self.rect, width=2, border_radius=7)
 
-        text_surface = self.button.font.render(self.button.label, True, (242, 246, 249))
+        text_surface = self.button.font.render(self.button.label, True,
+            (242, 246, 249) if self.button.enabled_getter() else (119, 132, 145))
         text_rect = text_surface.get_rect(center=self.rect.center)
         screen.blit(text_surface, text_rect)
 
@@ -44,8 +48,12 @@ class InventoryTabButton(UIElement):
         height,
         on_click,
         is_selected=None,
+        enabled_getter=None,
+        emphasized=False,
     ):
         self.label = label
+        self.enabled_getter = enabled_getter or (lambda: True)
+        self.emphasized = emphasized
         self.on_click = on_click
         self.is_selected = is_selected or (
             lambda: scene.selected_tab == self.label
@@ -58,7 +66,8 @@ class InventoryTabButton(UIElement):
         super().__init__(scene, renderer=renderer, background=False)
 
     def on_left_click(self):
-        self.on_click()
+        if self.enabled_getter():
+            self.on_click()
 
     def set_visible(self, visible):
         self.visible = visible
