@@ -3,7 +3,6 @@ from .inventory_tab_button import InventoryTabButton
 from .inventory_content import InventoryContentRenderer
 from .inventory_panel import InventoryPanelRenderer
 from .inventory_popup import InventoryPopupRenderer
-from .item_slot import ItemSlot
 from .popup_button import InventoryPopupButton
 from .learnable_skill_list_view import LearnableSkillListView
 from .skill_invest_button import SkillInvestButton
@@ -16,7 +15,6 @@ __all__ = [
     "InventoryContentRenderer",
     "InventoryPanelRenderer",
     "InventoryPopupRenderer",
-    "ItemSlot",
     "InventoryPopupButton",
     "LearnableSkillListView",
     "SkillInvestButton",

@@ -1,7 +1,11 @@
 import pygame
 from importlib import import_module
 
-from .slot_base import InventorySlot, InventorySlotRenderer
+from importlib import import_module
+
+_slot_base = import_module("ui.global.slot_base")
+InventorySlot = _slot_base.InventorySlot
+InventorySlotRenderer = _slot_base.InventorySlotRenderer
 
 ItemWindow = import_module("ui.global").ItemWindow
 

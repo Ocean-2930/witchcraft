@@ -1,13 +1,26 @@
 import pygame
-from importlib import import_module
 
 from .slot_base import InventorySlot, InventorySlotRenderer
 
-ItemWindow = import_module("ui.global").ItemWindow
+from .item_window import ItemWindow
 
 
 class ItemSlotRenderer(InventorySlotRenderer):
     IMAGE_PADDING = 7
+
+    def draw(self, screen):
+        super().draw(screen)
+        if self.slot.visible and self.slot.dimmed:
+            shade = pygame.Surface(self.rect.size, pygame.SRCALPHA)
+            shade.fill((0, 0, 0, 150))
+            screen.blit(shade, self.rect)
+        if self.slot.visible and self.slot.selected:
+            highlight = pygame.Surface(self.rect.size, pygame.SRCALPHA)
+            highlight.fill((50, 140, 230, 85))
+            screen.blit(highlight, self.rect)
+            pygame.draw.rect(
+                screen, (100, 190, 255), self.rect, 3, border_radius=5
+            )
 
     def draw_contents(self, screen):
         slot = self.slot
@@ -59,6 +72,8 @@ class ItemSlot(InventorySlot):
         on_right_click=None,
         item_window_enabled_getter=None,
     ):
+        self.dimmed = False
+        self.selected = False
         self.item_text = item_text
         self.stack_text = stack_text
         self.item = None

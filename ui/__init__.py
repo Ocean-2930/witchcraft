@@ -29,13 +29,16 @@ from .inventory_scene import (
     InventoryPanelRenderer,
     InventoryPopupRenderer,
     InventoryTabButton,
-    ItemSlot,
     InventoryPopupButton,
     LearnableSkillListView,
     PassiveSkillGrid,
 )
 
+# synthesis_scene
+from .synthesis_scene import SynthesisPanel
+
 # global
+ItemSlot = import_module(f"{__name__}.global").ItemSlot
 ChoiceBox = import_module(f"{__name__}.global").ChoiceBox
 DialogueBox = import_module(f"{__name__}.global").DialogueBox
 PauseButton = import_module(f"{__name__}.global").PauseButton
@@ -87,6 +90,7 @@ __all__ = [
     "InventoryPopupButton",
     "LearnableSkillListView",
     "PassiveSkillGrid",
+    "SynthesisPanel",
     # global
     "ChoiceBox",
     "DialogueBox",

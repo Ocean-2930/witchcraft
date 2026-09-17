@@ -331,6 +331,8 @@ class InventoryScene(Scene):
 
     def create_popup_buttons(self):
         button_specs = (
+            ("synthesis", "합성", VIRTUAL_WIDTH // 2, 320, 200, 44,
+             self.open_synthesis),
             (
                 "equip",
                 "장착",
@@ -437,6 +439,16 @@ class InventoryScene(Scene):
         self.position_action_buttons()
         self.update_popup_visibility()
 
+    def open_synthesis(self):
+        item = self.get_selected_item()
+        if item is None or not isinstance(item.item, Equip):
+            return
+        self.close_item_popup()
+        self.hide_item_windows()
+        from .synthesis_scene import SynthesisScene
+
+        self.add_overlay(SynthesisScene(self.game, self.get_item_inventory(), item))
+
     def open_discard_popup(self):
         item_instance = self.get_selected_item()
         if item_instance is None:
@@ -465,6 +477,7 @@ class InventoryScene(Scene):
         can_equip = isinstance(item, Equip)
 
         action_visibility = {
+            "synthesis": self.popup_mode == "actions" and can_equip,
             "equip": self.popup_mode == "actions" and can_equip,
             "use": self.popup_mode == "actions" and can_use,
             "shortcut": self.popup_mode == "actions" and can_use,
@@ -483,7 +496,7 @@ class InventoryScene(Scene):
         can_use = callable(getattr(item, "use", None))
         can_equip = isinstance(item, Equip)
         if can_equip:
-            visible_keys = ("equip", "discard")
+            visible_keys = ("equip", "synthesis", "discard")
         elif can_use:
             visible_keys = ("use", "shortcut", "discard")
         else:
@@ -689,6 +702,8 @@ class InventoryScene(Scene):
         self.close_item_popup()
 
     def equip_item_at_index(self, item_index):
+        if self.selected_tab != "장비":
+            return
         inventory_items = self.get_inventory_items()
         if item_index >= len(inventory_items):
             return

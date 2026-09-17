@@ -72,3 +72,5 @@ flowchart LR
 - `DungeonScene`의 hotbar 스킬은 아직 대상 타일 계산 단계까지만 구현되어 있다. 실제 다중 대상 효과 실행과 비용 지불 정책은 별도 전투 실행 계층이 필요하다.
 - `InventoryScene`은 dungeon 전용 overlay이므로 현재 부모 scene에서 `dungeon_inventory`를 읽는다. 다른 부모 scene에서 재사용할 필요가 생기면 이를 생성자 입력으로 전환한다.
 - 일부 scene별 renderer는 폰트와 표시 상태를 scene에서 직접 읽는다. 재사용 가능성이 생기는 시점에 데이터 또는 getter 입력으로 전환한다.
+
+- 합성 화면의 메인·재료 인스턴스 선택은 별도 overlay인 `SynthesisScene`의 임시 상태다. `InventoryScene`은 아이템 보관함과 선택 장비를 전달하여 합성창을 연다. `SynthesisPanel`은 getter와 재료 해제 callback을 받아 슬롯과 원본 장비를 보여 주는 공용 `ItemWindow` 정보창을 표시하고, 실제 인벤토리나 장비 데이터는 변경하지 않는다. 두 화면은 `ui/global`의 `ItemSlot`과 `InventorySlot` 기반을 공유한다.

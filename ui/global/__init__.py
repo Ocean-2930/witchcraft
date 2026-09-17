@@ -15,4 +15,7 @@ __all__ = [
     "ShortcutBar",
     "ShortcutSlot",
     "ItemWindow",
+    "ItemSlot",
 ]
+
+from .item_slot import ItemSlot
