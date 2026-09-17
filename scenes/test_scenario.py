@@ -28,6 +28,21 @@ def senario(scene: "DungeonScene"):
             ],
         )
     )
+    # 기존 철검과 스킬 2개를 공유하고, 명중 증가를 가진 비교용 철검.
+    scene.dungeon_inventory.add_item(
+        EquipmentInstance(
+            SimpleSword(),
+            stat_rows=[
+                SkillInstance(STAT_PASSIVE_SKILLS[0], level=3),
+                SkillInstance(STAT_PASSIVE_SKILLS[1], level=2),
+                SkillInstance(STAT_PASSIVE_SKILLS[5], level=2),
+                None,
+                None,
+                None,
+                None,
+            ],
+        )
+    )
     for tier in (1, 2):
         if tier == 1:
             scene.dungeon_inventory.add_learnable_skill(
