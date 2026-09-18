@@ -1,8 +1,15 @@
 from __future__ import annotations
 
 from collections import deque
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from itertools import combinations
+
+from typing import TYPE_CHECKING
+
+from .combat_timer import CombatTimer
+
+if TYPE_CHECKING:
+    from units import Enemy, Player
 
 from ..random_generator import RandomGenerator, RandomSeed
 
@@ -91,15 +98,62 @@ class DungeonMapConfig:
             raise ValueError("외곽 벽 두께는 2 이상이어야 합니다.")
 
 
-@dataclass(frozen=True)
+@dataclass
 class DungeonMap:
     tiles: tuple[tuple[int, ...], ...]
     rooms: tuple[Room, ...]
     connections: tuple[MapConnection, ...]
     hub_room_id: int
-    up_stairs: Position
-    down_stairs: Position
+    up_stairs: Position | None
+    down_stairs: Position | None
     seed: RandomSeed
+    player: Player | None = field(default=None, repr=False, compare=False)
+    enemies: list[Enemy] = field(default_factory=list)
+    combat_timer: CombatTimer = field(default_factory=CombatTimer, repr=False, compare=False)
+    initialized: bool = False
+
+    @property
+    def player_position(self) -> Position | None:
+        if self.player is None:
+            return None
+        return (self.player.tile_x, self.player.tile_y)
+
+    def bind_player(self, player: Player) -> None:
+        """인벤토리와 같은 플레이어를 참조해 좌표와 전투 상태를 중복하지 않는다."""
+        if self.player is player:
+            return
+        position = self.player_position or self.up_stairs
+        if position is None:
+            position = next(
+                ((x, y) for y, row in enumerate(self.tiles)
+                 for x, tile in enumerate(row) if tile != WALL),
+                None,
+            )
+        if position is None:
+            raise ValueError("플레이어를 배치할 수 있는 타일이 없습니다.")
+        if self.player is not None:
+            self.combat_timer.unregister(self.player)
+        self.player = player
+        player.tile_x, player.tile_y = position
+
+    def add_enemy(self, enemy: Enemy) -> None:
+        if not any(owned is enemy for owned in self.enemies):
+            self.enemies.append(enemy)
+
+    def remove_enemy(self, enemy: Enemy) -> None:
+        for index, owned in enumerate(self.enemies):
+            if owned is enemy:
+                self.enemies.pop(index)
+                self.combat_timer.unregister(enemy)
+                return
+
+    @classmethod
+    def from_tiles(cls, tiles) -> DungeonMap:
+        """기존 dict 맵도 좌표·유닛을 보관하는 동일한 모델로 변환한다."""
+        tiles = tuple(tuple(row) for row in tiles)
+        stairs = {tile: (x, y) for y, row in enumerate(tiles)
+                  for x, tile in enumerate(row) if tile in (UP_STAIRS, DOWN_STAIRS)}
+        return cls(tiles, (), (), -1, stairs.get(UP_STAIRS), stairs.get(DOWN_STAIRS), 0)
 
     @property
     def width(self) -> int:

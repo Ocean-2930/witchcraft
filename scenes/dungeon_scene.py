@@ -44,7 +44,6 @@ from ui import (
 from skills import SkillDirectionStatus, SkillTargetingInput
 from units import AttackResult, Enemy, EnemyMode
 from utilities.dungeon import (
-    CombatTimer,
     DOWN_STAIRS,
     FLOOR,
     UP_STAIRS,
@@ -112,31 +111,24 @@ class DungeonScene(Scene):
         dungeon_inventory: DungeonInventory | None = None,
     ):
         self.dungeon_map = dungeon_map or self.DEFAULT_MAP
+        if isinstance(self.dungeon_map, dict):
+            self.dungeon_map = DungeonMap.from_tiles(self.dungeon_map["map"])
         self.initial_dungeon_inventory = dungeon_inventory
         super().__init__(game)
 
     def scene_initialize(self):
-        if isinstance(self.dungeon_map, DungeonMap):
-            self.map_tiles = self.dungeon_map.map
-            self.rooms = self.dungeon_map.rooms
-            self.connections = self.dungeon_map.connections
-            self.up_stairs = self.dungeon_map.up_stairs
-            self.down_stairs = self.dungeon_map.down_stairs
-        else:
-            self.map_tiles = self.dungeon_map["map"]
-            self.rooms = ()
-            self.connections = ()
-            self.up_stairs = None
-            self.down_stairs = None
+        self.map_tiles = self.dungeon_map.map
+        self.rooms = self.dungeon_map.rooms
+        self.connections = self.dungeon_map.connections
+        self.up_stairs = self.dungeon_map.up_stairs
+        self.down_stairs = self.dungeon_map.down_stairs
         self.dungeon_inventory = (
             self.initial_dungeon_inventory or DungeonInventory()
         )
-        self.combat_timer = CombatTimer()
-        self.combat_timer.register(self.dungeon_inventory.player)
-        if self.up_stairs is not None:
-            self.dungeon_inventory.set_player_position(*self.up_stairs)
-        else:
-            self.dungeon_inventory.set_player_position(*self.get_first_floor_position())
+        self.dungeon_map.bind_player(self.dungeon_inventory.player)
+        self.combat_timer = self.dungeon_map.combat_timer
+        if self.combat_timer.get_entry(self.dungeon_inventory.player) is None:
+            self.combat_timer.register(self.dungeon_inventory.player)
         self.player_status = PlayerStatusRenderer(
             self,
             self.dungeon_inventory.get_stat,
@@ -183,13 +175,18 @@ class DungeonScene(Scene):
         self.filtered_tile_renderers = set()
         self.current_visible_tiles = set()
 
-        if settings.ENABLE_TEST_SCENARIO:
+        if settings.ENABLE_TEST_SCENARIO and not self.dungeon_map.initialized:
             from .test_scenario import senario
 
             senario(self)
 
         self.refresh_visible_tiles()
-        self.spawn_initial_monsters()
+        for enemy in self.dungeon_map.enemies:
+            if enemy.is_alive:
+                self.attach_monster(enemy)
+        if not self.dungeon_map.initialized:
+            self.spawn_initial_monsters()
+            self.dungeon_map.initialized = True
         self.fog_renderer = DungeonFogRenderer(
             self,
             lambda: self.floor_tiles,
@@ -408,7 +405,13 @@ class DungeonScene(Scene):
 
     def create_monster(self, tile_x, tile_y):
         unit = Enemy("적 몬스터", max_hp=100, attack_power=0, tile_x=tile_x, tile_y=tile_y)
-        self.combat_timer.register(unit)
+        self.dungeon_map.add_enemy(unit)
+        return self.attach_monster(unit)
+
+    def attach_monster(self, unit):
+        """맵에 보관된 적의 상태를 그대로 사용하는 화면 요소를 만든다."""
+        if self.combat_timer.get_entry(unit) is None:
+            self.combat_timer.register(unit)
         monster = {
             "unit": unit,
             "renderer": MonsterMarkerRenderer(
@@ -424,7 +427,7 @@ class DungeonScene(Scene):
         self.set_maze_base_position(monster["renderer"])
         self.maze_renderers.append(monster["renderer"])
         self.monsters.append(monster)
-        monster["renderer"].set_visible((tile_x, tile_y) in self.current_visible_tiles)
+        monster["renderer"].set_visible((unit.tile_x, unit.tile_y) in self.current_visible_tiles)
         return monster
 
     def spawn_initial_monsters(self):
@@ -1100,6 +1103,7 @@ class DungeonScene(Scene):
         if renderer in self.maze_renderers:
             self.maze_renderers.remove(renderer)
         self.monsters.remove(monster)
+        self.dungeon_map.remove_enemy(unit)
         if self.hovered_monster is monster:
             self.hovered_monster = None
         return True
