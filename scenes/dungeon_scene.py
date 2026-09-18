@@ -16,6 +16,7 @@ from settings import (
     KEY_3,
     KEY_4,
     KEY_E,
+    KEY_F,
     KEY_M,
     KEY_Q,
     KEY_R,
@@ -170,6 +171,9 @@ class DungeonScene(Scene):
         self.hotbar_input_guard = False
         self.last_skill_call = None
         self.combat_logs = []
+        # 현재 층의 좌표별 ItemInstance 목록과 상호작용 callback(scene).
+        self.ground_items = {}
+        self.tile_interactions = {}
         self.maze_offset_x = 0.0
         self.maze_offset_y = 0.0
         self.maze_renderers = []
@@ -746,6 +750,12 @@ class DungeonScene(Scene):
             super().scene_update(delta_time, game_events, mouse_position, wheel_move)
             return
 
+        if game_events[KEY_T]["keydown"]:
+            self.reset_movement_repeat()
+            self.interact_with_current_tile()
+            super().scene_update(delta_time, game_events, mouse_position, wheel_move)
+            return
+
         if self.has_direction_keydown(game_events):
             self.update_player_facing(game_events)
             self.update_held_direction(delta_time, game_events)
@@ -766,6 +776,32 @@ class DungeonScene(Scene):
             self.reset_movement_repeat()
 
         super().scene_update(delta_time, game_events, mouse_position, wheel_move)
+
+    def interact_with_current_tile(self):
+        """발밑 아이템을 먼저 줍고, 없으면 등록된 타일 이벤트를 실행한다."""
+        if self.active_move is not None or self.active_hotbar_key is not None:
+            return
+
+        position = self.dungeon_inventory.get_player_position()
+        items = self.ground_items.get(position)
+        if items:
+            for item_instance in items[:]:
+                if not self.dungeon_inventory.add_item(item_instance):
+                    self.add_combat_log("아이템을 더 주울 수 없다.")
+                    break
+                items.remove(item_instance)
+                self.add_combat_log(
+                    f"{item_instance.item.get_name()} {item_instance.stack}개를 주웠다."
+                )
+            if not items:
+                del self.ground_items[position]
+            return
+
+        interaction = self.tile_interactions.get(position)
+        if interaction is not None:
+            interaction(self)
+        else:
+            self.add_combat_log("상호작용할 대상이 없다.")
 
     def update_hovered_monster(self, mouse_position):
         self.hovered_monster = None
@@ -1271,7 +1307,7 @@ class DungeonScene(Scene):
     def can_start_move_direction(self, direction, game_events):
         direction_x, direction_y = direction
 
-        if not game_events[KEY_T]["status"]:
+        if not game_events[KEY_F]["status"]:
             return True
 
         return direction_x != 0 and direction_y != 0

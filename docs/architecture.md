@@ -16,6 +16,8 @@
 
 ## 의존성 원칙
 
+- `DungeonScene`은 현재 층의 `ground_items`(좌표 → `ItemInstance` 목록)와 `tile_interactions`(좌표 → `callback(scene)`)를 소유한다. `T` 입력은 `interact_with_current_tile()`로 전달하며, 아이템 보관 성공 여부는 `DungeonInventory.add_item()`에 위임한다. 아이템이 있는 타일은 줍기만 처리하고 이벤트는 다음 입력에서 실행한다. 이벤트의 일회성 여부와 행동 시간 비용은 callback이 관리하며, 현재 줍기 자체는 전투 시간을 진행하지 않는다.
+
 ```mermaid
 flowchart LR
     Core["core"] --> Scenes["scenes"]

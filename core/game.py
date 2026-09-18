@@ -30,6 +30,7 @@ from settings import (
     KEY_E,
     KEY_R,
     KEY_T,
+    KEY_F,
     KEY_M,
 )
 
@@ -103,6 +104,7 @@ class Game:
             KEY_E,
             KEY_R,
             KEY_T,
+            KEY_F,
             KEY_M,
         ]
         self.formal_events = { k:False for k in self.game_events }
