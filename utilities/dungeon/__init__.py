@@ -1,9 +1,12 @@
 from .map_generator import (
     DOWN_STAIRS,
+    EVENT_CENTER,
+    EVENT_SURROUND,
     FLOOR,
     UP_STAIRS,
     WALL,
     DungeonMap,
+    EventTile,
     DungeonMapConfig,
     DungeonMapGenerator,
     MapConnection,
@@ -16,6 +19,8 @@ from .sight import get_grid_line, get_visible_tiles, has_line_of_sight
 
 __all__ = [
     "DOWN_STAIRS",
+    "EVENT_CENTER",
+    "EVENT_SURROUND",
     "FLOOR",
     "UP_STAIRS",
     "WALL",
@@ -30,6 +35,7 @@ __all__ = [
     "get_visible_tiles",
     "has_line_of_sight",
     "DungeonMap",
+    "EventTile",
     "DungeonMapConfig",
     "DungeonMapGenerator",
     "MapConnection",

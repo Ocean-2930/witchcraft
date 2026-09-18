@@ -45,6 +45,7 @@ from skills import SkillDirectionStatus, SkillTargetingInput
 from units import AttackResult, Enemy, EnemyMode
 from utilities.dungeon import (
     DOWN_STAIRS,
+    EVENT_CENTER,
     FLOOR,
     UP_STAIRS,
     WALL,
@@ -374,6 +375,7 @@ class DungeonScene(Scene):
             self.get_tile_screen_y(tile_y),
             self.FLOOR_TILE_WIDTH,
             self.FLOOR_TILE_HEIGHT,
+            event_getter=lambda: self.dungeon_map.get_event_tile((tile_x, tile_y)),
         )
         self.set_dungeon_draw_order(tile, tile_x, tile_y, self.DEPTH_FLOOR)
         self.set_maze_base_position(tile)
@@ -632,7 +634,7 @@ class DungeonScene(Scene):
     def get_first_floor_position(self):
         for tile_y, row in enumerate(self.map_tiles):
             for tile_x, tile_value in enumerate(row):
-                if tile_value != WALL:
+                if tile_value not in (WALL, EVENT_CENTER):
                     return (tile_x, tile_y)
         raise ValueError("던전 맵에 이동 가능한 바닥이 없습니다.")
 
@@ -804,7 +806,11 @@ class DungeonScene(Scene):
         if interaction is not None:
             interaction(self)
         else:
-            self.add_combat_log("상호작용할 대상이 없다.")
+            event = self.dungeon_map.get_event_tile(position)
+            if event is not None:
+                self.add_combat_log(f"이벤트: {event.event_code}")
+            else:
+                self.add_combat_log("상호작용할 대상이 없다.")
 
     def update_hovered_monster(self, mouse_position):
         self.hovered_monster = None
@@ -1346,7 +1352,8 @@ class DungeonScene(Scene):
         if tile_x < 0 or tile_x >= len(self.map_tiles[tile_y]):
             return False
 
-        return target_tile not in self.wall_positions and not self.has_monster_at(target_tile)
+        return (self.map_tiles[tile_y][tile_x] not in (WALL, EVENT_CENTER)
+                and not self.has_monster_at(target_tile))
 
     def has_monster_at(self, tile_position):
         return any(

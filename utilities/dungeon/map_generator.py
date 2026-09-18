@@ -4,7 +4,7 @@ from collections import deque
 from dataclasses import dataclass, field, replace
 from itertools import combinations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, ClassVar
 
 from .combat_timer import CombatTimer
 
@@ -18,6 +18,8 @@ FLOOR = 0
 WALL = 1
 UP_STAIRS = 2
 DOWN_STAIRS = 3
+EVENT_CENTER = 4
+EVENT_SURROUND = 5
 
 Position = tuple[int, int]
 CorridorEdge = tuple[str, int, int]
@@ -72,6 +74,31 @@ class MapConnection:
 
 
 @dataclass(frozen=True)
+class EventTile:
+    """중앙 (x, y)를 기준으로 하는 3×3 이벤트 영역."""
+
+    event_code: str
+    x: int
+    y: int
+    SIZE: ClassVar[int] = 3
+
+    def __post_init__(self):
+        if not isinstance(self.event_code, str) or not self.event_code.strip():
+            raise ValueError("이벤트 코드는 비어 있지 않은 문자열이어야 합니다.")
+        if type(self.x) is not int or type(self.y) is not int:
+            raise ValueError("이벤트 좌표는 정수여야 합니다.")
+
+    @property
+    def positions(self) -> tuple[Position, ...]:
+        return tuple((x, y) for y in range(self.y - 1, self.y + 2)
+                     for x in range(self.x - 1, self.x + 2))
+
+    def contains(self, position: Position) -> bool:
+        x, y = position
+        return abs(x - self.x) <= 1 and abs(y - self.y) <= 1
+
+
+@dataclass(frozen=True)
 class DungeonMapConfig:
     min_rooms: int = 8
     max_rooms: int = 12
@@ -111,6 +138,30 @@ class DungeonMap:
     enemies: list[Enemy] = field(default_factory=list)
     combat_timer: CombatTimer = field(default_factory=CombatTimer, repr=False, compare=False)
     initialized: bool = False
+    event_tiles: list[EventTile] = field(default_factory=list)
+
+    def get_event_tile(self, position: Position) -> EventTile | None:
+        return next((event for event in self.event_tiles if event.contains(position)), None)
+
+    def add_event_tile(self, event: EventTile) -> None:
+        if not any(
+            room.left + 2 <= event.x <= room.right - 2
+            and room.top + 2 <= event.y <= room.bottom - 2
+            for room in self.rooms
+        ):
+            raise ValueError("이벤트는 방 안에 배치하고 벽과 한 칸의 바닥 여백을 둬야 합니다.")
+        for x, y in event.positions:
+            if not (0 <= y < self.height and 0 <= x < len(self.tiles[y])):
+                raise ValueError("이벤트 영역이 맵을 벗어납니다.")
+            if self.tiles[y][x] != FLOOR:
+                raise ValueError("이벤트 영역은 계단이 없는 일반 바닥이어야 합니다.")
+            if self.get_event_tile((x, y)) is not None:
+                raise ValueError("이벤트 영역이 다른 이벤트와 겹칩니다.")
+        tiles = self.map
+        for x, y in event.positions:
+            tiles[y][x] = EVENT_CENTER if (x, y) == (event.x, event.y) else EVENT_SURROUND
+        self.tiles = tuple(tuple(row) for row in tiles)
+        self.event_tiles.append(event)
 
     @property
     def player_position(self) -> Position | None:
@@ -126,7 +177,7 @@ class DungeonMap:
         if position is None:
             position = next(
                 ((x, y) for y, row in enumerate(self.tiles)
-                 for x, tile in enumerate(row) if tile != WALL),
+                 for x, tile in enumerate(row) if tile not in (WALL, EVENT_CENTER)),
                 None,
             )
         if position is None:
@@ -686,7 +737,7 @@ class DungeonMapGenerator:
         tiles[up_stairs[1]][up_stairs[0]] = UP_STAIRS
         tiles[down_stairs[1]][down_stairs[0]] = DOWN_STAIRS
 
-        return DungeonMap(
+        dungeon_map = DungeonMap(
             tiles=tuple(tuple(row) for row in tiles),
             rooms=normalized_rooms,
             connections=normalized_connections,
@@ -695,3 +746,10 @@ class DungeonMapGenerator:
             down_stairs=down_stairs,
             seed=self.seed,
         )
+        # 최소 큰 방 5개 중 계단 방 최대 2개를 제외해 이벤트 방 3개를 보장한다.
+        event_rooms = [room for room in normalized_rooms
+                       if room.is_large and room.room_id not in stair_pair]
+        self.random.shuffle(event_rooms)
+        for room in event_rooms[:3]:
+            dungeon_map.add_event_tile(EventTile("000", *room.center))
+        return dungeon_map

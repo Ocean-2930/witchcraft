@@ -13,7 +13,7 @@ class FloorTileRenderer(Renderer):
     FILTER_YELLOW = (255, 220, 40)
     FILTER_RED = (230, 45, 45)
 
-    def __init__(self, scene, pos_x, pos_y, width, height):
+    def __init__(self, scene, pos_x, pos_y, width, height, event_getter=None):
         texture_size = (int(width), int(height))
 
         if texture_size not in self.__class__.texture_images:
@@ -25,6 +25,7 @@ class FloorTileRenderer(Renderer):
 
         self.texture_image = self.__class__.texture_images[texture_size]
         self.filter_color = None
+        self.event_getter = event_getter
         super().__init__(scene, pos_x, pos_y, width, height)
 
     def filter_yellow(self):
@@ -56,6 +57,10 @@ class FloorTileRenderer(Renderer):
         else:
             pygame.draw.rect(screen, (206, 179, 137), self.rect, border_radius=4)
             pygame.draw.rect(screen, (128, 95, 58), self.rect, width=3, border_radius=4)
+
+        if self.event_getter is not None and self.event_getter() is not None:
+            pygame.draw.rect(screen, self.FILTER_YELLOW, self.rect)
+            pygame.draw.rect(screen, (180, 145, 20), self.rect, width=2)
 
         if self.filter_color is not None:
             screen.blit(

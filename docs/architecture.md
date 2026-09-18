@@ -16,6 +16,8 @@
 
 ## 의존성 원칙
 
+- `DungeonMap.event_tiles`는 `EventTile(event_code, x, y)` 목록이다. 좌표는 3×3 영역의 중앙이며, `positions`로 9칸을 조회한다. `add_event_tile()`은 맵 밖·벽·계단·다른 이벤트와의 겹침을 거부하고 `get_event_tile()`은 영역 내 어느 칸에서도 같은 이벤트를 반환한다. 이벤트 등록 시 타일맵에도 중앙 EVENT_CENTER=4와 주변 EVENT_SURROUND=5를 기록한다. 중앙은 플레이어와 적 모두 이동할 수 없고 주변 8칸은 이동 가능하다. 시야는 차단하지 않는다. 방 바닥의 바깥 테두리 한 칸을 여백으로 남겨야 하며 통로에는 등록할 수 없다. 생성기는 기존의 5×5 이상 큰 방 최소 5개 보장을 유지하고, 계단 방 최대 2개를 제외한 서로 다른 큰 방 3개에 코드 000 이벤트를 하나씩 생성한다. 노드와 타일 데이터는 scene 재생성에도 유지된다.
+
 - `DungeonScene`은 현재 층의 `ground_items`(좌표 → `ItemInstance` 목록)와 `tile_interactions`(좌표 → `callback(scene)`)를 소유한다. `T` 입력은 `interact_with_current_tile()`로 전달하며, 아이템 보관 성공 여부는 `DungeonInventory.add_item()`에 위임한다. 아이템이 있는 타일은 줍기만 처리하고 이벤트는 다음 입력에서 실행한다. 이벤트의 일회성 여부와 행동 시간 비용은 callback이 관리하며, 현재 줍기 자체는 전투 시간을 진행하지 않는다.
 
 ```mermaid

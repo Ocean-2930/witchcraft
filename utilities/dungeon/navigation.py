@@ -3,7 +3,7 @@ from __future__ import annotations
 from collections import deque
 from typing import Iterable, Sequence, TypeAlias
 
-from .map_generator import WALL
+from .map_generator import WALL, EVENT_CENTER
 
 
 Position: TypeAlias = tuple[int, int]
@@ -82,7 +82,7 @@ def _is_walkable(
     return (
         0 <= y < len(map_tiles)
         and 0 <= x < len(map_tiles[y])
-        and map_tiles[y][x] != WALL
+        and map_tiles[y][x] not in (WALL, EVENT_CENTER)
         and position not in blocked
     )
 
