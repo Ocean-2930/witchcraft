@@ -34,6 +34,8 @@ KEY_E = pygame.K_e
 KEY_R = pygame.K_r
 KEY_T = pygame.K_t
 KEY_F = pygame.K_f
+KEY_G = pygame.K_g
+REST_TICKS = 100
 KEY_M = pygame.K_m
 
 # develop settings

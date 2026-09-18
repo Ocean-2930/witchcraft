@@ -17,6 +17,7 @@ from settings import (
     KEY_4,
     KEY_E,
     KEY_F,
+    KEY_G,
     KEY_M,
     KEY_Q,
     KEY_R,
@@ -755,6 +756,11 @@ class DungeonScene(Scene):
             super().scene_update(delta_time, game_events, mouse_position, wheel_move)
             return
 
+        if game_events[KEY_G]["keydown"]:
+            self.rest_one_turn()
+            super().scene_update(delta_time, game_events, mouse_position, wheel_move)
+            return
+
         if game_events[KEY_T]["keydown"]:
             self.reset_movement_repeat()
             self.interact_with_current_tile()
@@ -781,6 +787,16 @@ class DungeonScene(Scene):
             self.reset_movement_repeat()
 
         super().scene_update(delta_time, game_events, mouse_position, wheel_move)
+
+    def rest_one_turn(self):
+        if self.active_move is not None or self.active_hotbar_key is not None:
+            return
+        self.reset_movement_repeat()
+        completed_turns = self.advance_monster_turns(settings.REST_TICKS)
+        self.combat_timer.schedule(self.dungeon_inventory.player, settings.REST_TICKS)
+        self.refresh_visible_tiles()
+        self.spawn_periodic_monsters(completed_turns)
+        self.add_combat_log("1턴 쉬었다.")
 
     def interact_with_current_tile(self):
         """발밑 아이템을 먼저 줍고, 없으면 등록된 타일 이벤트를 실행한다."""

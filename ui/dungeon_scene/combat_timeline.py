@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import pygame
+import settings
 
 from ui.renderer import Renderer
 from .textures import DUNGEON_TEXTURES
@@ -41,6 +42,7 @@ class CombatTimelineRenderer(Renderer):
         self.action_images = {
             "attack": self.load_image("attack.png"),
             "move": self.load_image("move.png"),
+            "rest": self.load_image("rest.png"),
         }
         self.tick_font = pygame.font.Font(None, 16)
         super().__init__(scene, pos_x, pos_y, width, height)
@@ -88,7 +90,9 @@ class CombatTimelineRenderer(Renderer):
             [
                 (attack_cost, "attack", "player"),
                 (move_cost, "move", "player"),
-                *((turn_tick, "turn", "enemy") for turn_tick in enemy_turns),
+                (settings.REST_TICKS, "rest", "player"),
+                *((turn_tick, "turn", "enemy")
+                  for turn_tick in sorted(enemy_turns)[:cls.MAX_BADGES - 3]),
             ],
             key=lambda event: (event[0], event[2] == "enemy", event[1]),
         )[:cls.MAX_BADGES]
@@ -103,14 +107,15 @@ class CombatTimelineRenderer(Renderer):
         tokens = []
         next_divider = cls.TICK_INTERVAL - turn_counter
 
-        for tick, action, owner in events:
+        for index, (tick, action, owner) in enumerate(events):
             while next_divider < tick:
                 tokens.append(("divider", next_divider))
                 next_divider += cls.TICK_INTERVAL
 
             tokens.append(("badge", tick, action, owner))
 
-            while next_divider == tick:
+            same_tick_follows = index + 1 < len(events) and events[index + 1][0] == tick
+            while next_divider == tick and not same_tick_follows:
                 tokens.append(("divider", next_divider))
                 next_divider += cls.TICK_INTERVAL
 
