@@ -25,6 +25,15 @@ class RandomGenerator:
         """다음 난수 발급에 사용할 현재 상태를 반환한다."""
         return self._current_random
 
+    @classmethod
+    def from_state(cls, state: float):
+        """시드 초기화를 거치지 않고 저장된 다음 발급 상태를 복원한다."""
+        if type(state) not in (int, float) or not 0 <= state < 1:
+            raise ValueError("난수 상태는 0 이상 1 미만이어야 합니다.")
+        generator = cls.__new__(cls)
+        generator._current_random = state
+        return generator
+
     def random(self, count: int | None = None) -> float | list[float]:
         """난수를 하나 발급하거나, count가 주어지면 그 수만큼 발급한다."""
         if count is None:

@@ -111,7 +111,9 @@ class DungeonScene(Scene):
         game,
         dungeon_map: DungeonMap | dict | None = None,
         dungeon_inventory: DungeonInventory | None = None,
+        current_floor: int = 1,
     ):
+        self.CURRENT_FLOOR = current_floor
         self.dungeon_map = dungeon_map or self.DEFAULT_MAP
         if isinstance(self.dungeon_map, dict):
             self.dungeon_map = DungeonMap.from_tiles(self.dungeon_map["map"])
@@ -166,7 +168,7 @@ class DungeonScene(Scene):
         self.last_skill_call = None
         self.combat_logs = []
         # 현재 층의 좌표별 ItemInstance 목록과 상호작용 callback(scene).
-        self.ground_items = {}
+        self.ground_items = self.dungeon_map.ground_items
         self.tile_interactions = {}
         self.maze_offset_x = 0.0
         self.maze_offset_y = 0.0

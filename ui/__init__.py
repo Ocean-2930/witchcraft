@@ -2,6 +2,9 @@ from importlib import import_module
 
 from .renderer import Renderer
 
+# message_scene
+from .message_scene.message_backdrop import MessageBackdropRenderer
+
 # dungeon_scene
 from .dungeon_scene import (
     CombatLogRenderer,
@@ -62,6 +65,7 @@ from .title_scene import TitleButton, TitleContentRenderer
 from .settings_scene import SettingsButton, SettingsContentRenderer, SettingsSlider
 
 __all__ = [
+    "MessageBackdropRenderer",
     "Renderer",
     # dungeon_scene
     "CombatLogRenderer",

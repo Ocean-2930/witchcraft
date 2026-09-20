@@ -125,9 +125,7 @@ class GameEntryScene(Scene):
         except ValueError as error:
             self.dialogue_box.set_dialogue("???", f"던전을 만들지 못했어. {error}")
             return
-        self.switch_scene(
-            DungeonScene(self.game, dungeon_map, dungeon_inventory)
-        )
+        self.game.activate_dungeon(DungeonScene(self.game, dungeon_map, dungeon_inventory))
 
     def save_seed(self):
         try:

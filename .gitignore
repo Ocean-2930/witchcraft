@@ -6,5 +6,8 @@ assets/**/*
 !assets/**/AGENTS.md
 
 tests/**
+!tests/test_save_system.py
 
 **/__pycache__
+
+data/saves/

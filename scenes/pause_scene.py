@@ -76,6 +76,8 @@ class PauseScene(Scene):
     def go_main(self):
         from .title_scene import TitleScene
 
+        if not self.game.leave_dungeon():
+            return
         if self.parent_scene is not None:
             self.parent_scene.overlay_scene = None
 

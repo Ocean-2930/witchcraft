@@ -139,6 +139,8 @@ class DungeonMap:
     combat_timer: CombatTimer = field(default_factory=CombatTimer, repr=False, compare=False)
     initialized: bool = False
     event_tiles: list[EventTile] = field(default_factory=list)
+    ground_items: dict = field(default_factory=dict)
+    event_states: dict = field(default_factory=dict)
 
     def get_event_tile(self, position: Position) -> EventTile | None:
         return next((event for event in self.event_tiles if event.contains(position)), None)

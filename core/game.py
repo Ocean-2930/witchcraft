@@ -5,6 +5,7 @@ import pygame
 import settings
 
 from scenes import TitleScene
+from utilities.save import SaveError, SaveManager, GameSession
 
 # game event import
 from settings import (
@@ -116,6 +117,11 @@ class Game:
 
         # set scene
         self.fixed_seed = None
+        self.save_manager = SaveManager()
+        self.session = None
+        self.dungeon_scene = None
+        self.save_error = None
+        self._save_elapsed = 0.0
         self.scene = TitleScene(self)
 
     def run(self):
@@ -147,7 +153,13 @@ class Game:
 
     def update(self):
         delta_time, game_events, mouse_position, wheel_move = self.read_inputs()
+        if not self.running:
+            return
         self.update_scene(delta_time, game_events, mouse_position, wheel_move)
+        self._save_elapsed += delta_time
+        if self._save_elapsed >= 0.5:
+            self._save_elapsed = 0.0
+            self.save_progress()
 
     def read_inputs(self):
         events = pygame.event.get()
@@ -156,7 +168,7 @@ class Game:
         wheel_move = 0
         for event in events:
             if event.type == pygame.QUIT:
-                self.running = False
+                self.quit()
 
             # read wheel movement
             if event.type == pygame.MOUSEWHEEL:
@@ -387,5 +399,46 @@ class Game:
         settings.FULLSCREEN = True
         self.resize_window()
 
+    def activate_dungeon(self, dungeon_scene, session=None):
+        self.session = session or GameSession(
+            dungeon_scene.dungeon_inventory,
+            {dungeon_scene.CURRENT_FLOOR: dungeon_scene.dungeon_map},
+            dungeon_scene.CURRENT_FLOOR,
+        )
+        self.dungeon_scene = dungeon_scene
+        self.scene = dungeon_scene
+        self.save_error = None
+        self.save_progress()
+
+    def save_progress(self, finish_move=False):
+        if self.session is None or self.dungeon_scene is None:
+            return True
+        if finish_move:
+            self.dungeon_scene.update_maze_move(self.dungeon_scene.MOVE_DURATION)
+        if self.dungeon_scene.active_move is not None:
+            return True
+        try:
+            self.save_manager.save(self.session)
+            self.save_error = None
+            return True
+        except SaveError as error:
+            if finish_move or self.save_error != str(error):
+                from scenes.message_scene import MessageScene
+
+                top = self.scene
+                while top.overlay_scene is not None:
+                    top = top.overlay_scene
+                top.add_overlay(MessageScene(self, str(error)))
+            self.save_error = str(error)
+            return False
+
+    def leave_dungeon(self):
+        if not self.save_progress(finish_move=True):
+            return False
+        self.session = None
+        self.dungeon_scene = None
+        return True
+
     def quit(self):
-        self.running = False
+        if self.save_progress(finish_move=True):
+            self.running = False
