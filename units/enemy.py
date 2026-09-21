@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from enum import Enum
 
 from .unit import Unit
+from .enemy_definitions import get_enemy_definition
 
 
 class EnemyMode(Enum):
@@ -16,6 +17,11 @@ class Enemy(Unit):
     ai_mode: EnemyMode = EnemyMode.GUARD
     patrol_target: tuple[int, int] | None = None
     last_known_player_position: tuple[int, int] | None = None
+
+    @classmethod
+    def from_code(cls, code: str, *, tile_x: int = 0, tile_y: int = 0) -> Enemy:
+        """JSON 기본 능력치로 독립적인 새 적을 생성한다. 이어하기에는 사용하지 않는다."""
+        return cls(**get_enemy_definition(code), tile_x=tile_x, tile_y=tile_y)
 
     def set_ai_mode(self, mode: EnemyMode) -> None:
         self.ai_mode = mode

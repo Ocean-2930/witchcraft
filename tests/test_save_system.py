@@ -18,7 +18,7 @@ from scenes.game_entry_scene import GameEntryScene
 from scenes.pause_scene import PauseScene
 from utilities.inventory import DungeonInventory
 from utilities.save import GameSession, SaveManager, SaveError
-from utilities.save.serializers import to_data
+from utilities.save.serializers import to_data, from_data
 from units import EnemyMode
 
 
@@ -109,6 +109,19 @@ class SaveSystemTests(unittest.TestCase):
         self.assertEqual(self.game.session.inventory.get_player_position(), (2, 2))
         self.assertEqual(len(self.game.scene.monsters), count)
         self.game.scene.draw()
+
+    def test_saved_enemy_does_not_reload_spawn_definition(self):
+        dungeon = self.start()
+        enemy = dungeon.dungeon_map.enemies[0]
+        enemy.name = "저장된 적"
+        enemy.max_hp = 222
+        enemy.hp = 17
+        enemy.attack_power = 31
+        snapshot = to_data(self.game.session)
+        with patch("units.enemy.get_enemy_definition", side_effect=AssertionError("생성 정의 재적용")):
+            restored = from_data(snapshot).floors[1].enemies[0]
+        self.assertEqual((restored.name, restored.max_hp, restored.hp, restored.attack_power),
+                         ("저장된 적", 222, 17, 31))
 
     def test_no_save_uses_original_entry(self):
         title = self.game.scene

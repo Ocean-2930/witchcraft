@@ -1,0 +1,24 @@
+{
+  "basic_monster": {
+    "name": "적 몬스터",
+    "max_hp": 100,
+    "attack_power": 0,
+    "max_mp": 0,
+    "defense": 0,
+    "penetration": 0,
+    "accuracy": 0,
+    "evasion": 0,
+    "attack_speed": 0,
+    "move_speed": 0,
+    "luck": 0,
+    "overloaded": 0,
+    "critical_chance": 0.0,
+    "critical_evasion": 0.0,
+    "critical_damage": 0.0,
+    "critical_damage_reduction": 0.0,
+    "damage_increase": 0.0,
+    "incoming_damage_reduction": 0.0,
+    "equipment_drop_rate": 0.0,
+    "gold_drop_amount": 0.0
+  }
+}

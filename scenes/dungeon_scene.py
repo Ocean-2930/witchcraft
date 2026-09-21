@@ -408,8 +408,8 @@ class DungeonScene(Scene):
         self.stair_tiles[(tile_x, tile_y)] = stair
         self.maze_renderers.append(stair)
 
-    def create_monster(self, tile_x, tile_y):
-        unit = Enemy("적 몬스터", max_hp=100, attack_power=0, tile_x=tile_x, tile_y=tile_y)
+    def create_monster(self, tile_x, tile_y, enemy_code="basic_monster"):
+        unit = Enemy.from_code(enemy_code, tile_x=tile_x, tile_y=tile_y)
         self.dungeon_map.add_enemy(unit)
         return self.attach_monster(unit)
 
