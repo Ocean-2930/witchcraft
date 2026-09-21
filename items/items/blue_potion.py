@@ -1,12 +1,16 @@
 from typing import ClassVar
 
 from ..usable_item import UsableItem
+from ..definitions import get_item_definition
 
 
 class BluePotion(UsableItem):
     ITEM_CODE: ClassVar[str] = "blue_potion"
-    MP_RECOVERY: ClassVar[int] = 5
-    max_stack: ClassVar[int] = 5
+    definition = get_item_definition(ITEM_CODE)
+    if definition.mp_recovery is None:
+        raise ValueError("blue_potion 정의에 mp_recovery가 필요합니다.")
+    MP_RECOVERY: ClassVar[int] = definition.mp_recovery
+    max_stack: ClassVar[int] = definition.max_stack
 
     def __init__(self):
         super().__init__(item_code=self.ITEM_CODE)
@@ -16,12 +20,3 @@ class BluePotion(UsableItem):
 
     def get_use_log(self, result) -> str | None:
         return f"마력을 {result} 회복했다."
-
-    def get_name(self) -> str:
-        return "푸른 물약"
-
-    def get_description(self) -> str:
-        return f"마나를 {self.MP_RECOVERY} 회복한다."
-
-    def get_flavor_text(self) -> str:
-        return "푸른 마력이 담긴 작은 물약이다."

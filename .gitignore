@@ -7,6 +7,7 @@ assets/**/*
 
 tests/**
 !tests/test_save_system.py
+!tests/test_item_definitions.py
 
 **/__pycache__
 

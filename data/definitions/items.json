@@ -1,0 +1,16 @@
+{
+  "blue_potion": {
+    "name": "푸른 물약",
+    "description": "마나를 {mp_recovery} 회복한다.",
+    "flavor_text": "푸른 마력이 담긴 작은 물약이다.",
+    "max_stack": 5,
+    "mp_recovery": 5
+  },
+  "simple_sword": {
+    "name": "평범한 철검",
+    "description": "",
+    "flavor_text": "간단하게 만들어진 철검이다",
+    "max_stack": 1,
+    "equip_type": "weapon"
+  }
+}

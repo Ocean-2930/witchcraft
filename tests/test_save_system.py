@@ -82,6 +82,11 @@ class SaveSystemTests(unittest.TestCase):
         self.assertEqual(before, json.loads(json.dumps(to_data(loaded))))
         self.assertIs(loaded.inventory.player, loaded.floors[1].player)
         self.assertIs(loaded.inventory.hotbar_items["1"], loaded.inventory.item_inventory.items[0])
+        restored_potion = loaded.floors[1].ground_items[(1, 1)][0]
+        self.assertEqual(restored_potion.stack, 2)
+        self.assertEqual(restored_potion.item.get_name(), BluePotion().get_name())
+        self.assertEqual(restored_potion.item.MP_RECOVERY, BluePotion.MP_RECOVERY)
+        self.assertEqual(restored_potion.max_stack, BluePotion.max_stack)
         for name in ("map", "enemy", "item", "battle"):
             original = getattr(inventory, f"{name}_random_generators")
             restored = getattr(loaded.inventory, f"{name}_random_generators")

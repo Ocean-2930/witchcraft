@@ -5,6 +5,7 @@ from typing import ClassVar
 import pygame
 
 from utilities import load_code_sprite
+from .definitions import ItemDefinition
 
 
 @dataclass(kw_only=True)
@@ -16,6 +17,7 @@ class Item:
 
     item_code: str = ""
     max_stack: ClassVar[int] = 1
+    definition: ClassVar[ItemDefinition | None] = None
 
     @classmethod
     def get_sprite(cls, item_code: str) -> pygame.Surface | None:
@@ -27,13 +29,17 @@ class Item:
         )
 
     def get_name(self) -> str:
-        return self.item_code
+        return self.definition.name if self.definition is not None else self.item_code
 
     def get_description(self) -> str:
-        return ""
+        if self.definition is None:
+            return ""
+        return self.definition.description.replace(
+            "{mp_recovery}", str(self.definition.mp_recovery)
+        )
 
     def get_detail_rows(self) -> list[tuple[str, str]]:
         return []
 
     def get_flavor_text(self) -> str:
-        return ""
+        return self.definition.flavor_text if self.definition is not None else ""
