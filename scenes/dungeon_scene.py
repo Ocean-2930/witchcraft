@@ -44,6 +44,7 @@ from ui import (
 )
 from skills import SkillDirectionStatus, SkillTargetingInput
 from units import AttackResult, Enemy, EnemyMode
+from units.enemy_definitions import SPAWN_ENEMY_CODES
 from utilities.dungeon import (
     DOWN_STAIRS,
     EVENT_CENTER,
@@ -408,7 +409,9 @@ class DungeonScene(Scene):
         self.stair_tiles[(tile_x, tile_y)] = stair
         self.maze_renderers.append(stair)
 
-    def create_monster(self, tile_x, tile_y, enemy_code="basic_monster"):
+    def create_monster(self, tile_x, tile_y, enemy_code=None):
+        if enemy_code is None:
+            enemy_code = self.enemy_random.choice(SPAWN_ENEMY_CODES)
         unit = Enemy.from_code(enemy_code, tile_x=tile_x, tile_y=tile_y)
         self.dungeon_map.add_enemy(unit)
         return self.attach_monster(unit)

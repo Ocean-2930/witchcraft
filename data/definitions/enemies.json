@@ -1,8 +1,8 @@
 {
   "basic_monster": {
-    "name": "적 몬스터",
+    "name": "슬라임",
     "max_hp": 100,
-    "attack_power": 0,
+    "attack_power": 5,
     "max_mp": 0,
     "defense": 0,
     "penetration": 0,
@@ -20,5 +20,17 @@
     "incoming_damage_reduction": 0.0,
     "equipment_drop_rate": 0.0,
     "gold_drop_amount": 0.0
+  },
+  "cave_bat": {
+    "name": "동굴 박쥐",
+    "max_hp": 60,
+    "attack_power": 8,
+    "move_speed": 1
+  },
+  "goblin": {
+    "name": "고블린",
+    "max_hp": 120,
+    "attack_power": 12,
+    "defense": 3
   }
 }

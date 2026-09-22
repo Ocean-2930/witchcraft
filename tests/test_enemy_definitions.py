@@ -1,18 +1,44 @@
 import json
 from pathlib import Path
 import unittest
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 
 from units import Enemy
 from units.enemy_definitions import DEFINITIONS_PATH, get_enemy_definition, load_enemy_definitions
+from units.enemy_definitions import SPAWN_ENEMY_CODES
+from utilities.random_generator import RandomGenerator
 
 
 class EnemyDefinitionTests(unittest.TestCase):
+    def test_random_spawn_repeats_after_rng_restore(self):
+        from scenes.dungeon_scene import DungeonScene
+
+        def make_scene(rng):
+            scene = Mock()
+            scene.enemy_random = rng
+            scene.attach_monster.side_effect = lambda unit: unit
+            return scene
+
+        original = make_scene(RandomGenerator(12345))
+        for _ in range(7):
+            DungeonScene.create_monster(original, 2, 3)
+        restored = make_scene(RandomGenerator.from_state(original.enemy_random.current_random))
+        first = [DungeonScene.create_monster(original, 2, 3) for _ in range(60)]
+        second = [DungeonScene.create_monster(restored, 2, 3) for _ in range(60)]
+        self.assertEqual([unit.name for unit in first], [unit.name for unit in second])
+        self.assertEqual({unit.name for unit in first},
+                         {get_enemy_definition(code)["name"] for code in SPAWN_ENEMY_CODES})
+        self.assertTrue(all((unit.tile_x, unit.tile_y) == (2, 3) for unit in first))
+        state = original.enemy_random.current_random
+        unit = DungeonScene.create_monster(original, 4, 5, "goblin")
+        self.assertEqual(unit.name, "고블린")
+        self.assertEqual(original.enemy_random.current_random, state)
+
     def test_spawn_uses_file_and_independent_state(self):
         definition = get_enemy_definition("basic_monster")
         first = Enemy.from_code("basic_monster", tile_x=3, tile_y=4)
         second = Enemy.from_code("basic_monster")
-        self.assertEqual(first.name, "적 몬스터")
+        self.assertEqual(first.name, "슬라임")
         self.assertEqual(first.hp, definition["max_hp"])
         self.assertEqual((first.tile_x, first.tile_y), (3, 4))
         first.take_damage(7)

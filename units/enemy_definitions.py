@@ -12,6 +12,7 @@ from .variable import MIN_MAX_HP, MIN_MAX_MP, MIN_SPEED_STEP, MAX_SPEED_STEP
 
 
 DEFINITIONS_PATH = Path(__file__).resolve().parents[1] / "data" / "definitions" / "enemies.json"
+SPAWN_ENEMY_CODES = ("basic_monster", "cave_bat", "goblin")
 
 
 def _unique_object(pairs):
