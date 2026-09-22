@@ -98,6 +98,7 @@ class InventoryScene(Scene):
         self.popup_rect = None
         self.popup_interacted_this_frame = False
         self.selected_item_index = None
+        self.selected_equipment_attribute = None
         self.selected_active_skill_code = None
         self.discard_amount = 1
 
@@ -182,7 +183,7 @@ class InventoryScene(Scene):
                     slot_size,
                     slot_size,
                     lambda equipment_attribute=attribute_name: (
-                        self.unequip_item(equipment_attribute)
+                        self.open_equipment_actions(equipment_attribute)
                     ),
                     item_window_enabled_getter=self.can_show_item_window,
                 )
@@ -341,6 +342,8 @@ class InventoryScene(Scene):
 
     def create_popup_buttons(self):
         button_specs = (
+            ("unequip", "장착 해제", VIRTUAL_WIDTH // 2, 280, 104, 36,
+             self.unequip_selected_item),
             ("synthesis", "합성", VIRTUAL_WIDTH // 2, 320, 200, 44,
              self.open_synthesis),
             (
@@ -442,12 +445,29 @@ class InventoryScene(Scene):
         if item_index >= len(inventory_items):
             return
 
+        self.selected_equipment_attribute = None
         self.selected_item_index = item_index
         self.popup_mode = "actions"
         self.hide_item_windows()
         self.popup_interacted_this_frame = True
         self.position_action_buttons()
         self.update_popup_visibility()
+
+    def open_equipment_actions(self, attribute):
+        inventory = getattr(self.parent_scene, "dungeon_inventory", None)
+        if self.selected_tab != "장비" or getattr(inventory, attribute, None) is None:
+            return
+        self.selected_item_index = None
+        self.selected_equipment_attribute = attribute
+        self.popup_mode = "actions"
+        self.hide_item_windows()
+        self.popup_interacted_this_frame = True
+        self.position_action_buttons()
+        self.update_popup_visibility()
+
+    def unequip_selected_item(self):
+        if self.selected_equipment_attribute is not None:
+            self.unequip_item(self.selected_equipment_attribute)
 
     def open_synthesis(self):
         item = self.get_selected_item()
@@ -476,6 +496,7 @@ class InventoryScene(Scene):
         self.popup_mode = None
         self.popup_rect = None
         self.selected_item_index = None
+        self.selected_equipment_attribute = None
         self.discard_amount = 1
         self.restore_skill_equip_slot_positions()
         self.update_popup_visibility()
@@ -488,12 +509,14 @@ class InventoryScene(Scene):
         can_use = callable(getattr(item, "use", None))
         can_equip = isinstance(item, Equip)
 
+        equipped = self.selected_equipment_attribute is not None
         action_visibility = {
+            "unequip": self.popup_mode == "actions" and equipped,
             "synthesis": self.popup_mode == "actions" and can_equip,
-            "equip": self.popup_mode == "actions" and can_equip,
+            "equip": self.popup_mode == "actions" and can_equip and not equipped,
             "use": self.popup_mode == "actions" and can_use,
             "shortcut": self.popup_mode == "actions" and can_use,
-            "discard": self.popup_mode == "actions",
+            "discard": self.popup_mode == "actions" and not equipped,
         }
         discard_keys = ("decrease", "increase", "confirm_discard", "cancel")
 
@@ -507,13 +530,20 @@ class InventoryScene(Scene):
         item = getattr(item_instance, "item", None)
         can_use = callable(getattr(item, "use", None))
         can_equip = isinstance(item, Equip)
-        if can_equip:
+        if self.selected_equipment_attribute is not None:
+            visible_keys = ("unequip", "synthesis")
+        elif can_equip:
             visible_keys = ("equip", "synthesis", "discard")
         elif can_use:
             visible_keys = ("use", "shortcut", "discard")
         else:
             visible_keys = ("discard",)
-        selected_slot = self.item_slots[self.selected_item_index]
+        if self.selected_equipment_attribute is not None:
+            index = next(i for i, (attribute, _) in enumerate(self.EQUIPMENT_SLOTS)
+                         if attribute == self.selected_equipment_attribute)
+            selected_slot = self.equipment_slots[index]
+        else:
+            selected_slot = self.item_slots[self.selected_item_index]
         button_width = 104
         button_height = 36
         button_gap = 4
@@ -722,6 +752,7 @@ class InventoryScene(Scene):
         if not isinstance(inventory_items[item_index].item, Equip):
             return
 
+        self.selected_equipment_attribute = None
         self.selected_item_index = item_index
         self.equip_selected_item()
 
@@ -839,6 +870,9 @@ class InventoryScene(Scene):
         )
 
     def get_selected_item(self):
+        if self.selected_equipment_attribute is not None:
+            inventory = getattr(self.parent_scene, "dungeon_inventory", None)
+            return getattr(inventory, self.selected_equipment_attribute, None)
         if self.selected_item_index is None:
             return None
 

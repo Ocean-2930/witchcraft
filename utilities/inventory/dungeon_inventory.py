@@ -153,8 +153,11 @@ class DungeonInventory:
 
     def synthesize_equipment(self, main: EquipmentInstance, material: EquipmentInstance) -> int:
         """검증 후 조화석과 재료를 소비하고 메인 장비에 결과 행을 적용한다."""
-        if not self.item_inventory.contains(main) or not self.item_inventory.contains(material):
-            raise ValueError("인벤토리에 있는 장비만 합성할 수 있습니다.")
+        main_owned = self.item_inventory.contains(main) or any(
+            getattr(self, slot) is main for slot in self.EQUIPMENT_SLOTS
+        )
+        if not main_owned or not self.item_inventory.contains(material):
+            raise ValueError("메인은 보유하거나 장착한 장비, 재료는 인벤토리 장비여야 합니다.")
         if not isinstance(main, EquipmentInstance):
             raise ValueError("스킬 장비만 합성할 수 있습니다.")
         result, kinds = main.synthesis_preview(material)

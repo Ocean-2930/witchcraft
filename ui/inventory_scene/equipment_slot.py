@@ -131,6 +131,9 @@ class EquipmentSlot(InventorySlot):
             return
         self.item_window.show_at(mouse_position)
 
+    def on_left_click(self):
+        self.on_right_click()
+
     def on_right_click(self):
         if self.on_right_click_callback is not None:
             self.on_right_click_callback()

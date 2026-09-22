@@ -23,6 +23,41 @@ from units import EnemyMode
 
 
 class SaveSystemTests(unittest.TestCase):
+    def test_equipped_actions_synthesis_and_save(self):
+        from scenes.inventory_scene import InventoryScene
+        from items import EquipmentInstance, SimpleSword
+
+        dungeon = self.start()
+        inventory = dungeon.dungeon_inventory
+        main = EquipmentInstance(SimpleSword())
+        material = EquipmentInstance(SimpleSword())
+        inventory.add_item(main)
+        inventory.add_item(material)
+        self.assertTrue(inventory.equip_item(main))
+        inventory.harmony_stones = 10000
+        menu = InventoryScene(self.game)
+        dungeon.add_overlay(menu)
+        menu.equipment_slots[0].on_left_click()
+        self.assertIs(menu.get_selected_item(), main)
+        self.assertTrue(menu.popup_buttons["unequip"].visible)
+        self.assertFalse(menu.popup_buttons["equip"].visible)
+        self.assertFalse(menu.popup_buttons["discard"].visible)
+        menu.open_synthesis()
+        synthesis = menu.overlay_scene
+        self.assertIs(synthesis.main_item, main)
+        synthesis.select_material(inventory.item_inventory.find_item_index(material))
+        synthesis.synthesize()
+        self.assertIs(inventory.weapon, main)
+        self.assertFalse(inventory.item_inventory.contains(material))
+        loaded = from_data(to_data(self.game.session))
+        self.assertEqual(loaded.inventory.weapon.stat_rows, main.stat_rows)
+        self.assertEqual(loaded.inventory.harmony_stones, inventory.harmony_stones)
+        synthesis.exit_scene()
+        menu.equipment_slots[0].on_left_click()
+        menu.unequip_selected_item()
+        self.assertIsNone(inventory.weapon)
+        self.assertTrue(inventory.item_inventory.contains(main))
+
     @classmethod
     def setUpClass(cls):
         pygame.init()
