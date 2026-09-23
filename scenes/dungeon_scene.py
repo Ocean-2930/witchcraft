@@ -1069,6 +1069,9 @@ class DungeonScene(Scene):
             self.dungeon_inventory.item_inventory.remove_amount(item_instance, 1)
             self.dungeon_inventory.get_hotbar_item(label)
 
+        if used:
+            self.add_skill_combat_logs(skill, targets, results)
+
         defeated = [monster for monster in target_monsters if not monster["unit"].is_alive]
         for monster in defeated:
             self.remove_monster(monster)
@@ -1092,8 +1095,6 @@ class DungeonScene(Scene):
             "used": used,
             "empty_target": not targets,
         }
-        if used:
-            self.add_skill_combat_logs(skill, targets, results)
         return used
 
     def add_combat_log(self, message):
@@ -1131,6 +1132,14 @@ class DungeonScene(Scene):
             self.maze_renderers.remove(renderer)
         self.monsters.remove(monster)
         self.dungeon_map.remove_enemy(unit)
+        if not unit.is_alive:
+            gold = self.dungeon_inventory.get_stat().get_gold_drop_amount(unit.drop_gold)
+            stones = unit.drop_harmony_stones
+            self.dungeon_inventory.gold += gold
+            self.dungeon_inventory.harmony_stones += stones
+            self.add_combat_log(f"{unit.name}를 쓰러뜨렸다")
+            self.add_combat_log(f"골드를 {gold} 얻었다")
+            self.add_combat_log(f"조화석을 {stones} 얻었다")
         if self.hovered_monster is monster:
             self.hovered_monster = None
         return True

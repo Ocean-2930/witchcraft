@@ -51,7 +51,7 @@ class EnemyDefinitionTests(unittest.TestCase):
     def test_invalid_definitions(self):
         for field, value in (("max_hp", 0), ("max_mp", -1), ("attack_power", True),
                              ("move_speed", 4), ("critical_chance", float("nan")),
-                             ("name", ""), ("hp", 10)):
+                             ("name", ""), ("hp", 10), ("drop_gold", -1), ("drop_harmony_stones", True), ("drop_gold", 1.5)):
             with self.subTest(field=field):
                 row = {"name": "적", "max_hp": 100, "attack_power": 0, field: value}
                 with patch.object(Path, "read_text", return_value=json.dumps({"bad": row})):

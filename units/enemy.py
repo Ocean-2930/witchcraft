@@ -14,6 +14,8 @@ class EnemyMode(Enum):
 
 @dataclass
 class Enemy(Unit):
+    drop_gold: int = 0
+    drop_harmony_stones: int = 0
     ai_mode: EnemyMode = EnemyMode.GUARD
     patrol_target: tuple[int, int] | None = None
     last_known_player_position: tuple[int, int] | None = None

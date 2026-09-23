@@ -1,4 +1,4 @@
-"""실행 코드나 UI 참조를 포함하지 않는 버전 1 저장 형식."""
+"""실행 코드나 UI 참조를 포함하지 않는 버전 2 저장 형식 (버전 1 읽기 호환)."""
 
 from dataclasses import asdict, fields
 from math import isfinite
@@ -59,11 +59,19 @@ def read_skill(data):
 
 def unit_data(unit):
     data = {f.name: getattr(unit, f.name) for f in fields(Unit)}
+    if isinstance(unit, Enemy):
+        data.update(drop_gold=integer(unit.drop_gold), drop_harmony_stones=integer(unit.drop_harmony_stones))
     data["buffs"] = plain(unit.buffs)
     return data
 
 
-def read_unit(data, enemy=False):
+def read_unit(data, enemy=False, legacy=False):
+    rewards = {}
+    if enemy:
+        data = dict(data)
+        for key in ("drop_gold", "drop_harmony_stones"):
+            # 버전 1의 기존 적은 재화 지급량이 없었으므로 0으로 이관한다.
+            rewards[key] = integer(data.pop(key, 0) if legacy else data.pop(key))
     if set(data) != {f.name for f in fields(Unit)} or type(data["name"]) is not str:
         raise ValueError("유닛 데이터가 올바르지 않습니다.")
     for key, value in data.items():
@@ -79,7 +87,7 @@ def read_unit(data, enemy=False):
     plain(data["buffs"])
     unit = Enemy(name=data["name"], max_hp=data["max_hp"], attack_power=data["attack_power"]) if enemy else Player(data["name"])
     # 생성자의 보정 때문에 현재 HP/MP 등이 바뀌지 않도록 검증 후 그대로 복원한다.
-    for key, value in data.items():
+    for key, value in {**data, **rewards}.items():
         setattr(unit, key, value)
     return unit
 
@@ -139,11 +147,11 @@ def to_data(session):
                       "interval": dungeon.combat_timer.turn_counter.interval,
                       "last_completed_turns": dungeon.combat_timer.last_completed_turns},
         }
-    return {"save_version": 1, "current_floor": session.current_floor, "inventory": inv, "items": items, "floors": floors}
+    return {"save_version": 2, "current_floor": session.current_floor, "inventory": inv, "items": items, "floors": floors}
 
 
 def from_data(data):
-    if type(data["save_version"]) is not int or data["save_version"] != 1:
+    if type(data["save_version"]) is not int or data["save_version"] not in (1, 2):
         raise ValueError("지원하지 않는 저장 버전입니다.")
     inv = data["inventory"]
     if type(inv["game_seed"]) not in (int, float, str):
@@ -257,7 +265,7 @@ def from_data(data):
             owned.extend(pile["items"])
         units = {"player": inventory.player}
         for index, enemy_data in enumerate(entry["enemies"]):
-            enemy = read_unit(enemy_data["unit"], enemy=True)
+            enemy = read_unit(enemy_data["unit"], enemy=True, legacy=data["save_version"] == 1)
             position((enemy.tile_x, enemy.tile_y))
             enemy.ai_mode = EnemyMode(enemy_data["mode"])
             enemy.patrol_target = position(enemy_data["patrol_target"], True)

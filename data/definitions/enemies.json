@@ -19,18 +19,24 @@
     "damage_increase": 0.0,
     "incoming_damage_reduction": 0.0,
     "equipment_drop_rate": 0.0,
-    "gold_drop_amount": 0.0
+    "gold_drop_amount": 0.0,
+    "drop_gold": 10,
+    "drop_harmony_stones": 1
   },
   "cave_bat": {
     "name": "동굴 박쥐",
     "max_hp": 60,
     "attack_power": 8,
-    "move_speed": 1
+    "move_speed": 1,
+    "drop_gold": 15,
+    "drop_harmony_stones": 1
   },
   "goblin": {
     "name": "고블린",
     "max_hp": 120,
     "attack_power": 12,
-    "defense": 3
+    "defense": 3,
+    "drop_gold": 25,
+    "drop_harmony_stones": 2
   }
 }

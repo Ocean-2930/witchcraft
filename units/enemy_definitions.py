@@ -25,7 +25,7 @@ def _unique_object(pairs):
 
 
 def load_enemy_definitions(path: Path):
-    """UnitBase 필드만 허용하며 정의와 내부 능력치 모두 읽기 전용으로 반환한다."""
+    """UnitBase 및 재화 지급량 필드를 허용하며 정의와 내부 능력치 모두 읽기 전용으로 반환한다."""
     try:
         data = json.loads(path.read_text(encoding="utf-8"), object_pairs_hook=_unique_object)
         if not isinstance(data, dict) or not data:
@@ -35,7 +35,11 @@ def load_enemy_definitions(path: Path):
             try:
                 if not code.strip() or not isinstance(row, dict):
                     raise ValueError("적 코드와 정의 객체가 필요합니다.")
-                base = UnitBase(**row)
+                rewards = {key: row.get(key, 0) for key in ("drop_gold", "drop_harmony_stones")}
+                for key, value in rewards.items():
+                    if type(value) is not int or value < 0:
+                        raise ValueError(f"{key}는 0 이상의 정수여야 합니다.")
+                base = UnitBase(**{key: value for key, value in row.items() if key not in rewards})
                 if not isinstance(base.name, str) or not base.name.strip():
                     raise ValueError("name은 비어 있지 않은 문자열이어야 합니다.")
                 for field in fields(UnitBase):
@@ -50,7 +54,7 @@ def load_enemy_definitions(path: Path):
                 for speed in (base.attack_speed, base.move_speed):
                     if not MIN_SPEED_STEP <= speed <= MAX_SPEED_STEP:
                         raise ValueError("속도 단계가 허용 범위 밖입니다.")
-                definitions[code] = MappingProxyType({field.name: getattr(base, field.name) for field in fields(UnitBase)})
+                definitions[code] = MappingProxyType({**{field.name: getattr(base, field.name) for field in fields(UnitBase)}, **rewards})
             except (TypeError, ValueError, OverflowError) as exc:
                 raise ValueError(f"{code}: {exc}") from exc
         return MappingProxyType(definitions)

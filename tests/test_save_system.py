@@ -94,6 +94,42 @@ class SaveSystemTests(unittest.TestCase):
         self.assertIsNone(self.game.save_error)
         return dungeon
 
+    def test_enemy_rewards_paid_once_and_saved(self):
+        dungeon = self.start()
+        monster = dungeon.monsters[0]
+        enemy = monster["unit"]
+        enemy.drop_gold = 37
+        enemy.drop_harmony_stones = 4
+        restored = from_data(to_data(self.game.session))
+        self.assertEqual(restored.floors[1].enemies[0].drop_gold, 37)
+        self.assertEqual(restored.floors[1].enemies[0].drop_harmony_stones, 4)
+        gold = dungeon.dungeon_inventory.get_stat().get_gold_drop_amount(37)
+        before = (dungeon.dungeon_inventory.gold, dungeon.dungeon_inventory.harmony_stones)
+        enemy.hp = 0
+        self.assertTrue(dungeon.remove_monster(monster))
+        self.assertFalse(dungeon.remove_monster(monster))
+        self.assertEqual(dungeon.combat_logs[-3:], [f"{enemy.name}를 쓰러뜨렸다", f"골드를 {gold} 얻었다", "조화석을 4 얻었다"])
+        loaded = from_data(to_data(self.game.session))
+        self.assertEqual((loaded.inventory.gold, loaded.inventory.harmony_stones), (before[0] + gold, before[1] + 4))
+        self.assertEqual(len(loaded.floors[1].enemies), len(dungeon.monsters))
+
+    def test_legacy_enemy_rewards_and_invalid_rewards(self):
+        self.start()
+        data = to_data(self.game.session)
+        data["save_version"] = 1
+        for floor in data["floors"].values():
+            for enemy in floor["enemies"]:
+                enemy["unit"].pop("drop_gold")
+                enemy["unit"].pop("drop_harmony_stones")
+        loaded = from_data(data)
+        self.assertEqual(loaded.floors[1].enemies[0].drop_gold, 0)
+        self.assertEqual(loaded.floors[1].enemies[0].drop_harmony_stones, 0)
+        for value in (-1, True, 1.5):
+            invalid = to_data(self.game.session)
+            next(iter(invalid["floors"].values()))["enemies"][0]["unit"]["drop_gold"] = value
+            with self.assertRaises(ValueError):
+                from_data(invalid)
+
     def test_roundtrip_preserves_models_references_and_rng(self):
         dungeon = self.start()
         inventory = dungeon.dungeon_inventory
