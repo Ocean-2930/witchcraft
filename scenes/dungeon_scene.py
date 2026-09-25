@@ -30,6 +30,7 @@ from ui import (
     CombatLogRenderer,
     CombatTimelineRenderer,
     FloorTileRenderer,
+    GroundItemsRenderer,
     DungeonFogRenderer,
     MonsterMarkerRenderer,
     MiniMap,
@@ -176,6 +177,7 @@ class DungeonScene(Scene):
         self.maze_offset_y = 0.0
         self.maze_renderers = []
         self.floor_tiles = {}
+        self.ground_item_renderers = {}
         self.stair_tiles = {}
         self.wall_tiles = {}
         self.filtered_tile_renderers = set()
@@ -1434,7 +1436,27 @@ class DungeonScene(Scene):
                 round(renderer.maze_base_y + self.maze_offset_y),
             )
 
+    def refresh_ground_item_renderers(self):
+        positions = {
+            position for position, items in self.ground_items.items()
+            if items and position in self.current_visible_tiles and position in self.floor_tiles
+        }
+        for position in self.ground_item_renderers.keys() - positions:
+            self.ground_item_renderers.pop(position).destroy()
+        for position in positions:
+            floor = self.floor_tiles[position]
+            renderer = self.ground_item_renderers.get(position)
+            if renderer is None:
+                renderer = GroundItemsRenderer(
+                    self, *floor.rect.center,
+                    items_getter=lambda position=position: self.ground_items.get(position, []),
+                )
+                self.set_dungeon_draw_order(renderer, *position, self.DEPTH_FLOOR + 0.5)
+                self.ground_item_renderers[position] = renderer
+            renderer.set_transform(*floor.rect.center)
+
     def scene_draw(self):
+        self.refresh_ground_item_renderers()
         screen = self.game.virtual_screen
         screen.fill((0, 0, 0))
 

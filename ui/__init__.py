@@ -10,6 +10,7 @@ from .dungeon_scene import (
     CombatLogRenderer,
     CombatTimelineRenderer,
     FloorTileRenderer,
+    GroundItemsRenderer,
     MonsterMarkerRenderer,
     MonsterTooltipRenderer,
     PlayerMarkerRenderer,
@@ -70,6 +71,7 @@ __all__ = [
     # dungeon_scene
     "CombatLogRenderer",
     "FloorTileRenderer",
+    "GroundItemsRenderer",
     "CombatTimelineRenderer",
     "MonsterMarkerRenderer",
     "MonsterTooltipRenderer",
