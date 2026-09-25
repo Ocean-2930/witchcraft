@@ -10,6 +10,17 @@ from utilities.random_generator import RandomGenerator
 
 
 class EnemyDefinitionTests(unittest.TestCase):
+    def test_weighted_drop_boundaries(self):
+        from utilities.dungeon.item_drops import roll_item_drop
+        table = (("blue_potion", 1), (0, 3), ("simple_sword", 0))
+        self.assertEqual(roll_item_drop(table, Mock(random=lambda: 0)).item.item_code, "blue_potion")
+        self.assertIsNone(roll_item_drop(table, Mock(random=lambda: 0.25)))
+        self.assertIsNone(roll_item_drop(table, Mock(random=lambda: 0.999)))
+        rng = Mock()
+        self.assertIsNone(roll_item_drop(((0, 0),), rng))
+        rng.random.assert_not_called()
+        self.assertIsNone(roll_item_drop(((1, 10),), RandomGenerator(123)))
+
     def test_random_spawn_repeats_after_rng_restore(self):
         from scenes.dungeon_scene import DungeonScene
 

@@ -94,6 +94,54 @@ class SaveSystemTests(unittest.TestCase):
         self.assertIsNone(self.game.save_error)
         return dungeon
 
+    def test_enemy_drops_and_ground_equipment_roundtrip(self):
+        from items import EquipmentInstance
+        dungeon = self.start()
+        for enemy_code, item_code in (("goblin", "simple_sword"), ("basic_monster", "blue_potion")):
+            dungeon.create_monster(3, 4, enemy_code)
+            monster = dungeon.monsters[-1]
+            enemy = monster["unit"]
+            loaded = from_data(to_data(self.game.session))
+            self.assertEqual(loaded.floors[1].enemies[-1].drop_items, enemy.drop_items)
+            before = len(dungeon.ground_items.get((3, 4), []))
+            enemy.hp = 0
+            self.assertTrue(dungeon.remove_monster(monster))
+            self.assertFalse(dungeon.remove_monster(monster))
+            self.assertEqual(len(dungeon.ground_items[(3, 4)]), before + 1)
+            dropped = dungeon.ground_items[(3, 4)][-1]
+            self.assertEqual(dropped.item.item_code, item_code)
+            self.assertEqual(dropped.stack, 1)
+            if isinstance(dropped, EquipmentInstance):
+                dropped.stat_rows[0] = None
+            loaded = from_data(to_data(self.game.session))
+            restored = loaded.floors[1].ground_items[(3, 4)][-1]
+            self.assertEqual(type(restored), type(dropped))
+            self.assertEqual(restored.item.item_code, item_code)
+            if isinstance(dropped, EquipmentInstance):
+                self.assertEqual(restored.stat_rows, dropped.stat_rows)
+            original_rng = dungeon.dungeon_inventory.get_item_random_generator(1)
+            loaded_rng = loaded.inventory.get_item_random_generator(1)
+            from utilities.dungeon.item_drops import roll_item_drop
+            table = (("simple_sword", 2), ("blue_potion", 3), (0, 4), (1, 1))
+            def codes(rng):
+                return [None if item is None else item.item.item_code
+                        for item in [roll_item_drop(table, rng) for _ in range(30)]]
+            self.assertEqual(codes(original_rng), codes(loaded_rng))
+
+    def test_legacy_drop_tables_and_invalid_drop_tables(self):
+        self.start()
+        data = to_data(self.game.session)
+        data["save_version"] = 2
+        for floor in data["floors"].values():
+            for enemy in floor["enemies"]:
+                enemy["unit"].pop("drop_items")
+        self.assertTrue(all(not enemy.drop_items for enemy in from_data(data).floors[1].enemies))
+        for table in ([["missing", 1]], [[0, -1]], [[True, 1]], [[0, float("nan")]]):
+            invalid = to_data(self.game.session)
+            next(iter(invalid["floors"].values()))["enemies"][0]["unit"]["drop_items"] = table
+            with self.assertRaises(ValueError):
+                from_data(invalid)
+
     def test_enemy_rewards_paid_once_and_saved(self):
         dungeon = self.start()
         monster = dungeon.monsters[0]
@@ -119,6 +167,7 @@ class SaveSystemTests(unittest.TestCase):
         data["save_version"] = 1
         for floor in data["floors"].values():
             for enemy in floor["enemies"]:
+                enemy["unit"].pop("drop_items")
                 enemy["unit"].pop("drop_gold")
                 enemy["unit"].pop("drop_harmony_stones")
         loaded = from_data(data)

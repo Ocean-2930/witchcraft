@@ -21,7 +21,17 @@
     "equipment_drop_rate": 0.0,
     "gold_drop_amount": 0.0,
     "drop_gold": 10,
-    "drop_harmony_stones": 1
+    "drop_harmony_stones": 1,
+    "drop_items": [
+      [
+        "blue_potion",
+        1
+      ],
+      [
+        0,
+        0
+      ]
+    ]
   },
   "cave_bat": {
     "name": "동굴 박쥐",
@@ -37,6 +47,16 @@
     "attack_power": 12,
     "defense": 3,
     "drop_gold": 25,
-    "drop_harmony_stones": 2
+    "drop_harmony_stones": 2,
+    "drop_items": [
+      [
+        "simple_sword",
+        1
+      ],
+      [
+        0,
+        0
+      ]
+    ]
   }
 }

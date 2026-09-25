@@ -16,6 +16,7 @@ class EnemyMode(Enum):
 class Enemy(Unit):
     drop_gold: int = 0
     drop_harmony_stones: int = 0
+    drop_items: tuple[tuple[str | int, float], ...] = ()
     ai_mode: EnemyMode = EnemyMode.GUARD
     patrol_target: tuple[int, int] | None = None
     last_known_player_position: tuple[int, int] | None = None

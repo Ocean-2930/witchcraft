@@ -8,6 +8,7 @@ from pathlib import Path
 from types import MappingProxyType
 
 from .unit_base import UnitBase
+from .drop_table import validate_drop_table
 from .variable import MIN_MAX_HP, MIN_MAX_MP, MIN_SPEED_STEP, MAX_SPEED_STEP
 
 
@@ -39,6 +40,7 @@ def load_enemy_definitions(path: Path):
                 for key, value in rewards.items():
                     if type(value) is not int or value < 0:
                         raise ValueError(f"{key}는 0 이상의 정수여야 합니다.")
+                rewards["drop_items"] = validate_drop_table(row.get("drop_items", ()))
                 base = UnitBase(**{key: value for key, value in row.items() if key not in rewards})
                 if not isinstance(base.name, str) or not base.name.strip():
                     raise ValueError("name은 비어 있지 않은 문자열이어야 합니다.")

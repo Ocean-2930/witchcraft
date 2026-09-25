@@ -1,9 +1,11 @@
-"""실행 코드나 UI 참조를 포함하지 않는 버전 2 저장 형식 (버전 1 읽기 호환)."""
+"""실행 코드나 UI 참조를 포함하지 않는 버전 3 저장 형식 (버전 1·2 읽기 호환)."""
 
 from dataclasses import asdict, fields
 from math import isfinite
 
-from items import BluePotion, SimpleSword, ItemInstance, EquipmentInstance
+from items import ItemInstance, EquipmentInstance
+from items.registry import ITEM_FACTORIES
+from utilities.dungeon.item_drops import checked_drop_table
 from items.equip import Equip
 from skills import AttackSkill, STAT_PASSIVE_SKILLS, SkillInstance
 from units import Player, Enemy, EnemyMode
@@ -16,7 +18,6 @@ from .session import GameSession
 
 
 # 새 콘텐츠는 클래스 경로 대신 안정적인 코드와 생성 함수를 등록한다.
-ITEM_FACTORIES = {cls().item_code: cls for cls in (BluePotion, SimpleSword)}
 SKILL_DEFINITIONS = {skill.skill_code: skill for skill in (AttackSkill(), *STAT_PASSIVE_SKILLS)}
 RNG_NAMES = ("map", "enemy", "item", "battle")
 
@@ -60,15 +61,17 @@ def read_skill(data):
 def unit_data(unit):
     data = {f.name: getattr(unit, f.name) for f in fields(Unit)}
     if isinstance(unit, Enemy):
+        data["drop_items"] = [list(entry) for entry in checked_drop_table(unit.drop_items)]
         data.update(drop_gold=integer(unit.drop_gold), drop_harmony_stones=integer(unit.drop_harmony_stones))
     data["buffs"] = plain(unit.buffs)
     return data
 
 
-def read_unit(data, enemy=False, legacy=False):
+def read_unit(data, enemy=False, legacy=False, legacy_drops=False):
     rewards = {}
     if enemy:
         data = dict(data)
+        rewards["drop_items"] = checked_drop_table(data.pop("drop_items", ()) if legacy_drops else data.pop("drop_items"))
         for key in ("drop_gold", "drop_harmony_stones"):
             # 버전 1의 기존 적은 재화 지급량이 없었으므로 0으로 이관한다.
             rewards[key] = integer(data.pop(key, 0) if legacy else data.pop(key))
@@ -147,11 +150,11 @@ def to_data(session):
                       "interval": dungeon.combat_timer.turn_counter.interval,
                       "last_completed_turns": dungeon.combat_timer.last_completed_turns},
         }
-    return {"save_version": 2, "current_floor": session.current_floor, "inventory": inv, "items": items, "floors": floors}
+    return {"save_version": 3, "current_floor": session.current_floor, "inventory": inv, "items": items, "floors": floors}
 
 
 def from_data(data):
-    if type(data["save_version"]) is not int or data["save_version"] not in (1, 2):
+    if type(data["save_version"]) is not int or data["save_version"] not in (1, 2, 3):
         raise ValueError("지원하지 않는 저장 버전입니다.")
     inv = data["inventory"]
     if type(inv["game_seed"]) not in (int, float, str):
@@ -265,7 +268,7 @@ def from_data(data):
             owned.extend(pile["items"])
         units = {"player": inventory.player}
         for index, enemy_data in enumerate(entry["enemies"]):
-            enemy = read_unit(enemy_data["unit"], enemy=True, legacy=data["save_version"] == 1)
+            enemy = read_unit(enemy_data["unit"], enemy=True, legacy=data["save_version"] == 1, legacy_drops=data["save_version"] < 3)
             position((enemy.tile_x, enemy.tile_y))
             enemy.ai_mode = EnemyMode(enemy_data["mode"])
             enemy.patrol_target = position(enemy_data["patrol_target"], True)

@@ -45,6 +45,7 @@ from ui import (
 from skills import SkillDirectionStatus, SkillTargetingInput
 from units import AttackResult, Enemy, EnemyMode
 from units.enemy_definitions import SPAWN_ENEMY_CODES
+from utilities.dungeon.item_drops import roll_item_drop
 from utilities.dungeon import (
     DOWN_STAIRS,
     EVENT_CENTER,
@@ -1133,6 +1134,12 @@ class DungeonScene(Scene):
         self.monsters.remove(monster)
         self.dungeon_map.remove_enemy(unit)
         if not unit.is_alive:
+            dropped = roll_item_drop(
+                unit.drop_items,
+                self.dungeon_inventory.get_item_random_generator(self.CURRENT_FLOOR),
+            )
+            if dropped is not None:
+                self.dungeon_map.ground_items.setdefault((unit.tile_x, unit.tile_y), []).append(dropped)
             gold = self.dungeon_inventory.get_stat().get_gold_drop_amount(unit.drop_gold)
             stones = unit.drop_harmony_stones
             self.dungeon_inventory.gold += gold
