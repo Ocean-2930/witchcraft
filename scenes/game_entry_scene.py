@@ -20,6 +20,7 @@ class GameEntryScene(Scene):
 
     def scene_initialize(self):
         self.mode = None
+        self.character_name = "renea"
         self.dialogue_box = None
         self.choice_box = None
         self.seed_status_marker = None
@@ -115,7 +116,7 @@ class GameEntryScene(Scene):
         from .dungeon_scene import DungeonScene
 
         seed = self.game.fixed_seed or create_random_seed()
-        dungeon_inventory = DungeonInventory(game_seed=seed)
+        dungeon_inventory = DungeonInventory(game_seed=seed, character_name=self.character_name)
         try:
             floor_random = dungeon_inventory.get_floor_random(1)
             dungeon_map = DungeonMapGenerator(

@@ -1,4 +1,4 @@
-"""실행 코드나 UI 참조를 포함하지 않는 버전 3 저장 형식 (버전 1·2 읽기 호환)."""
+"""실행 코드나 UI 참조를 포함하지 않는 버전 5 저장 형식 (버전 1~4 읽기 호환)."""
 
 from dataclasses import asdict, fields
 from math import isfinite
@@ -119,6 +119,7 @@ def to_data(session):
         "floor_randoms": inventory.floor_randoms,
         "random_states": {name: [r.current_random for r in getattr(inventory, f"{name}_random_generators")] for name in RNG_NAMES},
         "player": unit_data(inventory.player),
+        "character_name": inventory.validate_character_name(inventory.character_name),
         "capacity": inventory.item_inventory.capacity,
         "items": [item_ref(item) for item in inventory.item_inventory.items],
         "equipment": {slot: item_ref(getattr(inventory, slot)) for slot in inventory.EQUIPMENT_SLOTS},
@@ -150,16 +151,18 @@ def to_data(session):
                       "interval": dungeon.combat_timer.turn_counter.interval,
                       "last_completed_turns": dungeon.combat_timer.last_completed_turns},
         }
-    return {"save_version": 3, "current_floor": session.current_floor, "inventory": inv, "items": items, "floors": floors}
+    return {"save_version": 5, "current_floor": session.current_floor, "inventory": inv, "items": items, "floors": floors}
 
 
 def from_data(data):
-    if type(data["save_version"]) is not int or data["save_version"] not in (1, 2, 3):
+    if type(data["save_version"]) is not int or data["save_version"] not in (1, 2, 3, 4, 5):
         raise ValueError("지원하지 않는 저장 버전입니다.")
     inv = data["inventory"]
     if type(inv["game_seed"]) not in (int, float, str):
         raise ValueError("지원하지 않는 시드 형식입니다.")
     inventory = DungeonInventory(game_seed=inv["game_seed"])
+    if data["save_version"] == 5 or "character_name" in inv:
+        inventory.character_name = inventory.validate_character_name(inv["character_name"])
     inventory.player = read_unit(inv["player"])
     items = {}
     for key, entry in data["items"].items():

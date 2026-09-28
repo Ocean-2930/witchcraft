@@ -62,6 +62,9 @@ class DungeonInventory:
     learnable_skills: list[LearnableSkill] = field(default_factory=list)
     tier_skill_points: dict[int, int] = field(default_factory=dict)
     explored_tiles_by_floor: dict[int, set[tuple[int, int]]] = field(default_factory=dict)
+    character_name: str = "renea"
+
+    CHARACTER_NAMES: ClassVar[tuple[str, ...]] = ("renea", "valen")
 
     FLOOR_COUNT: ClassVar[int] = 10
 
@@ -80,6 +83,7 @@ class DungeonInventory:
     )
 
     def __post_init__(self):
+        self.validate_character_name(self.character_name)
         game_random = RandomGenerator(self.game_seed)
         self.floor_randoms = game_random.random(self.FLOOR_COUNT)
         self.map_random_generators = []
@@ -94,6 +98,12 @@ class DungeonInventory:
             self.enemy_random_generators.append(RandomGenerator(enemy_seed))
             self.item_random_generators.append(RandomGenerator(item_seed))
             self.battle_random_generators.append(RandomGenerator(battle_seed))
+
+    @classmethod
+    def validate_character_name(cls, name):
+        if type(name) is not str or name not in cls.CHARACTER_NAMES:
+            raise ValueError("알 수 없는 캐릭터 이름입니다.")
+        return name
 
     def get_floor_random(self, floor: int) -> float:
         return self.floor_randoms[self._floor_index(floor)]

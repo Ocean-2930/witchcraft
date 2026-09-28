@@ -23,6 +23,54 @@ from units import EnemyMode
 
 
 class SaveSystemTests(unittest.TestCase):
+    def test_character_name_new_game_save_continue_and_resave(self):
+        entry = GameEntryScene(self.game)
+        entry.character_name = "valen"
+        self.game.scene = entry
+        entry.start_game()
+        self.assertIsNone(self.game.save_error)
+        self.assertEqual(self.game.session.inventory.character_name, entry.character_name)
+        player = self.game.session.inventory.player
+        player.name = "별빛"
+        player.hp = 47
+        self.game.save_progress()
+        self.game.leave_dungeon()
+        title = TitleScene(self.game)
+        self.game.scene = title
+        title.continue_game()
+        inventory = self.game.session.inventory
+        self.assertEqual(inventory.character_name, "valen")
+        self.assertEqual((inventory.player.name, inventory.player.hp), ("별빛", 47))
+        self.assertIs(self.game.session.floors[1].player, inventory.player)
+        self.assertTrue(any(e.unit is inventory.player for e in self.game.session.floors[1].combat_timer.entries))
+        inventory.character_name = "renea"
+        self.game.save_progress()
+        self.assertEqual(self.game.save_manager.load().inventory.character_name, "renea")
+
+    def test_legacy_character_name_and_invalid_settings(self):
+        self.start()
+        for version in (1, 2, 3, 4):
+            data = to_data(self.game.session)
+            data["save_version"] = version
+            del data["inventory"]["character_name"]
+            loaded = from_data(data)
+            self.assertEqual(loaded.inventory.character_name, "renea")
+            self.assertEqual(to_data(loaded)["save_version"], 5)
+        for info in (None, {}, "", "sample", "unknown", 1, True, " valen "):
+            data = to_data(self.game.session)
+            data["inventory"]["character_name"] = info
+            with self.assertRaises(ValueError):
+                from_data(data)
+        data = to_data(self.game.session)
+        data["save_version"] = 4
+        del data["inventory"]["character_name"]
+        data["inventory"]["character_info"] = {"character_type": "human", "job": "adventurer"}
+        self.assertEqual(from_data(data).inventory.character_name, "renea")
+        data = to_data(self.game.session)
+        del data["inventory"]["character_name"]
+        with self.assertRaises(KeyError):
+            from_data(data)
+
     def test_equipped_actions_synthesis_and_save(self):
         from scenes.inventory_scene import InventoryScene
         from items import EquipmentInstance, SimpleSword
