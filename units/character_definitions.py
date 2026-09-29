@@ -7,6 +7,18 @@ from pathlib import Path
 
 DEFINITIONS_PATH = Path(__file__).resolve().parents[1] / "data" / "definitions" / "characters.json"
 
+# 공통 단발 모션 키와 표시 이름. 시트 파일명은 {motion}.png를 사용한다.
+COMMON_CHARACTER_MOTIONS = {
+    "attack": "공격",
+    "buff": "버프",
+    "magic": "마법",
+    "skill": "기술",
+    "hit": "피격",
+    "death": "사망",
+    "dodge": "회피",
+    "guard": "방어",
+}
+
 
 def load_character_definitions():
     data = json.loads(DEFINITIONS_PATH.read_text(encoding="utf-8"))

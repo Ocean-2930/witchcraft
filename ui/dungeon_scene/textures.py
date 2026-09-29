@@ -3,6 +3,8 @@ from functools import lru_cache
 
 import pygame
 
+from units.character_definitions import COMMON_CHARACTER_MOTIONS
+
 
 ASSET_ROOT = Path(__file__).resolve().parents[2] / "assets" / "images" / "dungeon_scene"
 
@@ -150,7 +152,9 @@ def get_character_textures(code):
         "character": root / "SD.png",
         "character_idle": root / standing,
         "character_walk": root / walking,
-        "character_attack": root / "attack.png",
-        "character_buff": root / "buff.png",
+        **{
+            f"character_{motion}": root / f"{motion}.png"
+            for motion in COMMON_CHARACTER_MOTIONS
+        },
         "player_profile": root / "profile.png",
     })

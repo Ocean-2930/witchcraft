@@ -132,4 +132,5 @@ flowchart LR
 - `get_character_textures(code)`는 캐릭터 코드별로 분리한 텍스처 저장소를 제공한다. 프로필·대기·걷기·정지 대체 이미지는 `assets/images/characters/{code}/`에서 읽고 지형 텍스처는 기존 던전 저장소에서 읽는다. 저장된 `character_name`을 사용하므로 이어하기에서도 같은 외형을 복원하며 저장 형식 변경은 없다.
 
 - `characters.json`의 선택적 `motions`는 캐릭터별 모션 배율, 기준점, 공통·프레임별 위치 보정을 소유한다. `units.character_definitions`가 유한한 숫자, 양수 배율, 좌표 두 개와 프레임 보정 8개를 검증하고 `PlayerMarkerRenderer`가 scene 생성 시 읽어 적용한다. 저장 대상 런타임 진행 상태가 아니므로 세이브 형식은 바뀌지 않으며 이어하기도 현재 설정을 읽는다. 모션 설정이 없는 정의는 scale=1, anchor=[256,448], offset=[0,0]을 사용한다.
-- 캐릭터 텍스처 저장소는 `character_buff`를 캐릭터 폴더의 `buff.png`로 매핑한다. 레네아에 해당 리소스와 `motions.buff` 보정을 등록했으며, 파일이 없는 캐릭터는 기존 누락 모션 생략 경로를 따른다.
+- 캐릭터 텍스처 저장소는 `character_buff`를 캐릭터 폴더의 `buff.png`로 매핑한다. 레네아에 해당 리소스와 `motions.buff` 보정을 등록했으며, 파일이 없는 캐릭터는 렌더러에서 대기 첫 프레임으로 대체한다. 대기 정렬값을 사용하여 0.4초 동안 유지하고 대기로 복귀하며, 대기 이미지도 없으면 재생을 생략한다. 이 대체 설정은 렌더러 내부에만 보관하며 JSON과 저장 상태를 변경하지 않는다.
+- `units.character_definitions.COMMON_CHARACTER_MOTIONS`는 범용 단발 모션 키와 한국어 이름을 소유한다. 텍스처 저장소는 이 목록으로 `{motion}.png` 매핑을 구성한다. 목록 등록은 전투 이벤트 연결이나 저장 상태 추가를 의미하지 않는다. 대기·이동의 캐릭터별 파일명은 기존 별도 매핑을 유지한다.

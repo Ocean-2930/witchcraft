@@ -67,14 +67,22 @@ class PlayerMarkerRenderer(ShiftRenderer):
         return self.current not in (None, "idle", "walk")
 
     def play_motion(self, motion):
-        """Play an optional character motion once; absent sheets never block input."""
+        """Play once, holding the standing pose when the requested sheet is absent."""
         if motion is None or motion in ("idle", "walk") or self.is_playing_motion:
             return False
         if motion not in self.animations:
             textures = get_character_textures(self.scene.dungeon_inventory.character_name)
             frames = textures.get_sheet_frames(f"character_{motion}", 8)
             if not frames:
-                return False
+                idle_frames = self.animations["idle"]["base_images"]
+                if not idle_frames:
+                    return False
+                frames = (idle_frames[0],) * 8
+                # Standing pixels must use standing alignment, not the missing motion's.
+                config = dict(self.motion_settings.get("idle", {}))
+                if config.get("frame_offsets"):
+                    config["frame_offsets"] = [config["frame_offsets"][0]] * 8
+                self.motion_settings[motion] = config
             self.add_animation(
                 motion, frames,
                 frame_lengths=[self.MOTION_FRAME_SECONDS / self.frame_duration] * len(frames),
