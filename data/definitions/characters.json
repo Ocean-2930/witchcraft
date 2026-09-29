@@ -16,7 +16,8 @@
     "motions": {
       "idle": {"scale": 1.0, "anchor": [256, 418], "offset": [0, 0]},
       "walk": {"scale": 1.0, "anchor": [260, 418], "offset": [0, 0]},
-      "attack": {"scale": 0.966, "anchor": [320.09, 448], "offset": [0, 0]}
+      "attack": {"scale": 0.966, "anchor": [320.09, 448], "offset": [0, 0]},
+      "buff": {"scale": 0.91, "anchor": [306, 448], "offset": [0, 0]}
     }
   }
 }
