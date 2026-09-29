@@ -7,7 +7,8 @@
       "idle": {"scale": 1.0, "anchor": [256, 448], "offset": [0, 0]},
       "walk": {"scale": 1.0, "anchor": [214, 448], "offset": [0, 0]},
       "attack": {"scale": 1.2, "anchor": [242.33, 448], "offset": [0, 0]},
-      "buff": {"scale": 1.06, "anchor": [256, 448], "offset": [0, 0]}
+      "buff": {"scale": 1.06, "anchor": [256, 448], "offset": [0, 0]},
+      "guard": {"scale": 1.08, "anchor": [250, 448], "offset": [0, 0]}
     }
   },
   "renea": {
@@ -18,7 +19,8 @@
       "idle": {"scale": 1.0, "anchor": [256, 418], "offset": [0, 0]},
       "walk": {"scale": 1.0, "anchor": [260, 418], "offset": [0, 0]},
       "attack": {"scale": 0.966, "anchor": [320.09, 448], "offset": [0, 0]},
-      "buff": {"scale": 0.91, "anchor": [306, 448], "offset": [0, 0]}
+      "buff": {"scale": 0.91, "anchor": [306, 448], "offset": [0, 0]},
+      "guard": {"scale": 0.93, "anchor": [286, 448], "offset": [0, 0]}
     }
   }
 }
