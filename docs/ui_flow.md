@@ -2,6 +2,8 @@
 
 ## 스킬 모션
 
+- 발렌의 `buff.png`도 공통 `character_buff` 매핑으로 로드한다. `motions.buff`는 대기와 맞춘 scale=1.06, anchor=[256,448], offset=[0,0]을 사용하며 기존 0.4초 단발 재생을 따른다. 영상의 황금빛 버프 모션을 등록한 것으로 별도 버프 스킬 효과를 추가하지 않는다.
+
 - 범용 단발 모션 목록은 `units.character_definitions.COMMON_CHARACTER_MOTIONS`에서 관리한다: 공격 `attack`, 버프 `buff`, 마법 `magic`, 기술 `skill`, 피격 `hit`, 사망 `death`, 회피 `dodge`, 방어 `guard`. 모든 캐릭터의 `assets/images/characters/{code}/{motion}.png`를 `character_{motion}` 키로 읽는다.
 - 새 시트를 추가하면 해당 이름을 `play_motion()`에 전달해 기존 8프레임 단발 경로로 재생할 수 있다. 실제 전투의 피격·사망·회피·방어 이벤트 자동 연결은 아직 없으며, 사망도 현재 공통 경로에서는 종료 후 대기로 복귀한다. 모션 파일이 없으면 대기 모션 첫 프레임을 0.4초간 유지한 뒤 대기로 복귀한다. 대기의 배율·기준점과 첫 프레임 보정을 그대로 사용한다. 개별 시트의 정렬값은 측정 후 `characters.json`의 해당 `motions` 항목에 추가한다.
 

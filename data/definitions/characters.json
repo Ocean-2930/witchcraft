@@ -6,7 +6,8 @@
     "motions": {
       "idle": {"scale": 1.0, "anchor": [256, 448], "offset": [0, 0]},
       "walk": {"scale": 1.0, "anchor": [214, 448], "offset": [0, 0]},
-      "attack": {"scale": 1.2, "anchor": [242.33, 448], "offset": [0, 0]}
+      "attack": {"scale": 1.2, "anchor": [242.33, 448], "offset": [0, 0]},
+      "buff": {"scale": 1.06, "anchor": [256, 448], "offset": [0, 0]}
     }
   },
   "renea": {
