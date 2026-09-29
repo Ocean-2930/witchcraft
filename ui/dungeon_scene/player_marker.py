@@ -10,8 +10,10 @@ class PlayerMarkerRenderer(ShiftRenderer):
     WALK_FRAME_COUNT = 8
     # Seconds keep motion timing independent of the display FPS setting.
     IDLE_FRAME_SECONDS = 0.15
-    WALK_FRAME_SECONDS = (0.1,) * 8
+    WALK_FRAME_SECONDS = (0.08,) * 8
     WALK_CONTACT_INDICES = (0, 4)
+    FOOT_BASELINE_RATIO = 448 / 512
+    TILE_BOTTOM_MARGIN = 6
 
     def __init__(self, scene, pos_x, pos_y, width, height):
         self.facing_left = False
@@ -111,7 +113,11 @@ class PlayerMarkerRenderer(ShiftRenderer):
         texture_image = self.get_current_texture_image()
 
         if texture_image is not None:
-            texture_rect = texture_image.get_rect(center=self.rect.center)
+            # Keep the sheet's fixed foot baseline above the current tile bottom.
+            foot_y = self.rect.centery + self.scene.FLOOR_TILE_HEIGHT / 2 - self.TILE_BOTTOM_MARGIN
+            texture_rect = texture_image.get_rect()
+            texture_rect.centerx = self.rect.centerx
+            texture_rect.top = round(foot_y - texture_image.get_height() * self.FOOT_BASELINE_RATIO)
             screen.blit(texture_image, texture_rect)
         else:
             pygame.draw.circle(screen, (198, 42, 42), self.rect.center, self.rect.width // 2)
