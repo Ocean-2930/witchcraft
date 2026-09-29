@@ -1,7 +1,7 @@
 import pygame
 
 from ui.renderer import Renderer
-from .textures import DUNGEON_TEXTURES
+from .textures import get_character_textures
 
 
 class PlayerStatusRenderer(Renderer):
@@ -28,7 +28,7 @@ class PlayerStatusRenderer(Renderer):
         self.profile_image = (
             profile_image
             if profile_image is not None
-            else DUNGEON_TEXTURES.get_scaled(
+            else get_character_textures(scene.dungeon_inventory.character_name).get_scaled(
                 "player_profile",
                 profile_size,
                 profile_size,

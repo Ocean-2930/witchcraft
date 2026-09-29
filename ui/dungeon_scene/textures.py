@@ -1,4 +1,5 @@
 from pathlib import Path
+from functools import lru_cache
 
 import pygame
 
@@ -6,10 +7,6 @@ import pygame
 ASSET_ROOT = Path(__file__).resolve().parents[2] / "assets" / "images" / "dungeon_scene"
 
 TEXTURE_SOURCES = {
-    "character": "character.png",
-    "character_idle": "player/idle_sheet.png",
-    "character_walk": "player/walk_sheet.png",
-    "player_profile": "player_profile.png",
     "floor": "floor_tile.png",
     "up_stairs": "up_stairs.png",
     "down_stairs": "down_stairs.png",
@@ -140,3 +137,18 @@ class DungeonTextureStore:
 
 
 DUNGEON_TEXTURES = DungeonTextureStore(TEXTURE_SOURCES)
+
+
+@lru_cache(maxsize=None)
+def get_character_textures(code):
+    from utilities.inventory import DungeonInventory
+
+    DungeonInventory.validate_character_name(code)
+    root = ASSET_ROOT.parent / "characters" / code
+    standing, walking = ("stannding.png", "walking.png") if code == "valen" else ("standing.png", "walk.png")
+    return DungeonTextureStore({
+        "character": root / "SD.png",
+        "character_idle": root / standing,
+        "character_walk": root / walking,
+        "player_profile": root / "profile.png",
+    })

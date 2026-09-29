@@ -4,7 +4,7 @@ import pygame
 import settings
 
 from ui.renderer import Renderer
-from .textures import DUNGEON_TEXTURES
+from .textures import get_character_textures
 
 
 ASSET_DIRECTORY = Path("assets/images/ui/combat_timeline")
@@ -32,7 +32,7 @@ class CombatTimelineRenderer(Renderer):
         self.player_getter = player_getter
         self.turn_counter_getter = turn_counter_getter
         self.enemy_turns_getter = enemy_turns_getter or (lambda: ())
-        self.profile_image = DUNGEON_TEXTURES.get_scaled(
+        self.profile_image = get_character_textures(scene.dungeon_inventory.character_name).get_scaled(
             "player_profile",
             21,
             21,

@@ -1,34 +1,34 @@
 import pygame
 
 from ui.renderer import ShiftRenderer
-from .textures import DUNGEON_TEXTURES
+from .textures import get_character_textures
 
 
 class PlayerMarkerRenderer(ShiftRenderer):
     draw_layer = -75
-    IDLE_FRAME_COUNT = 14
-    WALK_FRAME_COUNT = 4
+    IDLE_FRAME_COUNT = 8
+    WALK_FRAME_COUNT = 8
     # Seconds keep motion timing independent of the display FPS setting.
     IDLE_FRAME_SECONDS = 0.15
-    WALK_FRAME_SECONDS = (0.12, 0.08, 0.12, 0.08)
-    WALK_CONTACT_INDICES = (0, 2)
-    flipped_texture_images = {}
+    WALK_FRAME_SECONDS = (0.1,) * 8
+    WALK_CONTACT_INDICES = (0, 4)
 
     def __init__(self, scene, pos_x, pos_y, width, height):
         self.facing_left = False
+        self.flipped_texture_images = {}
         super().__init__(scene, pos_x, pos_y, width, height, background=True)
 
-        idle_frames = DUNGEON_TEXTURES.get_sheet_frames(
+        idle_frames = get_character_textures(scene.dungeon_inventory.character_name).get_sheet_frames(
             "character_idle",
             self.IDLE_FRAME_COUNT,
         )
-        walk_frames = DUNGEON_TEXTURES.get_sheet_frames(
+        walk_frames = get_character_textures(scene.dungeon_inventory.character_name).get_sheet_frames(
             "character_walk",
             self.WALK_FRAME_COUNT,
         )
 
         if not idle_frames:
-            fallback = DUNGEON_TEXTURES.get_contained(
+            fallback = get_character_textures(scene.dungeon_inventory.character_name).get_contained(
                 "character",
                 width,
                 height,
@@ -68,14 +68,14 @@ class PlayerMarkerRenderer(ShiftRenderer):
 
         cache_key = (self.current, self.index, self.image.get_size())
 
-        if cache_key not in self.__class__.flipped_texture_images:
-            self.__class__.flipped_texture_images[cache_key] = pygame.transform.flip(
+        if cache_key not in self.flipped_texture_images:
+            self.flipped_texture_images[cache_key] = pygame.transform.flip(
                 self.image,
                 True,
                 False,
             )
 
-        return self.__class__.flipped_texture_images[cache_key]
+        return self.flipped_texture_images[cache_key]
 
     def update(self, delta_time, game_events, mouse_position, wheel_move):
         if self.scene.should_continue_player_walk():
@@ -95,6 +95,10 @@ class PlayerMarkerRenderer(ShiftRenderer):
                     self.frame_duration * animation["frame_lengths"][self.index]
                     - self.delta_time
                 )
+                next_index = (self.index + 1) % frame_count
+                while next_index not in self.WALK_CONTACT_INDICES:
+                    remaining += self.frame_duration * animation["frame_lengths"][next_index]
+                    next_index = (next_index + 1) % frame_count
                 if delta_time < remaining:
                     self.animation_proceed(delta_time)
                     return

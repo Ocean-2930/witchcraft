@@ -126,3 +126,5 @@ flowchart LR
 - `GameEntryScene.character_name` → 새 인벤토리 → 세션 저장 → 이어하기로 캐릭터 이름을 전달한다. 버전 5는 `inventory.character_name`을 필수 검증한다. 버전 1~4는 이름이 없으면 `renea`로 이관하며 플레이어 상태는 보존한다. 초기 개발 단계의 종류·직업 정보는 더 이상 사용하지 않으며, 해당 정보가 남아 있어도 읽기를 거부하지 않는다.
 
 - `GameEntryScene`은 캐릭터 목록의 표시 영역과 가로 스크롤 위치를 소유한다. `CharacterCard`는 해당 영역으로 렌더링과 클릭 판정을 제한한다. 스크롤은 선택 화면의 일시 상태이며 저장 대상이 아니다.
+
+- `get_character_textures(code)`는 캐릭터 코드별로 분리한 텍스처 저장소를 제공한다. 프로필·대기·걷기·정지 대체 이미지는 `assets/images/characters/{code}/`에서 읽고 지형 텍스처는 기존 던전 저장소에서 읽는다. 저장된 `character_name`을 사용하므로 이어하기에서도 같은 외형을 복원하며 저장 형식 변경은 없다.

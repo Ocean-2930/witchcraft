@@ -205,8 +205,8 @@ class DungeonScene(Scene):
             self,
             VIRTUAL_WIDTH // 2,
             VIRTUAL_HEIGHT // 2,
-            72,
-            72,
+            108,
+            108,
         )
         self.combat_timeline = CombatTimelineRenderer(
             self,
