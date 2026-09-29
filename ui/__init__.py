@@ -23,7 +23,7 @@ from .dungeon_scene import (
 )
 
 # game_entry_scene
-from .game_entry_scene import GameEntryStartButton, SeedInput, SeedStatusMarker
+from .game_entry_scene import CharacterCard, GameEntryStartButton, SeedInput, SeedStatusMarker
 
 # inventory_scene
 from .inventory_scene import (
@@ -83,6 +83,7 @@ __all__ = [
     "MiniMap",
     "DungeonFogRenderer",
     # game_entry_scene
+    "CharacterCard",
     "GameEntryStartButton",
     "SeedInput",
     "SeedStatusMarker",

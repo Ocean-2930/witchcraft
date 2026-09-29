@@ -122,4 +122,7 @@ flowchart LR
 
 
 - `DungeonInventory.character_name`은 `assets/images/characters`의 실제 캐릭터 폴더 이름인 `renea` 또는 `valen` 문자열 하나를 소유한다. 기본값은 `renea`이며 `sample`은 캐릭터로 허용하지 않는다. 이름·능력치·현재 HP/MP 등 전투 상태는 기존 `player`가 유지한다.
+- `data/definitions/characters.json`은 캐릭터 선택 UI를 위한 기초 정의 파일이다. 캐릭터 폴더 이름을 키로 사용하며 `valen`, `renea` 순서로 캐릭터 코드(`code`), 표시 이름(`name`)과 설명(`description`)을 둔다. 표시 이름은 발렌·레네아이며 설명은 비워 둔다. `units/character_definitions.py`가 선택 화면 진입 시 UTF-8로 읽으며 JSON 순서를 보존한다. `GameEntryScene`은 지원 코드를 확인하고 `CharacterCard`를 배치한다. 카드는 `assets/images/characters/{code}/full_shot.png`를 비율 유지해 표시하며 선택 코드를 기존 인벤토리에 전달한다. 저장 형식은 바뀌지 않는다.
 - `GameEntryScene.character_name` → 새 인벤토리 → 세션 저장 → 이어하기로 캐릭터 이름을 전달한다. 버전 5는 `inventory.character_name`을 필수 검증한다. 버전 1~4는 이름이 없으면 `renea`로 이관하며 플레이어 상태는 보존한다. 초기 개발 단계의 종류·직업 정보는 더 이상 사용하지 않으며, 해당 정보가 남아 있어도 읽기를 거부하지 않는다.
+
+- `GameEntryScene`은 캐릭터 목록의 표시 영역과 가로 스크롤 위치를 소유한다. `CharacterCard`는 해당 영역으로 렌더링과 클릭 판정을 제한한다. 스크롤은 선택 화면의 일시 상태이며 저장 대상이 아니다.
