@@ -23,6 +23,115 @@ from units import EnemyMode
 
 
 class SaveSystemTests(unittest.TestCase):
+    def test_motion_anchor_offsets_and_mirroring(self):
+        dungeon = self.start()
+        marker = dungeon.player_marker
+        marker.motion_settings = {"idle": {
+            "scale": 1.25, "anchor": [220, 418], "offset": [4, -2],
+            "frame_offsets": [[2, 3]] * 8,
+        }}
+        marker.set_animation("idle")
+        image = marker.get_current_texture_image()
+        self.assertEqual(image.get_width(), round(marker.image.get_width() * 1.25))
+        rect = marker.get_texture_rect(image)
+        foot_y = marker.rect.centery + dungeon.FLOOR_TILE_HEIGHT / 2 - marker.TILE_BOTTOM_MARGIN
+        self.assertAlmostEqual(rect.left + (220 - 6) * rect.width / 512, marker.rect.centerx, delta=0.5)
+        self.assertAlmostEqual(rect.top + (418 - 1) * rect.height / 512, foot_y, delta=0.5)
+        marker.set_facing_left(True)
+        flipped = marker.get_current_texture_image()
+        left_rect = marker.get_texture_rect(flipped)
+        self.assertEqual(flipped.get_size(), image.get_size())
+        self.assertAlmostEqual(left_rect.left + (512 - 220 + 6) * left_rect.width / 512,
+                               marker.rect.centerx, delta=0.5)
+
+    def test_character_motion_config_validation_and_defaults(self):
+        from units.character_definitions import load_character_motion_settings
+        path = self.temp_path / "characters.json"
+        row = {"code": "test", "name": "테스트"}
+        with patch("units.character_definitions.DEFINITIONS_PATH", path):
+            path.write_text(json.dumps({"test": row}), encoding="utf-8")
+            self.assertEqual(load_character_motion_settings("test"), {})
+            for config in ({"scale": 0}, {"scale": True}, {"scale": float("nan")},
+                           {"anchor": [1]}, {"offset": [0, float("inf")]},
+                           {"frame_offsets": [[0, 0]]}, {"scales": 1}):
+                row["motions"] = {"attack": config}
+                path.write_text(json.dumps({"test": row}), encoding="utf-8")
+                with self.assertRaises(ValueError):
+                    load_character_motion_settings("test")
+
+    def test_skill_motion_definition_roundtrip(self):
+        from skills import AttackSkill, SkillInstance, STAT_PASSIVE_SKILLS
+        from skills.active_skill import ActiveSkill
+        from utilities.save.serializers import skill_data, read_skill
+
+        self.assertIsNone(ActiveSkill("no motion").motion)
+        for definition in (AttackSkill(), STAT_PASSIVE_SKILLS[0]):
+            restored = read_skill(skill_data(SkillInstance(definition, 1)))
+            self.assertEqual(restored.skill.motion, definition.motion)
+        self.assertEqual(read_skill({"code": "attack", "level": 1, "stack": 1}).skill.motion, "attack")
+
+    def test_skill_motion_plays_once_and_missing_sheet_does_not_block(self):
+        dungeon = self.start()
+        marker = dungeon.player_marker
+        frames = tuple(pygame.Surface((32, 32), pygame.SRCALPHA) for _ in range(8))
+        with patch("ui.dungeon_scene.player_marker.get_character_textures") as textures:
+            textures.return_value.get_sheet_frames.return_value = frames
+            self.assertFalse(marker.play_motion(None))
+            self.assertTrue(marker.play_motion("attack"))
+            self.assertFalse(marker.play_motion("attack"))
+            marker.update(0.175, {}, None, 0)
+            self.assertTrue(marker.is_playing_motion)
+            self.assertEqual(marker.index, 3)
+            marker.update(1.0, {}, None, 0)
+            self.assertFalse(marker.is_playing_motion)
+            self.assertEqual(marker.current, "idle")
+            self.assertTrue(marker.play_motion("attack"))
+            self.assertEqual(marker.index, 0)
+            marker.update(1.0, {}, None, 0)
+            textures.return_value.get_sheet_frames.return_value = ()
+            self.assertFalse(marker.play_motion("missing"))
+            self.assertFalse(marker.is_playing_motion)
+
+    def test_successful_cast_starts_motion_but_failed_cast_does_not(self):
+        from skills import AttackSkill
+        dungeon = self.start()
+        skill = AttackSkill()
+        with patch.object(dungeon, "get_hotbar_action_skill", return_value=skill), \
+             patch.object(dungeon.dungeon_inventory, "get_hotbar_item", return_value=None), \
+             patch.object(dungeon.dungeon_inventory, "get_hotbar_skill", return_value=None), \
+             patch.object(dungeon.dungeon_inventory, "use_skill", return_value=None) as cast, \
+             patch.object(dungeon.player_marker, "play_motion", return_value=True) as motion:
+            dungeon.use_hotbar_skill("1", (1, 0))
+            motion.assert_not_called()
+            cast.return_value = []
+            dungeon.use_hotbar_skill("1", (1, 0))
+            motion.assert_called_once_with("attack")
+            motion.reset_mock()
+            skill.motion = None
+            dungeon.use_hotbar_skill("1", (1, 0))
+            self.assertTrue(dungeon.last_skill_call["used"])
+            motion.assert_called_once_with(None)
+
+    def test_motion_blocks_followup_gameplay_input(self):
+        from unittest.mock import PropertyMock
+        from ui.dungeon_scene.player_marker import PlayerMarkerRenderer
+        dungeon = self.start()
+        events = {key: {"keydown": False, "keyup": False, "status": False}
+                  for key in range(1024)}
+        # Use the project's actual input constants, including non-integer keys.
+        for value in vars(settings).values():
+            if isinstance(value, (str, int)):
+                events.setdefault(value, {"keydown": False, "keyup": False, "status": False})
+        with patch.object(PlayerMarkerRenderer, "is_playing_motion", new_callable=PropertyMock, return_value=True), \
+             patch.object(dungeon, "update_hotbar_input") as hotbar, \
+             patch.object(dungeon, "try_start_maze_move") as movement, \
+             patch.object(dungeon, "update_hovered_monster"), \
+             patch.object(dungeon, "block_hotbar_input_during_move"):
+            dungeon.scene_update(0.01, events, None, 0)
+            self.assertFalse(dungeon.can_use_movement_input(events))
+            hotbar.assert_not_called()
+            movement.assert_not_called()
+
     def test_character_name_new_game_save_continue_and_resave(self):
         entry = GameEntryScene(self.game)
         entry.character_name = "valen"

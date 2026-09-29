@@ -42,6 +42,7 @@ def plain(value):
 
 
 def skill_data(instance):
+    # motion is code-defined presentation metadata, restored through SKILL_DEFINITIONS.
     if instance is None:
         return None
     code = instance.skill.skill_code
@@ -51,6 +52,7 @@ def skill_data(instance):
 
 
 def read_skill(data):
+    # Older saves also receive the current definition's motion without changing the format.
     if data is None:
         return None
     if type(data["level"]) is not int:

@@ -2,11 +2,21 @@
   "valen": {
     "code": "valen",
     "name": "발렌",
-    "description": ""
+    "description": "",
+    "motions": {
+      "idle": {"scale": 1.0, "anchor": [256, 448], "offset": [0, 0]},
+      "walk": {"scale": 1.0, "anchor": [214, 448], "offset": [0, 0]},
+      "attack": {"scale": 1.2, "anchor": [242.33, 448], "offset": [0, 0]}
+    }
   },
   "renea": {
     "code": "renea",
     "name": "레네아",
-    "description": ""
+    "description": "",
+    "motions": {
+      "idle": {"scale": 1.0, "anchor": [256, 418], "offset": [0, 0]},
+      "walk": {"scale": 1.0, "anchor": [260, 418], "offset": [0, 0]},
+      "attack": {"scale": 0.966, "anchor": [320.09, 448], "offset": [0, 0]}
+    }
   }
 }

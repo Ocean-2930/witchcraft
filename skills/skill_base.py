@@ -99,8 +99,13 @@ class SkillBase:
     critical_modifier_calculator: CriticalModifierCalculator | None = None
     damage_increase_modifier_calculator: DamageIncreaseModifierCalculator | None = None
     final_damage_calculator: FinalDamageCalculator | None = None
+    motion: str | None = None
 
     def __post_init__(self):
+        if self.motion is not None and (
+            not isinstance(self.motion, str) or not self.motion.isidentifier()
+        ):
+            raise ValueError("motion은 모션 이름 또는 None이어야 합니다.")
         if self.max_level is not None and self.max_level < 0:
             raise ValueError("max_level은 0 이상이거나 None이어야 합니다.")
         if not self.skill_code:

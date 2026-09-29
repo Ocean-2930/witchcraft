@@ -1,4 +1,5 @@
 import pygame
+from units.character_definitions import load_character_motion_settings
 
 from ui.renderer import ShiftRenderer
 from .textures import get_character_textures
@@ -8,6 +9,7 @@ class PlayerMarkerRenderer(ShiftRenderer):
     draw_layer = -75
     IDLE_FRAME_COUNT = 8
     WALK_FRAME_COUNT = 8
+    MOTION_FRAME_SECONDS = 0.05
     # Seconds keep motion timing independent of the display FPS setting.
     IDLE_FRAME_SECONDS = 0.15
     WALK_FRAME_SECONDS = (0.08,) * 8
@@ -18,6 +20,7 @@ class PlayerMarkerRenderer(ShiftRenderer):
     def __init__(self, scene, pos_x, pos_y, width, height):
         self.facing_left = False
         self.flipped_texture_images = {}
+        self.motion_settings = load_character_motion_settings(scene.dungeon_inventory.character_name)
         super().__init__(scene, pos_x, pos_y, width, height, background=True)
 
         idle_frames = get_character_textures(scene.dungeon_inventory.character_name).get_sheet_frames(
@@ -59,27 +62,56 @@ class PlayerMarkerRenderer(ShiftRenderer):
         )
         self.set_start("idle")
 
+    @property
+    def is_playing_motion(self):
+        return self.current not in (None, "idle", "walk")
+
+    def play_motion(self, motion):
+        """Play an optional character motion once; absent sheets never block input."""
+        if motion is None or motion in ("idle", "walk") or self.is_playing_motion:
+            return False
+        if motion not in self.animations:
+            textures = get_character_textures(self.scene.dungeon_inventory.character_name)
+            frames = textures.get_sheet_frames(f"character_{motion}", 8)
+            if not frames:
+                return False
+            self.add_animation(
+                motion, frames,
+                frame_lengths=[self.MOTION_FRAME_SECONDS / self.frame_duration] * len(frames),
+                loop=False, next_animation="idle",
+            )
+        self.set_animation(motion, update_formal=False)
+        return True
+
     def set_facing_left(self, facing_left):
         self.facing_left = facing_left
 
     def get_current_texture_image(self):
         if self.image is None:
             return None
-        if not self.facing_left:
+        scale = self.motion_settings.get(self.current, {}).get("scale", 1.0)
+        if not self.facing_left and scale == 1.0:
             return self.image
 
-        cache_key = (self.current, self.index, self.image.get_size())
+        cache_key = (self.current, self.index, self.image.get_size(), self.facing_left, scale)
 
         if cache_key not in self.flipped_texture_images:
-            self.flipped_texture_images[cache_key] = pygame.transform.flip(
-                self.image,
-                True,
-                False,
-            )
+            image = self.image
+            if scale != 1.0:
+                image = pygame.transform.smoothscale(image, (
+                    max(1, round(image.get_width() * scale)),
+                    max(1, round(image.get_height() * scale)),
+                ))
+            if self.facing_left:
+                image = pygame.transform.flip(image, True, False)
+            self.flipped_texture_images[cache_key] = image
 
         return self.flipped_texture_images[cache_key]
 
     def update(self, delta_time, game_events, mouse_position, wheel_move):
+        if self.is_playing_motion:
+            self.animation_proceed(delta_time)
+            return
         if self.scene.should_continue_player_walk():
             if self.current != "walk":
                 self.set_animation("walk")
@@ -109,15 +141,30 @@ class PlayerMarkerRenderer(ShiftRenderer):
 
         self.animation_proceed(delta_time)
 
+    def get_texture_rect(self, texture_image):
+        """Place each sheet's configured anchor at the shared tile foot position."""
+        config = self.motion_settings.get(self.current, {})
+        anchor_x, anchor_y = config.get("anchor", (256, 448))
+        offset_x, offset_y = config.get("offset", (0, 0))
+        frame_offsets = config.get("frame_offsets", ())
+        if frame_offsets:
+            frame_x, frame_y = frame_offsets[self.index]
+            offset_x += frame_x
+            offset_y += frame_y
+        if self.facing_left:
+            anchor_x = 512 - anchor_x
+            offset_x = -offset_x
+        foot_y = self.rect.centery + self.scene.FLOOR_TILE_HEIGHT / 2 - self.TILE_BOTTOM_MARGIN
+        rect = texture_image.get_rect()
+        rect.left = round(self.rect.centerx + (offset_x - anchor_x) * rect.width / 512)
+        rect.top = round(foot_y + (offset_y - anchor_y) * rect.height / 512)
+        return rect
+
     def draw(self, screen):
         texture_image = self.get_current_texture_image()
 
         if texture_image is not None:
-            # Keep the sheet's fixed foot baseline above the current tile bottom.
-            foot_y = self.rect.centery + self.scene.FLOOR_TILE_HEIGHT / 2 - self.TILE_BOTTOM_MARGIN
-            texture_rect = texture_image.get_rect()
-            texture_rect.centerx = self.rect.centerx
-            texture_rect.top = round(foot_y - texture_image.get_height() * self.FOOT_BASELINE_RATIO)
+            texture_rect = self.get_texture_rect(texture_image)
             screen.blit(texture_image, texture_rect)
         else:
             pygame.draw.circle(screen, (198, 42, 42), self.rect.center, self.rect.width // 2)

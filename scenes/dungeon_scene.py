@@ -743,6 +743,12 @@ class DungeonScene(Scene):
 
         self.update_hovered_monster(mouse_position)
 
+        if self.player_marker.is_playing_motion:
+            self.block_hotbar_input_during_move(game_events)
+            self.reset_movement_repeat()
+            super().scene_update(delta_time, game_events, mouse_position, wheel_move)
+            return
+
         if self.active_move is not None:
             self.block_hotbar_input_during_move(game_events)
             self.update_player_facing(game_events)
@@ -1040,6 +1046,8 @@ class DungeonScene(Scene):
         self.use_hotbar_skill(self.active_hotbar_label, self.active_hotbar_direction)
 
     def use_hotbar_skill(self, label, direction):
+        if self.player_marker.is_playing_motion:
+            return
         self.set_player_facing_by_direction(direction)
         skill = self.get_hotbar_action_skill(label)
         target_vectors = skill.get_range_vectors(direction)
@@ -1074,6 +1082,8 @@ class DungeonScene(Scene):
 
         if used:
             self.add_skill_combat_logs(skill, targets, results)
+            self.reset_movement_repeat()
+            self.player_marker.play_motion(skill.motion)
 
         defeated = [monster for monster in target_monsters if not monster["unit"].is_alive]
         for monster in defeated:
@@ -1248,6 +1258,8 @@ class DungeonScene(Scene):
         self.set_player_facing_by_direction(direction)
 
     def can_use_movement_input(self, game_events):
+        if self.player_marker.is_playing_motion:
+            return False
         if self.active_hotbar_key is not None:
             return False
         if self.is_hotbar_pressed(game_events):

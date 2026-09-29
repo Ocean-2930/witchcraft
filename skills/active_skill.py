@@ -34,6 +34,7 @@ class ActiveSkill(SkillBase):
         critical_modifier_calculator=None,
         damage_increase_modifier_calculator=None,
         final_damage_calculator=None,
+        motion: str | None = None,
     ):
         super().__init__(
             name=name,
@@ -53,6 +54,7 @@ class ActiveSkill(SkillBase):
             critical_modifier_calculator=critical_modifier_calculator,
             damage_increase_modifier_calculator=damage_increase_modifier_calculator,
             final_damage_calculator=final_damage_calculator,
+            motion=motion,
         )
         self.skill_coefficient = skill_coefficient
 

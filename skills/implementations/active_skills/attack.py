@@ -18,6 +18,7 @@ class AttackSkill(ActiveSkill):
             range_vectors=[(0, -1)],
             allow_diagonal=True,
             max_level=max_level,
+            motion="attack",
         )
 
     def get_description(self, level: int) -> str:

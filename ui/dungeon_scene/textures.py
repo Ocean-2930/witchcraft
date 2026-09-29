@@ -150,5 +150,6 @@ def get_character_textures(code):
         "character": root / "SD.png",
         "character_idle": root / standing,
         "character_walk": root / walking,
+        "character_attack": root / "attack.png",
         "player_profile": root / "profile.png",
     })
